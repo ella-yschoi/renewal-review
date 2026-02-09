@@ -1,4 +1,5 @@
 from fastapi import APIRouter, HTTPException
+from pydantic import ValidationError
 
 from app.engine.batch import process_pair
 from app.engine.parser import parse_pair
@@ -15,7 +16,11 @@ def get_results_store() -> dict[str, ReviewResult]:
 
 @router.post("/compare", response_model=ReviewResult)
 def compare(raw_pair: dict) -> ReviewResult:
-    pair = parse_pair(raw_pair)
+    try:
+        pair = parse_pair(raw_pair)
+    except (KeyError, ValidationError) as e:
+        raise HTTPException(status_code=422, detail=f"Invalid renewal pair: {e}") from e
+
     result = process_pair(pair)
     _results_store[result.policy_number] = result
     return result

@@ -1,48 +1,65 @@
-import json
-import random
-from pathlib import Path
+import asyncio
+import uuid
+from enum import StrEnum
 
-from fastapi import APIRouter, Query
+from fastapi import APIRouter, HTTPException, Query
 
-from app.config import settings
+from app.data_loader import load_pairs
 from app.engine.batch import process_batch
-from app.engine.parser import parse_pair
 from app.models.review import BatchSummary
 from app.routes.reviews import get_results_store
 
 router = APIRouter(prefix="/batch", tags=["batch"])
 
+
+class JobStatus(StrEnum):
+    PENDING = "pending"
+    RUNNING = "running"
+    COMPLETED = "completed"
+    FAILED = "failed"
+
+
+_jobs: dict[str, dict] = {}
 _last_summary: BatchSummary | None = None
 
 
-def _load_pairs(sample: int | None = None) -> list:
-    data_path = Path(settings.data_path)
-    if not data_path.exists():
-        return []
-    raw_pairs = json.loads(data_path.read_text())
-    if sample and sample < len(raw_pairs):
-        raw_pairs = random.sample(raw_pairs, sample)
-    return [parse_pair(rp) for rp in raw_pairs]
-
-
 @router.post("/run")
-def run_batch(sample: int | None = Query(None, ge=1)) -> dict:
-    global _last_summary
-    pairs = _load_pairs(sample)
+async def run_batch(sample: int | None = Query(None, ge=1)) -> dict:
+    pairs = load_pairs(sample)
     if not pairs:
-        return {"error": "No data found. Run data/generate.py first."}
+        raise HTTPException(status_code=404, detail="No data found. Run data/generate.py first.")
 
-    results, summary = process_batch(pairs)
-    _last_summary = summary
+    job_id = str(uuid.uuid4())[:8]
+    _jobs[job_id] = {"status": JobStatus.RUNNING, "summary": None, "error": None}
 
-    store = get_results_store()
-    for r in results:
-        store[r.policy_number] = r
+    async def _process():
+        global _last_summary
+        try:
+            loop = asyncio.get_event_loop()
+            results, summary = await loop.run_in_executor(None, process_batch, pairs)
+            _last_summary = summary
 
-    return {
-        "processed": summary.total,
-        "summary": summary.model_dump(),
-    }
+            store = get_results_store()
+            for r in results:
+                store[r.policy_number] = r
+
+            _jobs[job_id]["status"] = JobStatus.COMPLETED
+            _jobs[job_id]["summary"] = summary.model_dump()
+        except Exception as e:
+            _jobs[job_id]["status"] = JobStatus.FAILED
+            _jobs[job_id]["error"] = str(e)
+
+    asyncio.create_task(_process())
+
+    return {"job_id": job_id, "status": JobStatus.RUNNING}
+
+
+@router.get("/status/{job_id}")
+def get_job_status(job_id: str) -> dict:
+    job = _jobs.get(job_id)
+    if job is None:
+        raise HTTPException(status_code=404, detail=f"Job {job_id} not found")
+    return {"job_id": job_id, **job}
 
 
 @router.get("/summary", response_model=BatchSummary | None)

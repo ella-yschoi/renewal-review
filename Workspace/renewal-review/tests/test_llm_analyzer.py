@@ -1,48 +1,9 @@
-from typing import Any
-
 from app.engine.batch import process_pair
 from app.engine.differ import compute_diff
 from app.engine.rules import flag_diff
 from app.llm.analyzer import analyze_pair, should_analyze
+from app.llm.mock import MockLLMClient
 from app.models.policy import RenewalPair
-
-
-class MockLLMClient:
-    def __init__(self):
-        self.calls: list[tuple[str, str]] = []
-
-    def complete(self, prompt: str, trace_name: str) -> dict[str, Any]:
-        self.calls.append((prompt, trace_name))
-
-        if trace_name == "risk_signal_extractor":
-            return {
-                "signals": [
-                    {
-                        "signal_type": "claims_history",
-                        "description": "Water damage claim noted",
-                        "severity": "medium",
-                    }
-                ],
-                "confidence": 0.85,
-                "summary": "Moderate risk due to recent claim history",
-            }
-
-        if trace_name == "endorsement_comparison":
-            return {
-                "material_change": True,
-                "change_type": "restriction",
-                "confidence": 0.8,
-                "reasoning": "Coverage scope narrowed in renewal",
-            }
-
-        if trace_name == "coverage_similarity":
-            return {
-                "equivalent": False,
-                "confidence": 0.9,
-                "reasoning": "Coverage removed entirely",
-            }
-
-        return {"error": "unknown prompt"}
 
 
 def test_should_analyze_with_notes(home_pair: RenewalPair):
@@ -84,8 +45,6 @@ def test_analyze_pair_endorsement_desc(auto_pair: RenewalPair):
     has_endorsement_desc = any(
         c.field.startswith("endorsement_description_") for c in diff.changes
     )
-    # The auto fixture has an endorsement description change for UM100
-    # If present, the analyzer should call endorsement_comparison
     if has_endorsement_desc:
         client = MockLLMClient()
         insights = analyze_pair(client, diff, auto_pair)
