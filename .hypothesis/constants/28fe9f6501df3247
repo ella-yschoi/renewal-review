@@ -1,4 +1,0 @@
-# file: /Users/yeonsuchoi/Workspace/renewal-review/app/engine/parser.py
-# hypothesis_version: 6.151.5
-
-[250, 500, 1000, 5000, 30000, 60000, 100000, 150000, 300000, '-', '/', '100', '100/300', 'CA', 'age', 'auto_coverages', 'bodily_injury_limit', 'carrier', 'code', 'collision_deductible', 'coverage_a_dwelling', 'coverage_e_liability', 'coverage_f_medical', 'deductible', 'description', 'drivers', 'effective_date', 'endorsements', 'expiration_date', 'home_coverages', 'license_number', 'make', 'medical_payments', 'model', 'name', 'notes', 'personal', 'policy_number', 'policy_type', 'premium', 'prior', 'renewal', 'rental_reimbursement', 'replacement_cost', 'roadside_assistance', 'sr22', 'state', 'uninsured_motorist', 'usage', 'vehicles', 'vin', 'violations', 'water_backup', 'wind_hail_deductible', 'year']

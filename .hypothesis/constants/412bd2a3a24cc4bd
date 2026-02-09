@@ -1,4 +1,0 @@
-# file: /Users/yeonsuchoi/Workspace/renewal-review/app/config.py
-# hypothesis_version: 6.151.5
-
-['RR_', 'data/renewals.json', 'env_prefix', 'openai']
