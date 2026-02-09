@@ -19,10 +19,16 @@ Before making any code change, read `convention.md` in the repo root. All style,
 
 ## Workflow
 
-- **Worktrees:** Use `.worktrees/wt-feat-{1,2,3}` for features, `wt-hotfix` for urgent fixes, `wt-experiment` for spikes.
+- **Worktrees:** Use `.worktrees/wt-feat-{1,2,3}` for features, `wt-research` for research, `wt-hotfix` for urgent fixes, `wt-experiment` for spikes.
+- **Research:** Always use subagents (Task tool) for research tasks. Use `wt-research` worktree for research work, separate from feature development.
 - **Branching:** Follow `convention.md` branch naming. Create branches from `main`.
 - **Commits:** Imperative mood, < 72 chars, one logical change per commit.
 - **Before committing:** Run linter + tests. Never skip pre-commit hooks.
+
+## Security Pipeline
+
+- Pre-commit hooks: Gitleaks (secret detection), Semgrep (SAST). Do not bypass these.
+- AI-generated code must pass Ruff + Semgrep + Gitleaks before commit.
 
 ## Environment
 
