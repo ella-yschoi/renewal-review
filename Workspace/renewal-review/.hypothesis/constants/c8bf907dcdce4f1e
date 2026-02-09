@@ -1,4 +1,0 @@
-# file: /Users/yeonsuchoi/Workspace/renewal-review/app/routes/batch.py
-# hypothesis_version: 6.151.5
-
-['/batch', '/run', '/summary', 'batch', 'error', 'processed', 'summary']

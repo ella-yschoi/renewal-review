@@ -1,4 +1,0 @@
-# file: /Users/yeonsuchoi/Workspace/renewal-review/app/models/diff.py
-# hypothesis_version: 6.151.5
-
-['carrier_change', 'coverage_added', 'coverage_dropped', 'deductible_increase', 'driver_added', 'driver_removed', 'endorsement_added', 'endorsement_removed', 'notes_changed', 'premium_decrease', 'vehicle_added', 'vehicle_removed']
