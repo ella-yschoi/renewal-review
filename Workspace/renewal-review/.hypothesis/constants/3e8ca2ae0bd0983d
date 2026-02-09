@@ -1,0 +1,4 @@
+# file: /Users/yeonsuchoi/Workspace/renewal-review/app/llm/client.py
+# hypothesis_version: 6.151.5
+
+[0.1, 1024, 'LANGFUSE_PUBLIC_KEY', 'anthropic', 'content', 'error', 'gpt-4o-mini', 'json_object', 'raw', 'raw_response', 'role', 'type', 'user']

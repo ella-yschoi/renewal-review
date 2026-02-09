@@ -1,0 +1,65 @@
+{
+  "prior": {
+    "policy_number": "HOME-2024-001",
+    "policy_type": "home",
+    "carrier": "Allstate",
+    "effective_date": "2024-03-01",
+    "expiration_date": "2025-03-01",
+    "premium": 2400.00,
+    "state": "TX",
+    "notes": "",
+    "home_coverages": {
+      "coverage_a_dwelling": 350000,
+      "coverage_b_other_structures": 35000,
+      "coverage_c_personal_property": 175000,
+      "coverage_d_loss_of_use": 70000,
+      "coverage_e_liability": 300000,
+      "coverage_f_medical": 5000,
+      "deductible": 1000,
+      "wind_hail_deductible": 2500,
+      "water_backup": true,
+      "replacement_cost": true
+    },
+    "endorsements": [
+      {
+        "code": "HO-61",
+        "description": "Scheduled personal property",
+        "premium": 120.00
+      },
+      {
+        "code": "WB01",
+        "description": "Water backup and sump overflow coverage",
+        "premium": 75.00
+      }
+    ]
+  },
+  "renewal": {
+    "policy_number": "HOME-2024-001",
+    "policy_type": "home",
+    "carrier": "Allstate",
+    "effective_date": "2025-03-01",
+    "expiration_date": "2026-03-01",
+    "premium": 2952.00,
+    "state": "TX",
+    "notes": "Inflation guard applied. Roof age approaching replacement threshold.",
+    "home_coverages": {
+      "coverage_a_dwelling": 371000,
+      "coverage_b_other_structures": 37100,
+      "coverage_c_personal_property": 185500,
+      "coverage_d_loss_of_use": 74200,
+      "coverage_e_liability": 300000,
+      "coverage_f_medical": 5000,
+      "deductible": 1500,
+      "wind_hail_deductible": 5000,
+      "water_backup": false,
+      "replacement_cost": true
+    },
+    "endorsements": [
+      {
+        "code": "HO-61",
+        "description": "Scheduled personal property — updated valuations",
+        "premium": 145.00
+      }
+    ]
+  }
+}

@@ -1,0 +1,4 @@
+# file: /Users/yeonsuchoi/Workspace/renewal-review/app/routes/reviews.py
+# hypothesis_version: 6.151.5
+
+[404, '/compare', '/reviews', '/{policy_number}', 'reviews']

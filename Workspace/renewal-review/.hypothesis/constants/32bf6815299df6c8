@@ -1,0 +1,4 @@
+# file: /Users/yeonsuchoi/Workspace/renewal-review/app/models/policy.py
+# hypothesis_version: 6.151.5
+
+[0.0, 250.0, 500.0, 1000.0, 5000.0, 30000.0, 60000.0, 100000.0, 150000.0, 300000.0, '100', '100/300', 'CA', 'auto', 'home', 'personal']
