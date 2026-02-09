@@ -1,0 +1,150 @@
+{% extends "base.html" %}
+{% block title %}Dashboard — Renewal Review{% endblock %}
+
+{% block content %}
+<div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px;">
+  <h1 style="font-size:20px;">Dashboard</h1>
+  <div style="display:flex; gap:8px;">
+    <button class="btn btn-primary" onclick="runBatch(100)">Run Sample (100)</button>
+    <button class="btn btn-secondary" onclick="runBatch()">Run All (8,000)</button>
+    <button class="btn btn-secondary" onclick="runEval()">Run Eval</button>
+  </div>
+</div>
+
+<div id="loading"><div class="spinner"></div><p style="margin-top:8px;">Processing...</p></div>
+
+<div id="summary-section" style="{% if not summary %}display:none{% endif %}">
+  <div class="stats-grid">
+    <div class="stat-card">
+      <div class="value" id="stat-total">{{ summary.total if summary else 0 }}</div>
+      <div class="label">Total Processed</div>
+    </div>
+    <div class="stat-card">
+      <div class="value" style="color:#22543d" id="stat-low">{{ summary.low if summary else 0 }}</div>
+      <div class="label">Low Risk</div>
+    </div>
+    <div class="stat-card">
+      <div class="value" style="color:#744210" id="stat-medium">{{ summary.medium if summary else 0 }}</div>
+      <div class="label">Medium Risk</div>
+    </div>
+    <div class="stat-card">
+      <div class="value" style="color:#9b2c2c" id="stat-high">{{ summary.high if summary else 0 }}</div>
+      <div class="label">High Risk</div>
+    </div>
+    <div class="stat-card">
+      <div class="value" style="color:#fff; background:#9b2c2c; border-radius:6px; padding:2px 8px;" id="stat-critical">{{ summary.critical if summary else 0 }}</div>
+      <div class="label">Critical</div>
+    </div>
+    <div class="stat-card">
+      <div class="value" id="stat-time">{{ "%.0f"|format(summary.processing_time_ms) if summary else "—" }}</div>
+      <div class="label">Time (ms)</div>
+    </div>
+  </div>
+
+  <div class="card" id="distribution-bar">
+    <h2>Risk Distribution</h2>
+    <div class="progress-bar" style="height:24px; display:flex; border-radius:6px; overflow:hidden;">
+      <div id="bar-low" style="background:#c6f6d5; height:100%;" title="Low"></div>
+      <div id="bar-medium" style="background:#fefcbf; height:100%;" title="Medium"></div>
+      <div id="bar-high" style="background:#fed7d7; height:100%;" title="High"></div>
+      <div id="bar-critical" style="background:#9b2c2c; height:100%;" title="Critical"></div>
+    </div>
+    <div style="display:flex; justify-content:space-between; margin-top:6px; font-size:11px; color:#718096;">
+      <span id="pct-low"></span>
+      <span id="pct-medium"></span>
+      <span id="pct-high"></span>
+      <span id="pct-critical"></span>
+    </div>
+  </div>
+</div>
+
+<div id="eval-section" style="display:none;">
+  <div class="card">
+    <h2>Eval Results</h2>
+    <p style="margin-bottom:8px; font-size:13px;" id="eval-accuracy"></p>
+    <table>
+      <thead><tr><th>Policy</th><th>Description</th><th>Expected</th><th>Actual</th><th>Status</th></tr></thead>
+      <tbody id="eval-body"></tbody>
+    </table>
+  </div>
+</div>
+
+<div class="card" id="results-section" style="{% if not results %}display:none{% endif %}">
+  <h2>Recent Reviews <span style="font-weight:400; font-size:12px; color:#718096;" id="result-count"></span></h2>
+  <table>
+    <thead>
+      <tr><th>Policy #</th><th>Risk</th><th>Flags</th><th>Changes</th><th></th></tr>
+    </thead>
+    <tbody id="results-body">
+      {% if results %}
+      {% for r in results[:50] %}
+      <tr>
+        <td><a href="/ui/review/{{ r.policy_number }}">{{ r.policy_number }}</a></td>
+        <td><span class="badge badge-{{ r.risk_level.value }}">{{ r.risk_level.value }}</span></td>
+        <td>{{ r.diff.flags|length }}</td>
+        <td>{{ r.diff.changes|length }}</td>
+        <td><a href="/ui/review/{{ r.policy_number }}" class="btn btn-secondary" style="padding:2px 8px; font-size:11px;">View</a></td>
+      </tr>
+      {% endfor %}
+      {% endif %}
+    </tbody>
+  </table>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+function updateStats(s) {
+  document.getElementById('stat-total').textContent = s.total;
+  document.getElementById('stat-low').textContent = s.low;
+  document.getElementById('stat-medium').textContent = s.medium;
+  document.getElementById('stat-high').textContent = s.high;
+  document.getElementById('stat-critical').textContent = s.critical;
+  document.getElementById('stat-time').textContent = Math.round(s.processing_time_ms);
+  const t = s.total || 1;
+  document.getElementById('bar-low').style.width = (s.low/t*100)+'%';
+  document.getElementById('bar-medium').style.width = (s.medium/t*100)+'%';
+  document.getElementById('bar-high').style.width = (s.high/t*100)+'%';
+  document.getElementById('bar-critical').style.width = (s.critical/t*100)+'%';
+  document.getElementById('pct-low').textContent = 'Low '+(s.low/t*100).toFixed(1)+'%';
+  document.getElementById('pct-medium').textContent = 'Med '+(s.medium/t*100).toFixed(1)+'%';
+  document.getElementById('pct-high').textContent = 'High '+(s.high/t*100).toFixed(1)+'%';
+  document.getElementById('pct-critical').textContent = 'Crit '+(s.critical/t*100).toFixed(1)+'%';
+  document.getElementById('summary-section').style.display = '';
+}
+
+async function runBatch(sample) {
+  document.getElementById('loading').style.display = '';
+  const url = sample ? '/batch/run?sample='+sample : '/batch/run';
+  const resp = await fetch(url, {method:'POST'});
+  const data = await resp.json();
+  document.getElementById('loading').style.display = 'none';
+  if (data.summary) {
+    updateStats(data.summary);
+  }
+  window.location.reload();
+}
+
+async function runEval() {
+  document.getElementById('loading').style.display = '';
+  const resp = await fetch('/eval/run', {method:'POST'});
+  const data = await resp.json();
+  document.getElementById('loading').style.display = 'none';
+  document.getElementById('eval-section').style.display = '';
+  document.getElementById('eval-accuracy').textContent =
+    'Accuracy: ' + data.accuracy + '% (' + data.passed + '/' + data.total + ')';
+  const body = document.getElementById('eval-body');
+  body.innerHTML = '';
+  data.details.forEach(d => {
+    const pass = d.risk_pass && d.flags_pass;
+    body.innerHTML += '<tr>' +
+      '<td>'+d.policy_number+'</td>' +
+      '<td>'+d.description+'</td>' +
+      '<td><span class="badge badge-'+d.expected_risk+'">'+d.expected_risk+'</span></td>' +
+      '<td><span class="badge badge-'+d.actual_risk+'">'+d.actual_risk+'</span></td>' +
+      '<td>'+(pass ? '✓' : '✗ '+d.missing_flags.join(', '))+'</td>' +
+      '</tr>';
+  });
+}
+</script>
+{% endblock %}
