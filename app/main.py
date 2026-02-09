@@ -3,6 +3,7 @@ from fastapi import FastAPI
 from app.routes.batch import router as batch_router
 from app.routes.eval import router as eval_router
 from app.routes.reviews import router as reviews_router
+from app.routes.ui import router as ui_router
 
 app = FastAPI(
     title="Renewal Review",
@@ -10,6 +11,7 @@ app = FastAPI(
     version="0.1.0",
 )
 
+app.include_router(ui_router)
 app.include_router(reviews_router)
 app.include_router(batch_router)
 app.include_router(eval_router)
