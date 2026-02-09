@@ -1,0 +1,104 @@
+{
+  "prior": {
+    "policy_number": "AUTO-2024-001",
+    "policy_type": "auto",
+    "carrier": "StateFarm",
+    "effective_date": "2024-01-15",
+    "expiration_date": "2025-01-15",
+    "premium": 1200.00,
+    "state": "CA",
+    "notes": "",
+    "auto_coverages": {
+      "bodily_injury_limit": "100/300",
+      "property_damage_limit": "100",
+      "collision_deductible": 500,
+      "comprehensive_deductible": 250,
+      "uninsured_motorist": "100/300",
+      "medical_payments": 5000,
+      "rental_reimbursement": true,
+      "roadside_assistance": false
+    },
+    "vehicles": [
+      {
+        "vin": "1HGBH41JXMN109186",
+        "year": 2021,
+        "make": "Honda",
+        "model": "Civic",
+        "usage": "personal"
+      }
+    ],
+    "drivers": [
+      {
+        "license_number": "D1234567",
+        "name": "John Smith",
+        "age": 35,
+        "violations": 0,
+        "sr22": false
+      }
+    ],
+    "endorsements": [
+      {
+        "code": "UM100",
+        "description": "Uninsured motorist coverage enhancement",
+        "premium": 45.00
+      }
+    ]
+  },
+  "renewal": {
+    "policy_number": "AUTO-2024-001",
+    "policy_type": "auto",
+    "carrier": "StateFarm",
+    "effective_date": "2025-01-15",
+    "expiration_date": "2026-01-15",
+    "premium": 1356.00,
+    "state": "CA",
+    "notes": "Premium increase due to regional rate adjustment",
+    "auto_coverages": {
+      "bodily_injury_limit": "100/300",
+      "property_damage_limit": "100",
+      "collision_deductible": 500,
+      "comprehensive_deductible": 250,
+      "uninsured_motorist": "100/300",
+      "medical_payments": 5000,
+      "rental_reimbursement": true,
+      "roadside_assistance": true
+    },
+    "vehicles": [
+      {
+        "vin": "1HGBH41JXMN109186",
+        "year": 2021,
+        "make": "Honda",
+        "model": "Civic",
+        "usage": "personal"
+      },
+      {
+        "vin": "5YJSA1E26MF123456",
+        "year": 2024,
+        "make": "Tesla",
+        "model": "Model 3",
+        "usage": "personal"
+      }
+    ],
+    "drivers": [
+      {
+        "license_number": "D1234567",
+        "name": "John Smith",
+        "age": 36,
+        "violations": 0,
+        "sr22": false
+      }
+    ],
+    "endorsements": [
+      {
+        "code": "UM100",
+        "description": "Uninsured motorist coverage enhancement",
+        "premium": 50.00
+      },
+      {
+        "code": "RSA01",
+        "description": "Roadside assistance package",
+        "premium": 25.00
+      }
+    ]
+  }
+}

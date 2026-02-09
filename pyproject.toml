@@ -1,0 +1,34 @@
+[project]
+name = "renewal-review"
+version = "0.1.0"
+description = "Insurance renewal review pipeline — rule-based + LLM hybrid"
+requires-python = ">=3.13"
+dependencies = [
+    "fastapi>=0.115.0",
+    "uvicorn>=0.34.0",
+    "pydantic>=2.10.0",
+    "pydantic-settings>=2.7.0",
+]
+
+[project.optional-dependencies]
+llm = [
+    "openai>=1.60.0",
+    "anthropic>=0.43.0",
+    "langfuse>=2.58.0",
+]
+dev = [
+    "pytest>=8.3.0",
+    "hypothesis>=6.120.0",
+    "httpx>=0.28.0",
+    "ruff>=0.9.0",
+]
+
+[tool.ruff]
+target-version = "py313"
+line-length = 99
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "N", "UP", "B", "SIM"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]

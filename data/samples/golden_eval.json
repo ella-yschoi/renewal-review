@@ -1,0 +1,259 @@
+[
+  {
+    "pair": {
+      "prior": {
+        "policy_number": "EVAL-AUTO-001",
+        "policy_type": "auto",
+        "carrier": "StateFarm",
+        "effective_date": "2024-01-01",
+        "expiration_date": "2025-01-01",
+        "premium": 1500.00,
+        "notes": "",
+        "auto_coverages": {
+          "bodily_injury_limit": "100/300",
+          "property_damage_limit": "100",
+          "collision_deductible": 500,
+          "comprehensive_deductible": 250,
+          "uninsured_motorist": "100/300",
+          "medical_payments": 5000
+        },
+        "vehicles": [{"vin": "VIN00000000000001", "year": 2022, "make": "Toyota", "model": "Camry"}],
+        "drivers": [{"license_number": "D0000001", "name": "Eval Driver 1", "age": 40, "violations": 0}],
+        "endorsements": [{"code": "UM100", "description": "Uninsured motorist enhancement", "premium": 45}]
+      },
+      "renewal": {
+        "policy_number": "EVAL-AUTO-001",
+        "policy_type": "auto",
+        "carrier": "StateFarm",
+        "effective_date": "2025-01-01",
+        "expiration_date": "2026-01-01",
+        "premium": 1650.00,
+        "notes": "Premium increase due to regional rate adjustment",
+        "auto_coverages": {
+          "bodily_injury_limit": "100/300",
+          "property_damage_limit": "100",
+          "collision_deductible": 500,
+          "comprehensive_deductible": 250,
+          "uninsured_motorist": "100/300",
+          "medical_payments": 5000
+        },
+        "vehicles": [{"vin": "VIN00000000000001", "year": 2022, "make": "Toyota", "model": "Camry"}],
+        "drivers": [{"license_number": "D0000001", "name": "Eval Driver 1", "age": 41, "violations": 0}],
+        "endorsements": [{"code": "UM100", "description": "Uninsured motorist enhancement", "premium": 50}]
+      }
+    },
+    "expected_min_risk": "high",
+    "expected_flags": ["premium_increase_high", "notes_changed"],
+    "description": "10% premium increase with rate adjustment note"
+  },
+  {
+    "pair": {
+      "prior": {
+        "policy_number": "EVAL-HOME-001",
+        "policy_type": "home",
+        "carrier": "Allstate",
+        "effective_date": "2024-06-01",
+        "expiration_date": "2025-06-01",
+        "premium": 2800.00,
+        "notes": "",
+        "home_coverages": {
+          "coverage_a_dwelling": 400000,
+          "coverage_b_other_structures": 40000,
+          "coverage_c_personal_property": 200000,
+          "coverage_d_loss_of_use": 80000,
+          "coverage_e_liability": 300000,
+          "coverage_f_medical": 5000,
+          "deductible": 1000,
+          "water_backup": true,
+          "replacement_cost": true
+        },
+        "endorsements": [{"code": "WB01", "description": "Water backup and sump overflow coverage", "premium": 75}]
+      },
+      "renewal": {
+        "policy_number": "EVAL-HOME-001",
+        "policy_type": "home",
+        "carrier": "Allstate",
+        "effective_date": "2025-06-01",
+        "expiration_date": "2026-06-01",
+        "premium": 3500.00,
+        "notes": "Claim filed last year for water damage — monitor for rate impact",
+        "home_coverages": {
+          "coverage_a_dwelling": 420000,
+          "coverage_b_other_structures": 42000,
+          "coverage_c_personal_property": 210000,
+          "coverage_d_loss_of_use": 84000,
+          "coverage_e_liability": 300000,
+          "coverage_f_medical": 5000,
+          "deductible": 2500,
+          "water_backup": false,
+          "replacement_cost": true
+        },
+        "endorsements": []
+      }
+    },
+    "expected_min_risk": "critical",
+    "expected_flags": ["premium_increase_critical", "deductible_increase", "coverage_dropped", "endorsement_removed", "notes_changed"],
+    "description": "25% premium increase, water backup dropped, deductible raised, claim history note"
+  },
+  {
+    "pair": {
+      "prior": {
+        "policy_number": "EVAL-AUTO-002",
+        "policy_type": "auto",
+        "carrier": "GEICO",
+        "effective_date": "2024-03-01",
+        "expiration_date": "2025-03-01",
+        "premium": 2000.00,
+        "notes": "",
+        "auto_coverages": {
+          "bodily_injury_limit": "250/500",
+          "property_damage_limit": "100",
+          "collision_deductible": 500,
+          "comprehensive_deductible": 250,
+          "uninsured_motorist": "250/500",
+          "medical_payments": 10000
+        },
+        "vehicles": [
+          {"vin": "VIN00000000000010", "year": 2023, "make": "BMW", "model": "X3"},
+          {"vin": "VIN00000000000011", "year": 2020, "make": "Honda", "model": "Civic"}
+        ],
+        "drivers": [
+          {"license_number": "D0000010", "name": "Eval Driver 10", "age": 45, "violations": 0},
+          {"license_number": "D0000011", "name": "Eval Driver 11", "age": 17, "violations": 0}
+        ],
+        "endorsements": []
+      },
+      "renewal": {
+        "policy_number": "EVAL-AUTO-002",
+        "policy_type": "auto",
+        "carrier": "Progressive",
+        "effective_date": "2025-03-01",
+        "expiration_date": "2026-03-01",
+        "premium": 1800.00,
+        "notes": "New teen driver added — high risk profile",
+        "auto_coverages": {
+          "bodily_injury_limit": "100/300",
+          "property_damage_limit": "50",
+          "collision_deductible": 1000,
+          "comprehensive_deductible": 500,
+          "uninsured_motorist": "100/300",
+          "medical_payments": 5000
+        },
+        "vehicles": [
+          {"vin": "VIN00000000000010", "year": 2023, "make": "BMW", "model": "X3"}
+        ],
+        "drivers": [
+          {"license_number": "D0000010", "name": "Eval Driver 10", "age": 46, "violations": 0},
+          {"license_number": "D0000011", "name": "Eval Driver 11", "age": 18, "violations": 1},
+          {"license_number": "D0000012", "name": "Eval Teen", "age": 16, "violations": 0, "sr22": false}
+        ],
+        "endorsements": []
+      }
+    },
+    "expected_min_risk": "critical",
+    "expected_flags": ["carrier_change", "liability_limit_decrease", "deductible_increase", "vehicle_removed", "driver_added", "premium_decrease", "notes_changed"],
+    "description": "Carrier switch, liability downgrade, vehicle removed, teen driver added"
+  },
+  {
+    "pair": {
+      "prior": {
+        "policy_number": "EVAL-AUTO-003",
+        "policy_type": "auto",
+        "carrier": "Liberty Mutual",
+        "effective_date": "2024-01-01",
+        "expiration_date": "2025-01-01",
+        "premium": 900.00,
+        "notes": "",
+        "auto_coverages": {
+          "bodily_injury_limit": "50/100",
+          "property_damage_limit": "50",
+          "collision_deductible": 500,
+          "comprehensive_deductible": 250,
+          "uninsured_motorist": "50/100",
+          "medical_payments": 2000
+        },
+        "vehicles": [{"vin": "VIN00000000000020", "year": 2019, "make": "Nissan", "model": "Altima"}],
+        "drivers": [{"license_number": "D0000020", "name": "Eval Driver 20", "age": 30, "violations": 0}],
+        "endorsements": []
+      },
+      "renewal": {
+        "policy_number": "EVAL-AUTO-003",
+        "policy_type": "auto",
+        "carrier": "Liberty Mutual",
+        "effective_date": "2025-01-01",
+        "expiration_date": "2026-01-01",
+        "premium": 920.00,
+        "notes": "",
+        "auto_coverages": {
+          "bodily_injury_limit": "50/100",
+          "property_damage_limit": "50",
+          "collision_deductible": 500,
+          "comprehensive_deductible": 250,
+          "uninsured_motorist": "50/100",
+          "medical_payments": 2000
+        },
+        "vehicles": [{"vin": "VIN00000000000020", "year": 2019, "make": "Nissan", "model": "Altima"}],
+        "drivers": [{"license_number": "D0000020", "name": "Eval Driver 20", "age": 31, "violations": 0}],
+        "endorsements": []
+      }
+    },
+    "expected_min_risk": "low",
+    "expected_flags": [],
+    "description": "Clean renewal with minor premium increase (2.2%)"
+  },
+  {
+    "pair": {
+      "prior": {
+        "policy_number": "EVAL-HOME-002",
+        "policy_type": "home",
+        "carrier": "Nationwide",
+        "effective_date": "2024-04-01",
+        "expiration_date": "2025-04-01",
+        "premium": 3200.00,
+        "notes": "",
+        "home_coverages": {
+          "coverage_a_dwelling": 500000,
+          "coverage_b_other_structures": 50000,
+          "coverage_c_personal_property": 250000,
+          "coverage_d_loss_of_use": 100000,
+          "coverage_e_liability": 500000,
+          "coverage_f_medical": 5000,
+          "deductible": 1500,
+          "water_backup": true,
+          "replacement_cost": true
+        },
+        "endorsements": [
+          {"code": "HO-61", "description": "Scheduled personal property", "premium": 120},
+          {"code": "EQ01", "description": "Earthquake coverage endorsement", "premium": 200}
+        ]
+      },
+      "renewal": {
+        "policy_number": "EVAL-HOME-002",
+        "policy_type": "home",
+        "carrier": "Nationwide",
+        "effective_date": "2025-04-01",
+        "expiration_date": "2026-04-01",
+        "premium": 3520.00,
+        "notes": "Inflation guard applied to dwelling coverage",
+        "home_coverages": {
+          "coverage_a_dwelling": 525000,
+          "coverage_b_other_structures": 52500,
+          "coverage_c_personal_property": 262500,
+          "coverage_d_loss_of_use": 105000,
+          "coverage_e_liability": 500000,
+          "coverage_f_medical": 5000,
+          "deductible": 1500,
+          "water_backup": true,
+          "replacement_cost": true
+        },
+        "endorsements": [
+          {"code": "HO-61", "description": "Scheduled personal property — updated valuations", "premium": 140},
+          {"code": "EQ01", "description": "Earthquake coverage endorsement", "premium": 220}
+        ]
+      }
+    },
+    "expected_min_risk": "medium",
+    "expected_flags": ["premium_increase_high", "notes_changed"],
+    "description": "Inflation guard with endorsement description update and 10% premium increase"
+  }
+]

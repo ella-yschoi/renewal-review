@@ -1,0 +1,4 @@
+# file: /Users/yeonsuchoi/Workspace/renewal-review/app/models/review.py
+# hypothesis_version: 6.151.5
+
+[0.0, 'critical', 'high', 'low', 'medium']

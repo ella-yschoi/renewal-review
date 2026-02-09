@@ -1,0 +1,4 @@
+# file: /Users/yeonsuchoi/Workspace/renewal-review/app/engine/differ.py
+# hypothesis_version: 6.151.5
+
+[100, 'bodily_injury_limit', 'carrier', 'collision_deductible', 'coverage_a_dwelling', 'coverage_e_liability', 'coverage_f_medical', 'deductible', 'driver_added', 'driver_removed', 'endorsement_added', 'endorsement_removed', 'medical_payments', 'notes', 'premium', 'rental_reimbursement', 'replacement_cost', 'roadside_assistance', 'uninsured_motorist', 'vehicle_added', 'vehicle_removed', 'water_backup', 'wind_hail_deductible']

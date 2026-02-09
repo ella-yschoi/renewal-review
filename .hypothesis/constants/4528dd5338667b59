@@ -1,0 +1,4 @@
+# file: /Users/yeonsuchoi/Workspace/renewal-review/app/llm/analyzer.py
+# hypothesis_version: 6.151.5
+
+[0.0, 0.5, 'False', 'True', 'change_type', 'confidence', 'coverage_similarity', 'description', 'equivalent', 'error', 'reasoning', 'replacement_cost', 'signals', 'summary', 'unknown', 'water_backup']

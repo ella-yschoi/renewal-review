@@ -1,0 +1,4 @@
+# file: /Users/yeonsuchoi/Workspace/renewal-review/app/aggregator.py
+# hypothesis_version: 6.151.5
+
+[0.7, 0.75, 0.8, ' | ', 'NOT equivalent', 'restriction']
