@@ -36,6 +36,10 @@ def aggregate(
     if restriction_changes:
         final_risk = _max_risk(final_risk, RiskLevel.HIGH)
 
+    # combined strong signals → CRITICAL
+    if (high_confidence_signals or restriction_changes) and len(risk_signals) >= 2:
+        final_risk = _max_risk(final_risk, RiskLevel.CRITICAL)
+
     summary_parts = [f"Risk: {final_risk.value}"]
     if diff.flags:
         summary_parts.append(f"Flags: {len(diff.flags)}")
