@@ -64,19 +64,29 @@
       <tr><td>Latency overhead</td><td id="delta-latency"></td></tr>
     </table>
   </div>
+
+  <div class="card" id="examples-section" style="display:none;">
+    <h2 style="color:#805ad5;">Risk Changed — Individual Cases</h2>
+    <p style="font-size:12px; color:#718096; margin-bottom:10px;">Policies where LLM analysis changed the risk assessment vs rule-only</p>
+    <table>
+      <thead>
+        <tr>
+          <th>Policy #</th>
+          <th>V1 Risk</th>
+          <th>V2 Risk</th>
+          <th>Flags</th>
+          <th>LLM Insights</th>
+        </tr>
+      </thead>
+      <tbody id="examples-body"></tbody>
+    </table>
+  </div>
 </div>
 {% endblock %}
 
 {% block scripts %}
 <script>
-async function runComparison(sample) {
-  document.getElementById('loading').style.display = '';
-  document.getElementById('result').style.display = 'none';
-  const resp = await fetch('/migration/comparison?sample='+sample, {method:'POST'});
-  const d = await resp.json();
-  document.getElementById('loading').style.display = 'none';
-  document.getElementById('result').style.display = '';
-
+function renderResult(d) {
   document.getElementById('sample-size').textContent = d.sample_size;
   document.getElementById('risk-changes').textContent = d.delta.risk_level_changes;
   document.getElementById('llm-analyzed').textContent = d.v2.llm_analyzed;
@@ -98,6 +108,57 @@ async function runComparison(sample) {
   document.getElementById('delta-risk').textContent = d.delta.risk_level_changes;
   document.getElementById('delta-insights').textContent = d.delta.new_llm_insights;
   document.getElementById('delta-latency').textContent = d.delta.latency_overhead_ms + ' ms';
+
+  const body = document.getElementById('examples-body');
+  body.innerHTML = '';
+  if (d.examples && d.examples.length > 0) {
+    document.getElementById('examples-section').style.display = 'block';
+    d.examples.forEach(ex => {
+      const flags = ex.flags.map(f => '<span class="flag-tag">'+f+'</span>').join(' ');
+      let insights = '—';
+      if (ex.v2_insights && ex.v2_insights.length > 0) {
+        insights = ex.v2_insights.map(i =>
+          '<span class="flag-tag" style="background:#e9d8fd;color:#553c9a;">'+i.type+'</span> ' +
+          i.finding + ' <span style="font-size:11px;color:#718096;">('+Math.round(i.confidence*100)+'%)</span>'
+        ).join('<br>');
+      }
+      body.innerHTML += '<tr>' +
+        '<td style="font-weight:500;"><a href="/ui/review/'+ex.policy_number+'" style="color:#3182ce;">'+ex.policy_number+'</a></td>' +
+        '<td><span class="badge badge-'+ex.v1_risk+'">'+ex.v1_risk+'</span></td>' +
+        '<td><span class="badge badge-'+ex.v2_risk+'">'+ex.v2_risk+'</span></td>' +
+        '<td>'+flags+'</td>' +
+        '<td style="font-size:12px;">'+insights+'</td>' +
+        '</tr>';
+    });
+  } else {
+    document.getElementById('examples-section').style.display = 'none';
+  }
+}
+
+async function runComparison(sample) {
+  document.getElementById('loading').style.display = 'block';
+  document.getElementById('result').style.display = 'none';
+
+  const resp = await fetch('/migration/comparison?sample='+sample, {method:'POST'});
+  const job = await resp.json();
+
+  if (job.job_id) {
+    while (true) {
+      await new Promise(r => setTimeout(r, 300));
+      const status = await fetch('/migration/status/' + job.job_id).then(r => r.json());
+      if (status.status === 'completed' && status.result) {
+        renderResult(status.result);
+        break;
+      }
+      if (status.status === 'failed') {
+        document.getElementById('loading').innerHTML = '<p style="color:#e53e3e;">Failed: ' + (status.error || 'unknown') + '</p>';
+        return;
+      }
+    }
+  }
+
+  document.getElementById('loading').style.display = 'none';
+  document.getElementById('result').style.display = 'block';
 }
 </script>
 {% endblock %}
