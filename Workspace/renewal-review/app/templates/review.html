@@ -3,7 +3,7 @@
 
 {% block content %}
 <div style="margin-bottom:16px;">
-  <a href="/" style="color:#3182ce; font-size:13px;">← Back to Dashboard</a>
+  <a href="/" style="color:#3182ce; font-size:13px;">&larr; Back to Dashboard</a>
 </div>
 
 <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px;">
@@ -17,6 +17,129 @@
   <h2>Summary</h2>
   <p style="font-size:13px; color:#4a5568;">{{ result.summary }}</p>
 </div>
+
+{% if result.pair %}
+<div class="card">
+  <h2>Policy Overview — Prior vs Renewal</h2>
+  <table>
+    <thead>
+      <tr><th style="width:20%;">Section</th><th style="width:40%;">Prior Term</th><th style="width:40%;">Renewal Term</th></tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td style="font-weight:600; color:#718096;">Carrier</td>
+        <td>{{ result.pair.prior.carrier }}</td>
+        <td>{{ result.pair.renewal.carrier }}{% if result.pair.prior.carrier != result.pair.renewal.carrier %} <span class="flag-tag" style="background:#fed7d7; color:#9b2c2c;">changed</span>{% endif %}</td>
+      </tr>
+      <tr>
+        <td style="font-weight:600; color:#718096;">Premium</td>
+        <td>${{ "%.2f"|format(result.pair.prior.premium) }}</td>
+        <td>
+          ${{ "%.2f"|format(result.pair.renewal.premium) }}
+          {% set pct = ((result.pair.renewal.premium - result.pair.prior.premium) / result.pair.prior.premium * 100) if result.pair.prior.premium else 0 %}
+          <span style="font-size:11px; font-weight:600; color:{% if pct > 10 %}#e53e3e{% elif pct > 0 %}#dd6b20{% elif pct < 0 %}#38a169{% else %}#718096{% endif %};">
+            ({{ "%+.1f"|format(pct) }}%)
+          </span>
+        </td>
+      </tr>
+      <tr>
+        <td style="font-weight:600; color:#718096;">Term</td>
+        <td>{{ result.pair.prior.effective_date }} &rarr; {{ result.pair.prior.expiration_date }}</td>
+        <td>{{ result.pair.renewal.effective_date }} &rarr; {{ result.pair.renewal.expiration_date }}</td>
+      </tr>
+      <tr>
+        <td style="font-weight:600; color:#718096;">Type / State</td>
+        <td>{{ result.pair.prior.policy_type.value }} &middot; {{ result.pair.prior.state }}</td>
+        <td>{{ result.pair.renewal.policy_type.value }} &middot; {{ result.pair.renewal.state }}</td>
+      </tr>
+
+      {% if result.pair.prior.auto_coverages %}
+      <tr><td colspan="3" style="background:#edf2f7; font-weight:600; font-size:12px; color:#4a5568; padding:6px 12px;">AUTO COVERAGES</td></tr>
+      <tr>
+        <td style="font-weight:600; color:#718096;">Limits</td>
+        <td style="font-size:12px;">BI {{ result.pair.prior.auto_coverages.bodily_injury_limit }} / PD {{ result.pair.prior.auto_coverages.property_damage_limit }} / UM {{ result.pair.prior.auto_coverages.uninsured_motorist }}</td>
+        <td style="font-size:12px;">BI {{ result.pair.renewal.auto_coverages.bodily_injury_limit }} / PD {{ result.pair.renewal.auto_coverages.property_damage_limit }} / UM {{ result.pair.renewal.auto_coverages.uninsured_motorist }}</td>
+      </tr>
+      <tr>
+        <td style="font-weight:600; color:#718096;">Deductibles</td>
+        <td style="font-size:12px;">Collision ${{ result.pair.prior.auto_coverages.collision_deductible|int }} / Comp ${{ result.pair.prior.auto_coverages.comprehensive_deductible|int }}</td>
+        <td style="font-size:12px;">Collision ${{ result.pair.renewal.auto_coverages.collision_deductible|int }} / Comp ${{ result.pair.renewal.auto_coverages.comprehensive_deductible|int }}</td>
+      </tr>
+      <tr>
+        <td style="font-weight:600; color:#718096;">Extras</td>
+        <td style="font-size:12px;">Med ${{ result.pair.prior.auto_coverages.medical_payments|int }} / Rental {{ "Yes" if result.pair.prior.auto_coverages.rental_reimbursement else "No" }} / Roadside {{ "Yes" if result.pair.prior.auto_coverages.roadside_assistance else "No" }}</td>
+        <td style="font-size:12px;">Med ${{ result.pair.renewal.auto_coverages.medical_payments|int }} / Rental {{ "Yes" if result.pair.renewal.auto_coverages.rental_reimbursement else "No" }} / Roadside {{ "Yes" if result.pair.renewal.auto_coverages.roadside_assistance else "No" }}</td>
+      </tr>
+      {% endif %}
+
+      {% if result.pair.prior.home_coverages %}
+      <tr><td colspan="3" style="background:#edf2f7; font-weight:600; font-size:12px; color:#4a5568; padding:6px 12px;">HOME COVERAGES</td></tr>
+      <tr>
+        <td style="font-weight:600; color:#718096;">Dwelling</td>
+        <td style="font-size:12px;">A ${{ result.pair.prior.home_coverages.coverage_a_dwelling|int }} / B ${{ result.pair.prior.home_coverages.coverage_b_other_structures|int }}</td>
+        <td style="font-size:12px;">A ${{ result.pair.renewal.home_coverages.coverage_a_dwelling|int }} / B ${{ result.pair.renewal.home_coverages.coverage_b_other_structures|int }}</td>
+      </tr>
+      <tr>
+        <td style="font-weight:600; color:#718096;">Property</td>
+        <td style="font-size:12px;">C ${{ result.pair.prior.home_coverages.coverage_c_personal_property|int }} / D ${{ result.pair.prior.home_coverages.coverage_d_loss_of_use|int }}</td>
+        <td style="font-size:12px;">C ${{ result.pair.renewal.home_coverages.coverage_c_personal_property|int }} / D ${{ result.pair.renewal.home_coverages.coverage_d_loss_of_use|int }}</td>
+      </tr>
+      <tr>
+        <td style="font-weight:600; color:#718096;">Liability</td>
+        <td style="font-size:12px;">E ${{ result.pair.prior.home_coverages.coverage_e_liability|int }} / F ${{ result.pair.prior.home_coverages.coverage_f_medical|int }}</td>
+        <td style="font-size:12px;">E ${{ result.pair.renewal.home_coverages.coverage_e_liability|int }} / F ${{ result.pair.renewal.home_coverages.coverage_f_medical|int }}</td>
+      </tr>
+      <tr>
+        <td style="font-weight:600; color:#718096;">Deductibles</td>
+        <td style="font-size:12px;">General ${{ result.pair.prior.home_coverages.deductible|int }}{% if result.pair.prior.home_coverages.wind_hail_deductible %} / Wind ${{ result.pair.prior.home_coverages.wind_hail_deductible|int }}{% endif %}</td>
+        <td style="font-size:12px;">General ${{ result.pair.renewal.home_coverages.deductible|int }}{% if result.pair.renewal.home_coverages.wind_hail_deductible %} / Wind ${{ result.pair.renewal.home_coverages.wind_hail_deductible|int }}{% endif %}</td>
+      </tr>
+      <tr>
+        <td style="font-weight:600; color:#718096;">Options</td>
+        <td style="font-size:12px;">Water backup {{ "Yes" if result.pair.prior.home_coverages.water_backup else "No" }} / Replacement cost {{ "Yes" if result.pair.prior.home_coverages.replacement_cost else "No" }}</td>
+        <td style="font-size:12px;">Water backup {{ "Yes" if result.pair.renewal.home_coverages.water_backup else "No" }} / Replacement cost {{ "Yes" if result.pair.renewal.home_coverages.replacement_cost else "No" }}</td>
+      </tr>
+      {% endif %}
+
+      {% if result.pair.prior.vehicles %}
+      <tr><td colspan="3" style="background:#edf2f7; font-weight:600; font-size:12px; color:#4a5568; padding:6px 12px;">VEHICLES</td></tr>
+      <tr>
+        <td style="font-weight:600; color:#718096;">List</td>
+        <td style="font-size:12px;">{% for v in result.pair.prior.vehicles %}{{ v.year }} {{ v.make }} {{ v.model }} ({{ v.usage }}){% if not loop.last %}<br>{% endif %}{% endfor %}</td>
+        <td style="font-size:12px;">{% for v in result.pair.renewal.vehicles %}{{ v.year }} {{ v.make }} {{ v.model }} ({{ v.usage }}){% if not loop.last %}<br>{% endif %}{% endfor %}</td>
+      </tr>
+      {% endif %}
+
+      {% if result.pair.prior.drivers %}
+      <tr><td colspan="3" style="background:#edf2f7; font-weight:600; font-size:12px; color:#4a5568; padding:6px 12px;">DRIVERS</td></tr>
+      <tr>
+        <td style="font-weight:600; color:#718096;">List</td>
+        <td style="font-size:12px;">{% for d in result.pair.prior.drivers %}{{ d.name }}, age {{ d.age }}{% if d.violations %}, {{ d.violations }} violations{% endif %}{% if d.sr22 %}, SR-22{% endif %}{% if not loop.last %}<br>{% endif %}{% endfor %}</td>
+        <td style="font-size:12px;">{% for d in result.pair.renewal.drivers %}{{ d.name }}, age {{ d.age }}{% if d.violations %}, {{ d.violations }} violations{% endif %}{% if d.sr22 %}, SR-22{% endif %}{% if not loop.last %}<br>{% endif %}{% endfor %}</td>
+      </tr>
+      {% endif %}
+
+      {% if result.pair.prior.endorsements or result.pair.renewal.endorsements %}
+      <tr><td colspan="3" style="background:#edf2f7; font-weight:600; font-size:12px; color:#4a5568; padding:6px 12px;">ENDORSEMENTS</td></tr>
+      <tr>
+        <td style="font-weight:600; color:#718096;">List</td>
+        <td style="font-size:12px;">{% for e in result.pair.prior.endorsements %}{{ e.code }}: {{ e.description }}{% if e.premium %} (${{ "%.0f"|format(e.premium) }}){% endif %}{% if not loop.last %}<br>{% endif %}{% endfor %}{% if not result.pair.prior.endorsements %}—{% endif %}</td>
+        <td style="font-size:12px;">{% for e in result.pair.renewal.endorsements %}{{ e.code }}: {{ e.description }}{% if e.premium %} (${{ "%.0f"|format(e.premium) }}){% endif %}{% if not loop.last %}<br>{% endif %}{% endfor %}{% if not result.pair.renewal.endorsements %}—{% endif %}</td>
+      </tr>
+      {% endif %}
+
+      {% if result.pair.prior.notes or result.pair.renewal.notes %}
+      <tr><td colspan="3" style="background:#edf2f7; font-weight:600; font-size:12px; color:#4a5568; padding:6px 12px;">NOTES</td></tr>
+      <tr>
+        <td style="font-weight:600; color:#718096;">Text</td>
+        <td style="font-size:12px; color:#4a5568; font-style:italic;">{{ result.pair.prior.notes or "—" }}</td>
+        <td style="font-size:12px; color:#4a5568; font-style:italic;">{{ result.pair.renewal.notes or "—" }}</td>
+      </tr>
+      {% endif %}
+    </tbody>
+  </table>
+</div>
+{% endif %}
 
 {% if result.diff.flags %}
 <div class="card">
@@ -50,8 +173,9 @@
 </div>
 
 {% if result.llm_insights %}
-<div class="card">
-  <h2>LLM Insights ({{ result.llm_insights|length }})</h2>
+<div class="card" style="border-left:4px solid #805ad5;">
+  <h2 style="color:#805ad5;">LLM Insights ({{ result.llm_insights|length }})</h2>
+  <p style="font-size:11px; color:#805ad5; margin-bottom:10px;">V2 hybrid pipeline — analyzed by LLM for unstructured text signals</p>
   <table>
     <thead>
       <tr><th>Type</th><th>Finding</th><th>Confidence</th><th>Reasoning</th></tr>
@@ -59,7 +183,7 @@
     <tbody>
       {% for i in result.llm_insights %}
       <tr>
-        <td><span class="flag-tag">{{ i.analysis_type }}</span></td>
+        <td><span class="flag-tag" style="background:#e9d8fd; color:#553c9a;">{{ i.analysis_type }}</span></td>
         <td>{{ i.finding }}</td>
         <td>{{ "%.0f"|format(i.confidence * 100) }}%</td>
         <td style="font-size:12px; color:#718096;">{{ i.reasoning }}</td>
@@ -67,6 +191,11 @@
       {% endfor %}
     </tbody>
   </table>
+</div>
+{% else %}
+<div class="card" style="border-left:4px solid #cbd5e0;">
+  <h2 style="color:#718096;">LLM Insights</h2>
+  <p style="font-size:12px; color:#a0aec0;">V1 rule-based only — no unstructured text requiring LLM analysis</p>
 </div>
 {% endif %}
 {% endblock %}
