@@ -3,6 +3,7 @@ from enum import StrEnum
 from pydantic import BaseModel
 
 from app.models.diff import DiffResult
+from app.models.policy import RenewalPair
 
 
 class RiskLevel(StrEnum):
@@ -25,6 +26,7 @@ class ReviewResult(BaseModel):
     diff: DiffResult
     llm_insights: list[LLMInsight] = []
     summary: str = ""
+    pair: RenewalPair | None = None
 
 
 class BatchSummary(BaseModel):
