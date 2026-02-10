@@ -41,11 +41,15 @@ class LLMClient:
         return self._anthropic_client
 
     def complete(self, prompt: str, trace_name: str) -> dict[str, Any]:
-        trace = None
         generation = None
         if self._langfuse:
-            trace = self._langfuse.trace(name=trace_name)
-            generation = trace.generation(name=trace_name, input=prompt)
+            generation = self._langfuse.start_observation(
+                as_type="generation",
+                name=trace_name,
+                input=prompt,
+                model="gpt-4o-mini" if self.provider == "openai" else "claude-sonnet-4-5-20250929",
+                metadata={"provider": self.provider},
+            )
 
         try:
             raw = self._call_provider(prompt)
@@ -54,9 +58,8 @@ class LLMClient:
             result = {"error": str(e), "raw_response": raw if "raw" in dir() else ""}
 
         if generation:
-            generation.end(output=result)
-        if self._langfuse:
-            self._langfuse.flush()
+            generation.update(output=result)
+            generation.end()
 
         return result
 
