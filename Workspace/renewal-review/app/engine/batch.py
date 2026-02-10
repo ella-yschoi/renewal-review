@@ -1,4 +1,5 @@
 import time
+from collections.abc import Callable
 
 from app.aggregator import aggregate
 from app.config import settings
@@ -32,7 +33,9 @@ def process_pair(pair: RenewalPair, llm_client: LLMClientProtocol | None = None)
 
     if llm_client and diff.flags and should_analyze(diff, pair):
         insights = analyze_pair(llm_client, diff, pair)
-        return aggregate(pair.prior.policy_number, rule_risk, diff, insights)
+        result = aggregate(pair.prior.policy_number, rule_risk, diff, insights)
+        result.pair = pair
+        return result
 
     summary_parts = []
     if diff.flags:
@@ -44,11 +47,14 @@ def process_pair(pair: RenewalPair, llm_client: LLMClientProtocol | None = None)
         risk_level=rule_risk,
         diff=diff,
         summary=" | ".join(summary_parts),
+        pair=pair,
     )
 
 
 def process_batch(
-    pairs: list[RenewalPair], llm_client: LLMClientProtocol | None = None
+    pairs: list[RenewalPair],
+    llm_client: LLMClientProtocol | None = None,
+    on_progress: Callable[[int, int], None] | None = None,
 ) -> tuple[list[ReviewResult], BatchSummary]:
     start = time.perf_counter()
 
@@ -56,7 +62,12 @@ def process_batch(
         llm_client = LLMClient()
 
     client = llm_client if settings.llm_enabled else None
-    results = [process_pair(p, client) for p in pairs]
+    total = len(pairs)
+    results = []
+    for i, p in enumerate(pairs):
+        results.append(process_pair(p, client))
+        if on_progress:
+            on_progress(i + 1, total)
     elapsed_ms = (time.perf_counter() - start) * 1000
 
     summary = BatchSummary(

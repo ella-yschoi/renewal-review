@@ -1,6 +1,6 @@
 from pathlib import Path
 
-from fastapi import APIRouter, HTTPException, Request
+from fastapi import APIRouter, HTTPException, Query, Request
 from fastapi.templating import Jinja2Templates
 
 from app.routes.reviews import get_results_store
@@ -10,11 +10,19 @@ router = APIRouter(tags=["ui"])
 TEMPLATES_DIR = Path(__file__).parent.parent / "templates"
 templates = Jinja2Templates(directory=str(TEMPLATES_DIR))
 
+PAGE_SIZE = 50
+
 
 @router.get("/")
-def dashboard(request: Request):
+def dashboard(request: Request, page: int = Query(1, ge=1)):
     store = get_results_store()
-    results = sorted(store.values(), key=lambda r: r.risk_level.value, reverse=True)
+    all_results = sorted(store.values(), key=lambda r: r.risk_level.value, reverse=True)
+
+    total = len(all_results)
+    total_pages = max(1, (total + PAGE_SIZE - 1) // PAGE_SIZE)
+    page = min(page, total_pages)
+    start = (page - 1) * PAGE_SIZE
+    results = all_results[start : start + PAGE_SIZE]
 
     # get last batch summary from batch route
     from app.routes.batch import _last_summary
@@ -26,6 +34,9 @@ def dashboard(request: Request):
             "active": "dashboard",
             "summary": _last_summary,
             "results": results,
+            "page": page,
+            "total_pages": total_pages,
+            "total_results": total,
         },
     )
 

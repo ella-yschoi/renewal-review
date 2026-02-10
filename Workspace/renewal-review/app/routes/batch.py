@@ -30,16 +30,29 @@ async def run_batch(sample: int | None = Query(None, ge=1)) -> dict:
         raise HTTPException(status_code=404, detail="No data found. Run data/generate.py first.")
 
     job_id = str(uuid.uuid4())[:8]
-    _jobs[job_id] = {"status": JobStatus.RUNNING, "summary": None, "error": None}
+    _jobs[job_id] = {
+        "status": JobStatus.RUNNING,
+        "summary": None,
+        "error": None,
+        "processed": 0,
+        "total": len(pairs),
+    }
 
     async def _process():
         global _last_summary
         try:
+
+            def on_progress(processed, total):
+                _jobs[job_id]["processed"] = processed
+
             loop = asyncio.get_event_loop()
-            results, summary = await loop.run_in_executor(None, process_batch, pairs)
+            results, summary = await loop.run_in_executor(
+                None, lambda: process_batch(pairs, on_progress=on_progress)
+            )
             _last_summary = summary
 
             store = get_results_store()
+            store.clear()
             for r in results:
                 store[r.policy_number] = r
 
@@ -51,7 +64,7 @@ async def run_batch(sample: int | None = Query(None, ge=1)) -> dict:
 
     asyncio.create_task(_process())
 
-    return {"job_id": job_id, "status": JobStatus.RUNNING}
+    return {"job_id": job_id, "status": JobStatus.RUNNING, "total": len(pairs)}
 
 
 @router.get("/status/{job_id}")

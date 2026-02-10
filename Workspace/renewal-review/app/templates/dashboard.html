@@ -11,7 +11,7 @@
   </div>
 </div>
 
-<div id="loading"><div class="spinner"></div><p style="margin-top:8px;">Processing...</p></div>
+<div id="loading"><div class="spinner"></div><p style="margin-top:8px;" id="loading-text">Processing...</p></div>
 
 <div id="summary-section" style="{% if not summary %}display:none{% endif %}">
   <div class="stats-grid">
@@ -43,17 +43,18 @@
 
   <div class="card" id="distribution-bar">
     <h2>Risk Distribution</h2>
+    {% set t = summary.total if summary and summary.total else 1 %}
     <div class="progress-bar" style="height:24px; display:flex; border-radius:6px; overflow:hidden;">
-      <div id="bar-low" style="background:#c6f6d5; height:100%;" title="Low"></div>
-      <div id="bar-medium" style="background:#fefcbf; height:100%;" title="Medium"></div>
-      <div id="bar-high" style="background:#fed7d7; height:100%;" title="High"></div>
-      <div id="bar-critical" style="background:#9b2c2c; height:100%;" title="Critical"></div>
+      <div id="bar-low" style="background:#c6f6d5; height:100%; width:{{ (summary.low / t * 100) if summary else 0 }}%;" title="Low"></div>
+      <div id="bar-medium" style="background:#fefcbf; height:100%; width:{{ (summary.medium / t * 100) if summary else 0 }}%;" title="Medium"></div>
+      <div id="bar-high" style="background:#fed7d7; height:100%; width:{{ (summary.high / t * 100) if summary else 0 }}%;" title="High"></div>
+      <div id="bar-critical" style="background:#9b2c2c; height:100%; width:{{ (summary.critical / t * 100) if summary else 0 }}%;" title="Critical"></div>
     </div>
     <div style="display:flex; justify-content:space-between; margin-top:6px; font-size:11px; color:#718096;">
-      <span id="pct-low"></span>
-      <span id="pct-medium"></span>
-      <span id="pct-high"></span>
-      <span id="pct-critical"></span>
+      <span id="pct-low">{% if summary %}Low {{ "%.1f"|format(summary.low / t * 100) }}%{% endif %}</span>
+      <span id="pct-medium">{% if summary %}Med {{ "%.1f"|format(summary.medium / t * 100) }}%{% endif %}</span>
+      <span id="pct-high">{% if summary %}High {{ "%.1f"|format(summary.high / t * 100) }}%{% endif %}</span>
+      <span id="pct-critical">{% if summary %}Crit {{ "%.1f"|format(summary.critical / t * 100) }}%{% endif %}</span>
     </div>
   </div>
 </div>
@@ -70,14 +71,13 @@
 </div>
 
 <div class="card" id="results-section" style="{% if not results %}display:none{% endif %}">
-  <h2>Recent Reviews <span style="font-weight:400; font-size:12px; color:#718096;" id="result-count"></span></h2>
+  <h2>Reviews <span style="font-weight:400; font-size:12px; color:#718096;">{{ total_results }} total — page {{ page }}/{{ total_pages }}</span></h2>
   <table>
     <thead>
       <tr><th>Policy #</th><th>Risk</th><th>Flags</th><th>Changes</th><th></th></tr>
     </thead>
     <tbody id="results-body">
-      {% if results %}
-      {% for r in results[:50] %}
+      {% for r in results %}
       <tr>
         <td><a href="/ui/review/{{ r.policy_number }}">{{ r.policy_number }}</a></td>
         <td><span class="badge badge-{{ r.risk_level.value }}">{{ r.risk_level.value }}</span></td>
@@ -86,9 +86,19 @@
         <td><a href="/ui/review/{{ r.policy_number }}" class="btn btn-secondary" style="padding:2px 8px; font-size:11px;">View</a></td>
       </tr>
       {% endfor %}
-      {% endif %}
     </tbody>
   </table>
+  {% if total_pages > 1 %}
+  <div style="display:flex; justify-content:center; align-items:center; gap:12px; margin-top:16px;">
+    {% if page > 1 %}
+    <a href="/?page={{ page - 1 }}" class="btn btn-secondary" style="padding:4px 12px; font-size:12px;">&larr; Prev</a>
+    {% endif %}
+    <span style="font-size:13px; color:#4a5568;">{{ page }} / {{ total_pages }}</span>
+    {% if page < total_pages %}
+    <a href="/?page={{ page + 1 }}" class="btn btn-secondary" style="padding:4px 12px; font-size:12px;">Next &rarr;</a>
+    {% endif %}
+  </div>
+  {% endif %}
 </div>
 {% endblock %}
 
@@ -110,27 +120,42 @@ function updateStats(s) {
   document.getElementById('pct-medium').textContent = 'Med '+(s.medium/t*100).toFixed(1)+'%';
   document.getElementById('pct-high').textContent = 'High '+(s.high/t*100).toFixed(1)+'%';
   document.getElementById('pct-critical').textContent = 'Crit '+(s.critical/t*100).toFixed(1)+'%';
-  document.getElementById('summary-section').style.display = '';
+  document.getElementById('summary-section').style.display = 'block';
 }
 
 async function runBatch(sample) {
-  document.getElementById('loading').style.display = '';
+  document.getElementById('loading').style.display = 'block';
+  document.getElementById('loading-text').textContent = 'Processing...';
   const url = sample ? '/batch/run?sample='+sample : '/batch/run';
   const resp = await fetch(url, {method:'POST'});
   const data = await resp.json();
-  document.getElementById('loading').style.display = 'none';
-  if (data.summary) {
-    updateStats(data.summary);
+
+  if (data.job_id) {
+    while (true) {
+      await new Promise(r => setTimeout(r, 300));
+      const status = await fetch('/batch/status/' + data.job_id).then(r => r.json());
+      if (status.status === 'completed') {
+        if (status.summary) updateStats(status.summary);
+        break;
+      }
+      if (status.status === 'failed') {
+        document.getElementById('loading-text').textContent = 'Failed: ' + (status.error || 'unknown');
+        return;
+      }
+    }
   }
-  window.location.reload();
+
+  document.getElementById('loading').style.display = 'none';
+  window.location.href = '/?page=1';
 }
 
 async function runEval() {
-  document.getElementById('loading').style.display = '';
+  document.getElementById('loading').style.display = 'block';
+  document.getElementById('loading-text').textContent = 'Running eval...';
   const resp = await fetch('/eval/run', {method:'POST'});
   const data = await resp.json();
   document.getElementById('loading').style.display = 'none';
-  document.getElementById('eval-section').style.display = '';
+  document.getElementById('eval-section').style.display = 'block';
   document.getElementById('eval-accuracy').textContent =
     'Accuracy: ' + data.accuracy + '% (' + data.passed + '/' + data.total + ')';
   const body = document.getElementById('eval-body');
