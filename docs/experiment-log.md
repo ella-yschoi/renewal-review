@@ -16,7 +16,7 @@
 
 3. **삼각 검증 실험용 문서** — `requirements.md`(FR-1~FR-6, 수락 기준 포함)와 `architecture.md`(계층 구조, 의존성 규칙, 네이밍 컨벤션)를 작성했다. 이 문서들은 삼각 검증에서 Agent A/B/C에게 선택적으로 제공되어 정보 격리를 만드는 핵심 도구다.
 
-4. **커밋 로깅 훅** — 처음에는 셸 스크립트로 커밋 메타데이터를 자동 기록하려 했으나, 커밋 메시지만으로는 "왜, 어떻게"를 담을 수 없어서 CLAUDE.md 컨벤션 방식으로 전환했다. Claude Code가 전체 작업 맥락을 알고 있으므로 직접 프레젠테이션급 로그를 작성하는 것이 더 낫다.
+4. **작업 로그 시스템** — 처음에는 셸 훅으로 커밋 메타데이터를 자동 기록하려 했으나, 커밋 메시지만으로는 "왜, 어떻게"를 담을 수 없었다. PreToolUse 훅 + CLAUDE.md 컨벤션 조합으로 전환: 훅이 `git commit` 시 experiment-log.md의 staging 여부를 체크해서 미작성 시 커밋을 차단하고, Claude Code가 전체 맥락을 담아 프레젠테이션급 로그를 직접 작성하도록 했다.
 
 5. **순수 개발 시간 추정** — AI agent 없이 동일 시스템을 만들었을 때의 시간을 Phase별로 추정했다. AI ~4시간 vs 순수 ~37시간(5일), 약 9배 차이.
 
@@ -34,7 +34,7 @@
 - **의존성 관리**: `pyproject.toml`에 `sqlalchemy[asyncio]`, `asyncpg`, `psycopg[binary]` 추가 후 `uv sync --extra dev`로 설치. optional-dependencies 구조라 dev 그룹을 별도로 sync해야 했다.
 - **DB 이중 경로**: `data_loader.py`의 `load_pairs()` 인터페이스는 그대로 유지하면서, 내부에서 `settings.db_url` 유무로 DB/JSON 분기. 기존 코드를 호출하는 쪽은 변경 없음.
 - **SA 모델 설계**: Pydantic 모델(API 레이어)과 SQLAlchemy 모델(DB 레이어)을 분리. `prior_json`/`renewal_json` 컬럼에 원본 JSON을 통째로 저장해서, DB에서 로드할 때 기존 `parse_pair()` 파서를 그대로 재사용.
-- **문서 작성 기준**: `requirements.md`의 수락 기준은 테스트 케이스와 1:1 매핑되게 설계(0건/1건/3건+ 패턴). `architecture.md`의 의존성 규칙은 기존 코드베이스 패턴을 분석해서 명시화.
+- **문서 작성 기준**: `requirements.md`는 FR-1~FR-9 체계로 확장. 기존 코드 컨텍스트(BatchSummary 모델, batch.py 실행 흐름, UI 구조), 구체적 필드 정의(타입+값 소스 매핑 테이블), 계산 예시(risk_distribution), 테스트 케이스(입력→검증 매핑)를 모두 포함. `architecture.md`는 batch.py 수정 위치까지 코드 레벨로 명시.
 - **테스트 검증**: `RR_DB_URL=""` 환경변수로 DB 경로를 비활성화한 상태에서 기존 68개 테스트 전부 통과 확인. ruff check도 통과.
 
 ---
