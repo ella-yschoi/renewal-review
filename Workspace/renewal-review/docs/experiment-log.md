@@ -38,3 +38,43 @@
 - **테스트 검증**: `RR_DB_URL=""` 환경변수로 DB 경로를 비활성화한 상태에서 기존 68개 테스트 전부 통과 확인. ruff check도 통과.
 
 ---
+
+## 2026-02-14 00:10 | `experiment/teams-analytics`
+
+### 무엇을 했는가
+
+실험 B — Agent Teams 방식으로 Analytics 모듈을 구현했다. 실험 A(SubAgent)와 동일한 요구사항.
+
+생성/수정한 구성요소:
+- Pydantic 모델 3종 (BatchRunRecord, TrendPoint, AnalyticsSummary)
+- 비즈니스 로직 (compute_trends — 일별 그룹핑, 리스크 분포 집계)
+- API 라우트 2개 (GET /analytics/history, /analytics/trends)
+- 배치 라우트 수정 (실행 완료 시 history 자동 저장, 밴쿠버 타임존)
+- 테스트 5개 (0건/1건/3건+ 케이스 + 라우트 2개)
+
+결과: 기존 68개 + 신규 5개 = 73개 테스트 전체 통과.
+
+### 왜 했는가
+
+SubAgent 방식(실험 A)과 Agent Teams 방식의 생산성 비교 실험(실험 B). 동일한 과제를 다른 오케스트레이션 모델로 수행하여 차이를 측정.
+
+### 어떻게 했는가
+
+**Agent Teams 3인 팀 구성:**
+
+1. **팀 생성** — TeamCreate로 "analytics-feature" 팀 생성. 태스크 3개를 TaskCreate로 등록하고 의존성 설정: task #1(모델+서비스) → task #2(라우트+배치) → task #3(테스트).
+
+2. **modeler 팀원** (general-purpose) — task #1 담당. `app/models/analytics.py`와 `app/engine/analytics.py` 작성. 완료 후 태스크를 completed로 마킹.
+
+3. **router 팀원** (general-purpose) — task #2 담당. modeler 완료 후 스폰. `app/routes/analytics.py` 생성, `app/routes/batch.py` 수정, `app/main.py` 수정. 태스크 자동 완료 마킹.
+
+4. **tester 팀원** (general-purpose) — task #3 담당. router 완료 후 스폰. `tests/test_analytics.py` 작성, 테스트 실행 검증.
+
+**SubAgent 방식과의 차이점:**
+- Teams 방식은 TaskCreate/TaskUpdate로 태스크를 명시적으로 정의하고 의존성(blockedBy)을 설정
+- 각 팀원이 독립된 agent로 스폰되어 SendMessage/TaskList로 협조
+- 의존성 때문에 순차 실행이 강제됨 (modeler → router → tester)
+- SubAgent 방식에서는 modeler와 router를 병렬 디스패치할 수 있었으나, Teams에서는 blockedBy로 순차 처리
+- 팀 리더가 각 팀원의 완료를 확인하고 다음 팀원을 스폰하는 오케스트레이션 오버헤드 발생
+
+---
