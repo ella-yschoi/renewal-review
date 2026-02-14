@@ -37,31 +37,37 @@ Before making any code change, read `convention.md` in the repo root. All style,
 - Git: 2.39.2
 - Main branch: `main`
 
-## 실험 작업 로그
+## 실험 로그 (experiment 브랜치 전용)
 
-커밋 전에 `docs/experiment-log.md`에 작업 내역을 작성하고, 이 파일을 커밋에 포함한다.
+experiment/ 브랜치에서 커밋할 때 **두 파일 모두** 작성하고 staging에 포함해야 한다. 훅이 둘 다 체크하며, 누락 시 커밋을 차단한다.
 
-### 작성 시점
-
-- 의미 있는 작업 단위가 완료되었을 때 (사소한 커밋마다 X)
-- 세팅/설정 작업 완료 시
-- 실험 실행 전후
-- 문제 해결 시
-
-### 형식 (한국어)
+### 1. 실험 로그 — `docs/experiments/log.md`
 
 ```markdown
 ## YYYY-MM-DD HH:MM | `브랜치명`
 
 ### 무엇을 했는가
-구체적 작업 내용. 어떤 기능을 만들었는지, 어떤 설정을 했는지, 어떤 문제를 해결했는지.
+구체적 작업 내용. 정량 결과 (시간, 파일 수, 테스트 수) 포함.
 
 ### 왜 했는가
-프로젝트/실험 맥락에서 이 작업이 필요한 이유. 어떤 목표에 기여하는지.
+프로젝트/실험 맥락에서 이 작업이 필요한 이유.
 
 ### 어떻게 했는가
-구현 방식, 세팅 과정, 사용한 도구/기술, 내린 결정과 그 이유.
-선택지가 여러 개였다면 왜 이 방식을 골랐는지.
+구현 방식, 도구, 결정과 그 이유.
+```
+
+### 2. 프레젠테이션 로그 — `docs/presentation-log.md`
+
+```markdown
+### YYYY-MM-DD HH:MM | `브랜치명` | `해시`
+
+**커밋 메시지**
+
+_diff 통계_
+
+> **Context**: 이 커밋의 맥락과 의도
+> **Result**: 결과 또는 변경 효과
+> **Insight**: 청중이 기억할 한 문장
 ```
 
 ### 규칙
@@ -69,7 +75,30 @@ Before making any code change, read `convention.md` in the repo root. All style,
 - 프레젠테이션 소스로 쓸 것이므로 구체적이고 맥락이 풍부하게 작성
 - 커밋 메시지 수준이 아니라, "이 작업을 모르는 사람이 읽어도 이해할 수 있는" 수준
 - 한국어로 작성 (나중에 영어로 번역 예정)
-- 파일 목록은 불필요 — 의도와 맥락에 집중
+- 의도와 맥락에 집중 — 파일 목록 나열 불필요
+
+## Design Doc 자동 업데이트
+
+코드(`app/`, `tests/`)를 변경하면 `docs/design-doc.md`의 관련 섹션을 함께 업데이트한다.
+별도 요청 없이 자동으로 수행하며, 커밋 시 design-doc.md가 staging에 없으면 훅이 블록한다.
+
+| 변경 대상 | 업데이트 섹션 |
+|-----------|--------------|
+| 새 모듈/파일 추가, 계층 구조 변경 | 1. Architecture |
+| Pydantic/SQLAlchemy 모델 | 2. Data Model |
+| engine/ 비즈니스 로직 | 3. Processing Pipeline |
+| routes/ 엔드포인트 | 4. API Surface |
+| templates/ HTML | 5. UI |
+| 에러 처리, 예외 핸들링 | 6. Error Handling |
+| tests/ 테스트 추가 | 7. Testing Strategy |
+| pyproject.toml 의존성 | 8. Tech Stack |
+
+### 규칙
+
+- 변경과 무관한 섹션은 건드리지 않는다
+- 아직 비어 있는 섹션은 해당 변경에 맞춰 처음 작성한다
+- 기존 내용이 있으면 변경 부분만 업데이트한다
+- 구현과 일치하는 정확한 내용만 작성한다 (추측 금지)
 
 ## What NOT to Do
 
