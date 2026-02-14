@@ -3,6 +3,8 @@ from pathlib import Path
 from fastapi import APIRouter, HTTPException, Query, Request
 from fastapi.templating import Jinja2Templates
 
+from app.engine.analytics import compute_trends
+from app.routes.analytics import get_history_store
 from app.routes.reviews import get_results_store
 
 router = APIRouter(tags=["ui"])
@@ -50,6 +52,16 @@ def review_detail(request: Request, policy_number: str):
     return templates.TemplateResponse(
         "review.html",
         {"request": request, "active": "dashboard", "result": result},
+    )
+
+
+@router.get("/ui/analytics")
+def analytics_page(request: Request):
+    history = get_history_store()
+    summary = compute_trends(history)
+    return templates.TemplateResponse(
+        "analytics.html",
+        {"request": request, "active": "analytics", "history": history, "summary": summary},
     )
 
 

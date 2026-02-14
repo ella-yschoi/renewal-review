@@ -1,6 +1,5 @@
 import asyncio
 import uuid
-from datetime import UTC
 from enum import StrEnum
 
 from fastapi import APIRouter, HTTPException, Query
@@ -62,6 +61,7 @@ async def run_batch(sample: int | None = Query(None, ge=1)) -> dict:
             _jobs[job_id]["summary"] = summary.model_dump()
 
             from datetime import datetime
+            from zoneinfo import ZoneInfo
 
             from app.models.analytics import BatchRunRecord
 
@@ -73,7 +73,7 @@ async def run_batch(sample: int | None = Query(None, ge=1)) -> dict:
                 high=summary.high,
                 critical=summary.critical,
                 processing_time_ms=summary.processing_time_ms,
-                created_at=datetime.now(UTC),
+                created_at=datetime.now(ZoneInfo("America/Vancouver")),
             )
             get_history_store().append(record)
         except Exception as e:
