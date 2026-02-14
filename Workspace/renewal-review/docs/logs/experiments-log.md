@@ -59,6 +59,18 @@
 | 전체 테스트 통과 | 73/73 (기존 68 + 신규 5) |
 | ruff check | 통과 (수정 후) |
 
+#### 토큰 사용량
+
+| SubAgent | 토큰 수 | Tool 호출 |
+|----------|---------|----------|
+| 리서치 (Explore) | 88,549 | 13 |
+| 모델+서비스 (general-purpose) | 23,531 | 3 |
+| 라우트+main (general-purpose) | 28,690 | 11 |
+| 테스트 (general-purpose) | 23,523 | 2 |
+| **합계** | **164,293** | **29** |
+
+> 리서치 subagent가 전체 토큰의 54%를 사용. 기존 코드 패턴을 탐색하는 Explore 타입이 가장 많은 컨텍스트를 소비함. 구현 subagent들은 각각 23k~29k로 균등.
+
 #### 생성된 파일
 
 | 파일 | 줄 수 | 역할 |
@@ -114,6 +126,12 @@ SubAgent vs Agent Teams 비교 실험의 첫 번째 그룹. 동일 과제를 두
 
 결과: 기존 68개 + 신규 5개 = 73개 테스트 전체 통과.
 
+#### 토큰 사용량
+
+Agent Teams 방식에서는 각 팀원(teammate)이 독립 프로세스로 실행되며, 완료 시 토큰 사용량을 반환하지 않는다. SubAgent의 Task tool은 결과와 함께 토큰 메타데이터를 반환하지만, Teams의 SendMessage/TaskUpdate 프로토콜에는 토큰 보고가 포함되지 않음.
+
+> **측정 불가** — Langfuse가 세션 레벨 trace를 기록하지만, 개별 teammate별 토큰 분리는 현재 지원되지 않음. 향후 실험에서는 각 teammate의 시작/종료 시점에 Langfuse span을 수동으로 삽입하여 측정 가능.
+
 ### 왜 했는가
 
 SubAgent 방식(실험 A)과 Agent Teams 방식의 생산성 비교 실험(실험 B). 동일한 과제를 다른 오케스트레이션 모델로 수행하여 차이를 측정.
@@ -153,6 +171,9 @@ SubAgent 방식(실험 A)과 Agent Teams 방식의 생산성 비교 실험(실�
 | 전체 테스트 통과 | Yes | Yes | 동일 |
 | 린트 수정 횟수 | 1 (ruff format) | 0 | Teams |
 | pre-commit 통과 | Yes | Yes | 동일 |
+| 토큰 사용량 | 164,293 (4 subagent) | 측정 불가* | SubAgent |
+
+\* Teams 방식은 teammate가 토큰 메타데이터를 반환하지 않아 정확한 측정 불가. SubAgent는 Task tool 반환값에 토큰 정보가 포함됨.
 
 ### 정성 분석
 
