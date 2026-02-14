@@ -42,7 +42,7 @@
         "endorsements": [{"code": "UM100", "description": "Uninsured motorist enhancement", "premium": 50}]
       }
     },
-    "expected_min_risk": "high",
+    "expected_min_risk": "action_required",
     "expected_flags": ["premium_increase_high", "notes_changed"],
     "description": "10% premium increase with rate adjustment note"
   },
@@ -91,7 +91,7 @@
         "endorsements": []
       }
     },
-    "expected_min_risk": "critical",
+    "expected_min_risk": "urgent_review",
     "expected_flags": ["premium_increase_critical", "deductible_increase", "coverage_dropped", "endorsement_removed", "notes_changed"],
     "description": "25% premium increase, water backup dropped, deductible raised, claim history note"
   },
@@ -150,7 +150,7 @@
         "endorsements": []
       }
     },
-    "expected_min_risk": "critical",
+    "expected_min_risk": "urgent_review",
     "expected_flags": ["carrier_change", "liability_limit_decrease", "deductible_increase", "vehicle_removed", "driver_added", "premium_decrease", "notes_changed"],
     "description": "Carrier switch, liability downgrade, vehicle removed, teen driver added"
   },
@@ -197,7 +197,7 @@
         "endorsements": []
       }
     },
-    "expected_min_risk": "low",
+    "expected_min_risk": "no_action_needed",
     "expected_flags": [],
     "description": "Clean renewal with minor premium increase (2.2%)"
   },
@@ -252,7 +252,7 @@
         ]
       }
     },
-    "expected_min_risk": "medium",
+    "expected_min_risk": "review_recommended",
     "expected_flags": ["premium_increase_high", "notes_changed"],
     "description": "Inflation guard with endorsement description update and 10% premium increase"
   }

@@ -68,10 +68,10 @@ async def run_batch(sample: int | None = Query(None, ge=1)) -> dict:
             record = BatchRunRecord(
                 job_id=job_id,
                 total=summary.total,
-                low=summary.low,
-                medium=summary.medium,
-                high=summary.high,
-                critical=summary.critical,
+                no_action_needed=summary.no_action_needed,
+                review_recommended=summary.review_recommended,
+                action_required=summary.action_required,
+                urgent_review=summary.urgent_review,
                 processing_time_ms=summary.processing_time_ms,
                 created_at=datetime.now(ZoneInfo("America/Vancouver")),
             )

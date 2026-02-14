@@ -28,10 +28,10 @@ Quote Generator 모듈도 동일 패턴:
 ## 2. Data Model
 
 ### BatchRunRecord
-배치 실행 1회의 요약 기록. job_id, risk level별 카운트(total/low/medium/high/critical), processing_time_ms, created_at.
+배치 실행 1회의 요약 기록. job_id, risk level별 카운트(total/no_action_needed/review_recommended/action_required/urgent_review), processing_time_ms, created_at.
 
 ### TrendPoint
-일별 집계 데이터. date(YYYY-MM-DD), total_runs, avg_processing_time_ms, critical_ratio.
+일별 집계 데이터. date(YYYY-MM-DD), total_runs, avg_processing_time_ms, urgent_review_ratio.
 
 ### AnalyticsSummary
 전체 분석 결과. total_runs, total_policies_reviewed, avg_processing_time_ms, risk_distribution(dict), trends(list[TrendPoint]).
@@ -46,7 +46,7 @@ Quote Generator 모듈도 동일 패턴:
 
 `compute_trends(records)`: BatchRunRecord 리스트를 받아 AnalyticsSummary를 반환.
 - 빈 리스트 → 제로 기본값
-- risk_distribution: 전체 레코드의 risk level별 합산
+- risk_distribution: 전체 레코드의 risk level별 합산 (no_action_needed/review_recommended/action_required/urgent_review)
 - trends: created_at 기준 일별 그룹핑 후 TrendPoint 생성
 
 `generate_quotes(pair, diff)`: RenewalPair와 DiffResult를 받아 최대 3개의 QuoteRecommendation 반환.
@@ -70,6 +70,7 @@ Quote Generator 모듈도 동일 패턴:
 파이프라인 네이밍: V1/V2 → **Basic Analytics** (규칙 기반) / **LLM Analytics** (규칙+LLM).
 
 - `review.html` — 리뷰 상세에서 파이프라인 라벨 표시 (Basic Analytics / LLM Analytics)
+- `quotes.html` — Quote Generator UI. flagged 정책 목록 표시, "Generate Quotes" 클릭 시 JS로 `/reviews/{policy_number}` → `/quotes/generate` 호출하여 대안 견적 표시. 라우트: `GET /ui/quotes`
 - `migration.html` — Basic vs LLM 비교 대시보드. element ID: `basic-*`, `llm-*`. JS에서 `d.basic.*`, `d.llm.*` 참조
 
 ## 6. Error Handling
