@@ -10,6 +10,7 @@ class Settings(BaseSettings):
     llm_enabled: bool = False
     llm_provider: str = "openai"
     data_path: str = "data/renewals.json"
+    db_url: str = ""
 
 
 settings = Settings()
