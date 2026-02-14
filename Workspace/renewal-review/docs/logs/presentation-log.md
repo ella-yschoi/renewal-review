@@ -63,3 +63,23 @@ _5 files added: 3 experiment docs + 2 shell scripts_
 > **Context**: 실험 1(병렬 협업)과 실험 2(삼각 검증)를 하나의 자동화 파이프라인으로 통합하는 실험 3의 준비 단계. Ralph Wiggum 반복 루프 패턴에 삼각 검증을 내장하여, PROMPT.md 하나로 기능 정의 → 구현 → 품질 검증 → 의도 검증 → 자가 수정까지 사람 개입 없이 완료하는 파이프라인을 설계.
 > **Result**: `triangular-verify.sh`(Agent B+C 순차 실행, PASS/FAIL 판정)과 `self-correcting-loop.sh`(4-phase while 루프, max-iterations 안전장치, 피드백 전달) 작성 완료. 실험 과제는 Smart Quote Generator — 보험 대안 견적 자동 생성.
 > **Insight**: 실험 2에서 삼각 검증이 "이슈를 발견"했다면, 실험 3은 "발견 즉시 자동 수정"까지 닫는다. 핵심은 실패 메시지를 다음 반복의 입력으로 전달하는 피드백 루프 — 완벽한 첫 시도 대신 반복을 통한 수렴.
+
+### 2026-02-14 15:30 | `experiment/self-correcting-loop` | `pending`
+
+**feat: implement Smart Quote Generator — auto/home alternative quotes**
+
+_5 files created, 2 files modified, ~469 lines added, 8 new tests_
+
+> **Context**: Self-Correcting Loop 실험의 Phase 1 (구현 단계). 요구사항 문서(3-requirements-quote-generator.md)의 FR-1~FR-9를 하나의 반복에서 완전 구현. 기존 renewal-review 파이프라인이 "위험 탐지"까지만 했다면, Quote Generator는 "탐지된 위험에 대한 대안 제시"를 자동화하는 다음 단계.
+> **Result**: Auto 3전략(raise_deductible 10%, drop_optional 4%, reduce_medical 2.5%) + Home 3전략(raise_deductible 12.5%, drop_water_backup 3%, reduce_personal_property 4%) 구현. 보호 제약(liability 필드 5개 불변) 적용. ruff 0 errors, 81/81 tests passed, semgrep 0 findings. 모든 파일 300줄 미만.
+> **Insight**: 전략 패턴으로 전략별 독립 함수를 리스트에 등록하면, 새 전략 추가가 함수 하나 + 리스트 등록 한 줄로 끝남. 확장성과 테스트 용이성 모두 확보.
+
+---
+
+### 2026-02-14 14:45 | 실험 3 최종 비교 — 자동 루프 vs 수동 대조군
+
+**Self-Correcting Loop: 641초 자동 vs 549초 수동, 사람 개입 0 vs 1**
+
+> **Context**: 동일한 Smart Quote Generator 과제를 자동 루프(`self-correcting-loop.sh`)와 수동 오케스트레이션(Claude Code 세션)으로 각각 실행. 자동은 PROMPT.md → claude --print → ruff/pytest/semgrep → triangular-verify.sh 전체 파이프라인을 사람 없이 실행. 수동은 개발자가 코드 작성, 품질 게이트, 삼각 검증을 순차적으로 직접 오케스트레이션.
+> **Result**: 자동 641초(1회 반복, 사람 개입 0), 수동 549초(삼각 검증 재실행 1회, 사람 개입 1). 자동이 92초 느렸지만 완전 자율 완료. 수동은 Agent B가 잘못된 모듈을 리뷰하여 프롬프트 수정 후 재실행 필요.
+> **Insight**: 자동화의 가치는 속도가 아니라 **신뢰성** — 밤에 기능 3개를 큐에 넣고, 아침에 검증된 코드를 리뷰한다. 사람이 실수를 감지하고 수정하는 비용은 과제가 복잡해질수록 기하급수적으로 증가한다.
