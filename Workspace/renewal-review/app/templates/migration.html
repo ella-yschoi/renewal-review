@@ -37,20 +37,20 @@
       <h2>Basic Analytics</h2>
       <p style="font-size:12px; color:#718096; margin-bottom:8px;" id="basic-time"></p>
       <table>
-        <tr><td>Low</td><td id="basic-low"></td></tr>
-        <tr><td>Medium</td><td id="basic-medium"></td></tr>
-        <tr><td>High</td><td id="basic-high"></td></tr>
-        <tr><td>Critical</td><td id="basic-critical"></td></tr>
+        <tr><td>No Action Needed</td><td id="basic-no-action-needed"></td></tr>
+        <tr><td>Review Recommended</td><td id="basic-review-recommended"></td></tr>
+        <tr><td>Action Required</td><td id="basic-action-required"></td></tr>
+        <tr><td>Urgent Review</td><td id="basic-urgent-review"></td></tr>
       </table>
     </div>
     <div class="card">
       <h2>LLM Analytics</h2>
       <p style="font-size:12px; color:#718096; margin-bottom:8px;" id="llm-time"></p>
       <table>
-        <tr><td>Low</td><td id="llm-low"></td></tr>
-        <tr><td>Medium</td><td id="llm-medium"></td></tr>
-        <tr><td>High</td><td id="llm-high"></td></tr>
-        <tr><td>Critical</td><td id="llm-critical"></td></tr>
+        <tr><td>No Action Needed</td><td id="llm-no-action-needed"></td></tr>
+        <tr><td>Review Recommended</td><td id="llm-review-recommended"></td></tr>
+        <tr><td>Action Required</td><td id="llm-action-required"></td></tr>
+        <tr><td>Urgent Review</td><td id="llm-urgent-review"></td></tr>
       </table>
       <p style="font-size:12px; color:#805ad5; margin-top:8px;" id="llm-pct"></p>
     </div>
@@ -93,16 +93,16 @@ function renderResult(d) {
   document.getElementById('new-insights').textContent = d.delta.new_llm_insights;
 
   document.getElementById('basic-time').textContent = d.basic.processing_time_ms + ' ms';
-  document.getElementById('basic-low').textContent = d.basic.distribution.low;
-  document.getElementById('basic-medium').textContent = d.basic.distribution.medium;
-  document.getElementById('basic-high').textContent = d.basic.distribution.high;
-  document.getElementById('basic-critical').textContent = d.basic.distribution.critical;
+  document.getElementById('basic-no-action-needed').textContent = d.basic.distribution.no_action_needed;
+  document.getElementById('basic-review-recommended').textContent = d.basic.distribution.review_recommended;
+  document.getElementById('basic-action-required').textContent = d.basic.distribution.action_required;
+  document.getElementById('basic-urgent-review').textContent = d.basic.distribution.urgent_review;
 
   document.getElementById('llm-time').textContent = d.llm.processing_time_ms + ' ms';
-  document.getElementById('llm-low').textContent = d.llm.distribution.low;
-  document.getElementById('llm-medium').textContent = d.llm.distribution.medium;
-  document.getElementById('llm-high').textContent = d.llm.distribution.high;
-  document.getElementById('llm-critical').textContent = d.llm.distribution.critical;
+  document.getElementById('llm-no-action-needed').textContent = d.llm.distribution.no_action_needed;
+  document.getElementById('llm-review-recommended').textContent = d.llm.distribution.review_recommended;
+  document.getElementById('llm-action-required').textContent = d.llm.distribution.action_required;
+  document.getElementById('llm-urgent-review').textContent = d.llm.distribution.urgent_review;
   document.getElementById('llm-pct').textContent = d.llm.llm_analyzed_pct + '% policies analyzed by LLM';
 
   document.getElementById('delta-risk').textContent = d.delta.risk_level_changes;

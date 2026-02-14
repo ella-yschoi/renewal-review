@@ -1,7 +1,12 @@
 from app.models.diff import DiffResult
 from app.models.review import LLMInsight, ReviewResult, RiskLevel
 
-RISK_ORDER = [RiskLevel.LOW, RiskLevel.MEDIUM, RiskLevel.HIGH, RiskLevel.CRITICAL]
+RISK_ORDER = [
+    RiskLevel.NO_ACTION_NEEDED,
+    RiskLevel.REVIEW_RECOMMENDED,
+    RiskLevel.ACTION_REQUIRED,
+    RiskLevel.URGENT_REVIEW,
+]
 
 
 def _max_risk(a: RiskLevel, b: RiskLevel) -> RiskLevel:
@@ -20,7 +25,7 @@ def aggregate(
         i for i in llm_insights if i.confidence >= 0.8 and "NOT equivalent" in i.finding
     ]
     if high_confidence_signals:
-        final_risk = _max_risk(final_risk, RiskLevel.HIGH)
+        final_risk = _max_risk(final_risk, RiskLevel.ACTION_REQUIRED)
 
     risk_signals = [
         i
@@ -28,17 +33,17 @@ def aggregate(
         if i.analysis_type == "risk_signal_extractor" and i.confidence >= 0.7
     ]
     if len(risk_signals) >= 2:
-        final_risk = _max_risk(final_risk, RiskLevel.HIGH)
+        final_risk = _max_risk(final_risk, RiskLevel.ACTION_REQUIRED)
 
     restriction_changes = [
         i for i in llm_insights if "restriction" in i.finding.lower() and i.confidence >= 0.75
     ]
     if restriction_changes:
-        final_risk = _max_risk(final_risk, RiskLevel.HIGH)
+        final_risk = _max_risk(final_risk, RiskLevel.ACTION_REQUIRED)
 
     # combined strong signals → CRITICAL
     if (high_confidence_signals or restriction_changes) and len(risk_signals) >= 2:
-        final_risk = _max_risk(final_risk, RiskLevel.CRITICAL)
+        final_risk = _max_risk(final_risk, RiskLevel.URGENT_REVIEW)
 
     summary_parts = [f"Risk: {final_risk.value}"]
     if diff.flags:

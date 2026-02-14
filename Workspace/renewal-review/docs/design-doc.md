@@ -22,10 +22,10 @@ Analytics 모듈은 기존 계층 구조를 따라 3개 레이어로 구성:
 ## 2. Data Model
 
 ### BatchRunRecord
-배치 실행 1회의 요약 기록. job_id, risk level별 카운트(total/low/medium/high/critical), processing_time_ms, created_at.
+배치 실행 1회의 요약 기록. job_id, risk level별 카운트(total/no_action_needed/review_recommended/action_required/urgent_review), processing_time_ms, created_at.
 
 ### TrendPoint
-일별 집계 데이터. date(YYYY-MM-DD), total_runs, avg_processing_time_ms, critical_ratio.
+일별 집계 데이터. date(YYYY-MM-DD), total_runs, avg_processing_time_ms, urgent_review_ratio.
 
 ### AnalyticsSummary
 전체 분석 결과. total_runs, total_policies_reviewed, avg_processing_time_ms, risk_distribution(dict), trends(list[TrendPoint]).
@@ -34,7 +34,7 @@ Analytics 모듈은 기존 계층 구조를 따라 3개 레이어로 구성:
 
 `compute_trends(records)`: BatchRunRecord 리스트를 받아 AnalyticsSummary를 반환.
 - 빈 리스트 → 제로 기본값
-- risk_distribution: 전체 레코드의 risk level별 합산
+- risk_distribution: 전체 레코드의 risk level별 합산 (no_action_needed/review_recommended/action_required/urgent_review)
 - trends: created_at 기준 일별 그룹핑 후 TrendPoint 생성
 
 ## 4. API Surface
