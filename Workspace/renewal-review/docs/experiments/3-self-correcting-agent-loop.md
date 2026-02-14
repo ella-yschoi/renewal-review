@@ -457,5 +457,5 @@ description: Use when implementing a feature with automated quality + intent ver
 - [x] 대조군(수동) 실행 — 549초, 삼각 재실행 1회
 - [x] 기록 템플릿 채우기
 - [x] 기존 테스트 regression 없음 (81/81, 82/82)
-- [ ] .claude/skills/self-correcting-loop/ 패키징
+- [x] .claude/skills/self-correcting-loop/ 패키징
 - [x] 실험 로그 + 프레젠테이션 로그 작성
