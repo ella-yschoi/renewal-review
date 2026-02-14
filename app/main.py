@@ -1,5 +1,6 @@
 from fastapi import FastAPI
 
+from app.routes.analytics import router as analytics_router
 from app.routes.batch import router as batch_router
 from app.routes.eval import router as eval_router
 from app.routes.reviews import router as reviews_router
@@ -15,6 +16,7 @@ app.include_router(ui_router)
 app.include_router(reviews_router)
 app.include_router(batch_router)
 app.include_router(eval_router)
+app.include_router(analytics_router)
 
 
 @app.get("/health")

@@ -7,6 +7,7 @@ from fastapi import APIRouter, HTTPException, Query
 from app.data_loader import load_pairs
 from app.engine.batch import process_batch
 from app.models.review import BatchSummary
+from app.routes.analytics import get_history_store
 from app.routes.reviews import get_results_store
 
 router = APIRouter(prefix="/batch", tags=["batch"])
@@ -58,6 +59,23 @@ async def run_batch(sample: int | None = Query(None, ge=1)) -> dict:
 
             _jobs[job_id]["status"] = JobStatus.COMPLETED
             _jobs[job_id]["summary"] = summary.model_dump()
+
+            from datetime import datetime
+            from zoneinfo import ZoneInfo
+
+            from app.models.analytics import BatchRunRecord
+
+            record = BatchRunRecord(
+                job_id=job_id,
+                total=summary.total,
+                low=summary.low,
+                medium=summary.medium,
+                high=summary.high,
+                critical=summary.critical,
+                processing_time_ms=summary.processing_time_ms,
+                created_at=datetime.now(ZoneInfo("America/Vancouver")),
+            )
+            get_history_store().append(record)
         except Exception as e:
             _jobs[job_id]["status"] = JobStatus.FAILED
             _jobs[job_id]["error"] = str(e)
