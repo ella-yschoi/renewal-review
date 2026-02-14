@@ -41,7 +41,7 @@ Before making any code change, read `convention.md` in the repo root. All style,
 
 experiment/ 브랜치에서 커밋할 때 **두 파일 모두** 작성하고 staging에 포함해야 한다. 훅이 둘 다 체크하며, 누락 시 커밋을 차단한다.
 
-### 1. 실험 로그 — `docs/experiments/log.md`
+### 1. 실험 로그 — `docs/logs/experiments-log.md`
 
 ```markdown
 ## YYYY-MM-DD HH:MM | `브랜치명`
@@ -56,7 +56,7 @@ experiment/ 브랜치에서 커밋할 때 **두 파일 모두** 작성하고 sta
 구현 방식, 도구, 결정과 그 이유.
 ```
 
-### 2. 프레젠테이션 로그 — `docs/presentation-log.md`
+### 2. 프레젠테이션 로그 — `docs/logs/presentation-log.md`
 
 ```markdown
 ### YYYY-MM-DD HH:MM | `브랜치명` | `해시`
