@@ -38,11 +38,16 @@ def test_diff_result_with_flags():
 
 
 def test_risk_level_ordering():
-    levels = [RiskLevel.LOW, RiskLevel.MEDIUM, RiskLevel.HIGH, RiskLevel.CRITICAL]
+    levels = [
+        RiskLevel.NO_ACTION_NEEDED,
+        RiskLevel.REVIEW_RECOMMENDED,
+        RiskLevel.ACTION_REQUIRED,
+        RiskLevel.URGENT_REVIEW,
+    ]
     assert len(levels) == 4
 
 
 def test_batch_summary_defaults():
     summary = BatchSummary(total=100)
-    assert summary.low == 0
+    assert summary.no_action_needed == 0
     assert summary.llm_analyzed == 0

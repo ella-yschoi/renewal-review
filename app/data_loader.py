@@ -1,4 +1,3 @@
-import asyncio
 import json
 import random
 from pathlib import Path
@@ -29,25 +28,22 @@ def _load_from_json() -> list[RenewalPair]:
 
 
 def _load_from_db() -> list[RenewalPair]:
-    from app.db import get_session_factory
+    from sqlalchemy import create_engine, select
+    from sqlalchemy.orm import Session
+
     from app.models.db_models import RenewalPairRow
 
-    factory = get_session_factory()
-    if factory is None:
-        return _load_from_json()
-
-    async def _fetch():
-        from sqlalchemy import select
-
-        async with factory() as session:
-            result = await session.execute(select(RenewalPairRow))
-            rows = result.scalars().all()
-        return rows
+    sync_url = settings.db_url.replace("+asyncpg", "+psycopg")
+    engine = create_engine(sync_url)
 
     try:
-        rows = asyncio.run(_fetch())
-    except RuntimeError:
+        with Session(engine) as session:
+            rows = session.execute(select(RenewalPairRow)).scalars().all()
+    except Exception:
+        engine.dispose()
         return _load_from_json()
+
+    engine.dispose()
 
     pairs = []
     for row in rows:

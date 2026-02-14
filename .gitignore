@@ -8,3 +8,4 @@ data/renewals.json
 .hypothesis/
 *.egg-info/
 dist/
+toolbox

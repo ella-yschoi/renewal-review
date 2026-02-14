@@ -3,6 +3,7 @@
 import asyncio
 import json
 import sys
+from datetime import date
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
@@ -47,8 +48,8 @@ async def seed():
                     carrier_renewal=renewal["carrier"],
                     premium_prior=float(prior["premium"]),
                     premium_renewal=float(renewal["premium"]),
-                    effective_date_prior=prior["effective_date"],
-                    effective_date_renewal=renewal["effective_date"],
+                    effective_date_prior=date.fromisoformat(prior["effective_date"]),
+                    effective_date_renewal=date.fromisoformat(renewal["effective_date"]),
                     state=prior.get("state", "CA"),
                     prior_json=prior,
                     renewal_json=renewal,

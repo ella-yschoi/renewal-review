@@ -17,7 +17,12 @@ router = APIRouter(tags=["eval"])
 _migration_jobs: dict[str, dict] = {}
 
 GOLDEN_PATH = Path(__file__).parent.parent.parent / "data" / "samples" / "golden_eval.json"
-RISK_ORDER = [RiskLevel.LOW, RiskLevel.MEDIUM, RiskLevel.HIGH, RiskLevel.CRITICAL]
+RISK_ORDER = [
+    RiskLevel.NO_ACTION_NEEDED,
+    RiskLevel.REVIEW_RECOMMENDED,
+    RiskLevel.ACTION_REQUIRED,
+    RiskLevel.URGENT_REVIEW,
+]
 
 
 def _risk_ge(actual: RiskLevel, expected: RiskLevel) -> bool:
@@ -67,10 +72,12 @@ def run_eval() -> dict:
 
 def _risk_dist(results: list) -> dict[str, int]:
     return {
-        "low": sum(1 for r in results if r.risk_level == RiskLevel.LOW),
-        "medium": sum(1 for r in results if r.risk_level == RiskLevel.MEDIUM),
-        "high": sum(1 for r in results if r.risk_level == RiskLevel.HIGH),
-        "critical": sum(1 for r in results if r.risk_level == RiskLevel.CRITICAL),
+        "no_action_needed": sum(1 for r in results if r.risk_level == RiskLevel.NO_ACTION_NEEDED),
+        "review_recommended": sum(
+            1 for r in results if r.risk_level == RiskLevel.REVIEW_RECOMMENDED
+        ),
+        "action_required": sum(1 for r in results if r.risk_level == RiskLevel.ACTION_REQUIRED),
+        "urgent_review": sum(1 for r in results if r.risk_level == RiskLevel.URGENT_REVIEW),
     }
 
 

@@ -20,20 +20,20 @@
       <div class="label">Total Processed</div>
     </div>
     <div class="stat-card">
-      <div class="value" style="color:#22543d" id="stat-low">{{ summary.low if summary else 0 }}</div>
-      <div class="label">Low Risk</div>
+      <div class="value" style="color:#22543d" id="stat-no-action-needed">{{ summary.no_action_needed if summary else 0 }}</div>
+      <div class="label">No Action Needed</div>
     </div>
     <div class="stat-card">
-      <div class="value" style="color:#744210" id="stat-medium">{{ summary.medium if summary else 0 }}</div>
-      <div class="label">Medium Risk</div>
+      <div class="value" style="color:#744210" id="stat-review-recommended">{{ summary.review_recommended if summary else 0 }}</div>
+      <div class="label">Review Recommended</div>
     </div>
     <div class="stat-card">
-      <div class="value" style="color:#9b2c2c" id="stat-high">{{ summary.high if summary else 0 }}</div>
-      <div class="label">High Risk</div>
+      <div class="value" style="color:#9b2c2c" id="stat-action-required">{{ summary.action_required if summary else 0 }}</div>
+      <div class="label">Action Required</div>
     </div>
     <div class="stat-card">
-      <div class="value" style="color:#fff; background:#9b2c2c; border-radius:6px; padding:2px 8px;" id="stat-critical">{{ summary.critical if summary else 0 }}</div>
-      <div class="label">Critical</div>
+      <div class="value" style="color:#fff; background:#9b2c2c; border-radius:6px; padding:2px 8px;" id="stat-urgent-review">{{ summary.urgent_review if summary else 0 }}</div>
+      <div class="label">Urgent Review</div>
     </div>
     <div class="stat-card">
       <div class="value" id="stat-time">{{ "%.0f"|format(summary.processing_time_ms) if summary else "—" }}</div>
@@ -45,16 +45,16 @@
     <h2>Risk Distribution</h2>
     {% set t = summary.total if summary and summary.total else 1 %}
     <div class="progress-bar" style="height:24px; display:flex; border-radius:6px; overflow:hidden;">
-      <div id="bar-low" style="background:#c6f6d5; height:100%; width:{{ (summary.low / t * 100) if summary else 0 }}%;" title="Low"></div>
-      <div id="bar-medium" style="background:#fefcbf; height:100%; width:{{ (summary.medium / t * 100) if summary else 0 }}%;" title="Medium"></div>
-      <div id="bar-high" style="background:#fed7d7; height:100%; width:{{ (summary.high / t * 100) if summary else 0 }}%;" title="High"></div>
-      <div id="bar-critical" style="background:#9b2c2c; height:100%; width:{{ (summary.critical / t * 100) if summary else 0 }}%;" title="Critical"></div>
+      <div id="bar-no-action-needed" style="background:#c6f6d5; height:100%; width:{{ (summary.no_action_needed / t * 100) if summary else 0 }}%;" title="No Action Needed"></div>
+      <div id="bar-review-recommended" style="background:#fefcbf; height:100%; width:{{ (summary.review_recommended / t * 100) if summary else 0 }}%;" title="Review Recommended"></div>
+      <div id="bar-action-required" style="background:#fed7d7; height:100%; width:{{ (summary.action_required / t * 100) if summary else 0 }}%;" title="Action Required"></div>
+      <div id="bar-urgent-review" style="background:#9b2c2c; height:100%; width:{{ (summary.urgent_review / t * 100) if summary else 0 }}%;" title="Urgent Review"></div>
     </div>
     <div style="display:flex; justify-content:space-between; margin-top:6px; font-size:11px; color:#718096;">
-      <span id="pct-low">{% if summary %}Low {{ "%.1f"|format(summary.low / t * 100) }}%{% endif %}</span>
-      <span id="pct-medium">{% if summary %}Med {{ "%.1f"|format(summary.medium / t * 100) }}%{% endif %}</span>
-      <span id="pct-high">{% if summary %}High {{ "%.1f"|format(summary.high / t * 100) }}%{% endif %}</span>
-      <span id="pct-critical">{% if summary %}Crit {{ "%.1f"|format(summary.critical / t * 100) }}%{% endif %}</span>
+      <span id="pct-no-action-needed">{% if summary %}No Action {{ "%.1f"|format(summary.no_action_needed / t * 100) }}%{% endif %}</span>
+      <span id="pct-review-recommended">{% if summary %}Review {{ "%.1f"|format(summary.review_recommended / t * 100) }}%{% endif %}</span>
+      <span id="pct-action-required">{% if summary %}Action {{ "%.1f"|format(summary.action_required / t * 100) }}%{% endif %}</span>
+      <span id="pct-urgent-review">{% if summary %}Urgent {{ "%.1f"|format(summary.urgent_review / t * 100) }}%{% endif %}</span>
     </div>
   </div>
 </div>
@@ -106,20 +106,20 @@
 <script>
 function updateStats(s) {
   document.getElementById('stat-total').textContent = s.total;
-  document.getElementById('stat-low').textContent = s.low;
-  document.getElementById('stat-medium').textContent = s.medium;
-  document.getElementById('stat-high').textContent = s.high;
-  document.getElementById('stat-critical').textContent = s.critical;
+  document.getElementById('stat-no-action-needed').textContent = s.no_action_needed;
+  document.getElementById('stat-review-recommended').textContent = s.review_recommended;
+  document.getElementById('stat-action-required').textContent = s.action_required;
+  document.getElementById('stat-urgent-review').textContent = s.urgent_review;
   document.getElementById('stat-time').textContent = Math.round(s.processing_time_ms);
   const t = s.total || 1;
-  document.getElementById('bar-low').style.width = (s.low/t*100)+'%';
-  document.getElementById('bar-medium').style.width = (s.medium/t*100)+'%';
-  document.getElementById('bar-high').style.width = (s.high/t*100)+'%';
-  document.getElementById('bar-critical').style.width = (s.critical/t*100)+'%';
-  document.getElementById('pct-low').textContent = 'Low '+(s.low/t*100).toFixed(1)+'%';
-  document.getElementById('pct-medium').textContent = 'Med '+(s.medium/t*100).toFixed(1)+'%';
-  document.getElementById('pct-high').textContent = 'High '+(s.high/t*100).toFixed(1)+'%';
-  document.getElementById('pct-critical').textContent = 'Crit '+(s.critical/t*100).toFixed(1)+'%';
+  document.getElementById('bar-no-action-needed').style.width = (s.no_action_needed/t*100)+'%';
+  document.getElementById('bar-review-recommended').style.width = (s.review_recommended/t*100)+'%';
+  document.getElementById('bar-action-required').style.width = (s.action_required/t*100)+'%';
+  document.getElementById('bar-urgent-review').style.width = (s.urgent_review/t*100)+'%';
+  document.getElementById('pct-no-action-needed').textContent = 'No Action '+(s.no_action_needed/t*100).toFixed(1)+'%';
+  document.getElementById('pct-review-recommended').textContent = 'Review '+(s.review_recommended/t*100).toFixed(1)+'%';
+  document.getElementById('pct-action-required').textContent = 'Action '+(s.action_required/t*100).toFixed(1)+'%';
+  document.getElementById('pct-urgent-review').textContent = 'Urgent '+(s.urgent_review/t*100).toFixed(1)+'%';
   document.getElementById('summary-section').style.display = 'block';
 }
 

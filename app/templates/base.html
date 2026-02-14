@@ -19,10 +19,10 @@
     td { padding: 8px 12px; border-bottom: 1px solid #edf2f7; }
     tr:hover { background: #f7fafc; }
     .badge { display: inline-block; padding: 2px 8px; border-radius: 4px; font-size: 11px; font-weight: 600; text-transform: uppercase; }
-    .badge-low { background: #c6f6d5; color: #22543d; }
-    .badge-medium { background: #fefcbf; color: #744210; }
-    .badge-high { background: #fed7d7; color: #9b2c2c; }
-    .badge-critical { background: #9b2c2c; color: #fff; }
+    .badge-no_action_needed { background: #c6f6d5; color: #22543d; }
+    .badge-review_recommended { background: #fefcbf; color: #744210; }
+    .badge-action_required { background: #fed7d7; color: #9b2c2c; }
+    .badge-urgent_review { background: #9b2c2c; color: #fff; }
     .btn { display: inline-block; padding: 8px 16px; border-radius: 6px; font-size: 13px; font-weight: 600; cursor: pointer; border: none; text-decoration: none; }
     .btn-primary { background: #3182ce; color: #fff; }
     .btn-primary:hover { background: #2b6cb0; }
@@ -44,7 +44,9 @@
   <nav>
     <span class="logo">Renewal Review</span>
     <a href="/" class="{% if active == 'dashboard' %}active{% endif %}">Dashboard</a>
-    <a href="/ui/migration" class="{% if active == 'migration' %}active{% endif %}">Migration</a>
+    <a href="/ui/analytics" class="{% if active == 'analytics' %}active{% endif %}">LLM Analytics</a>
+    <a href="/ui/quotes" class="{% if active == 'quotes' %}active{% endif %}">Quote Generator</a>
+    <a href="/ui/migration" class="{% if active == 'migration' %}active{% endif %}">LLM Insights</a>
   </nav>
   <div class="container">
     {% block content %}{% endblock %}

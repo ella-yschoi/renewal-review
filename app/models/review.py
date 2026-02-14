@@ -7,10 +7,10 @@ from app.models.policy import RenewalPair
 
 
 class RiskLevel(StrEnum):
-    LOW = "low"
-    MEDIUM = "medium"
-    HIGH = "high"
-    CRITICAL = "critical"
+    NO_ACTION_NEEDED = "no_action_needed"
+    REVIEW_RECOMMENDED = "review_recommended"
+    ACTION_REQUIRED = "action_required"
+    URGENT_REVIEW = "urgent_review"
 
 
 class LLMInsight(BaseModel):
@@ -31,9 +31,9 @@ class ReviewResult(BaseModel):
 
 class BatchSummary(BaseModel):
     total: int
-    low: int = 0
-    medium: int = 0
-    high: int = 0
-    critical: int = 0
+    no_action_needed: int = 0
+    review_recommended: int = 0
+    action_required: int = 0
+    urgent_review: int = 0
     llm_analyzed: int = 0
     processing_time_ms: float = 0.0

@@ -9,7 +9,12 @@ def compute_trends(records: list[BatchRunRecord]) -> AnalyticsSummary:
             total_runs=0,
             total_policies_reviewed=0,
             avg_processing_time_ms=0.0,
-            risk_distribution={"low": 0, "medium": 0, "high": 0, "critical": 0},
+            risk_distribution={
+                "no_action_needed": 0,
+                "review_recommended": 0,
+                "action_required": 0,
+                "urgent_review": 0,
+            },
             trends=[],
         )
 
@@ -17,10 +22,10 @@ def compute_trends(records: list[BatchRunRecord]) -> AnalyticsSummary:
     avg_time = sum(r.processing_time_ms for r in records) / len(records)
 
     risk_distribution = {
-        "low": sum(r.low for r in records),
-        "medium": sum(r.medium for r in records),
-        "high": sum(r.high for r in records),
-        "critical": sum(r.critical for r in records),
+        "no_action_needed": sum(r.no_action_needed for r in records),
+        "review_recommended": sum(r.review_recommended for r in records),
+        "action_required": sum(r.action_required for r in records),
+        "urgent_review": sum(r.urgent_review for r in records),
     }
 
     by_date: dict[str, list[BatchRunRecord]] = defaultdict(list)
@@ -32,7 +37,7 @@ def compute_trends(records: list[BatchRunRecord]) -> AnalyticsSummary:
     for day in sorted(by_date):
         day_records = by_date[day]
         day_total = sum(r.total for r in day_records)
-        day_critical = sum(r.critical for r in day_records)
+        day_urgent_review = sum(r.urgent_review for r in day_records)
         trends.append(
             TrendPoint(
                 date=day,
@@ -40,7 +45,7 @@ def compute_trends(records: list[BatchRunRecord]) -> AnalyticsSummary:
                 avg_processing_time_ms=round(
                     sum(r.processing_time_ms for r in day_records) / len(day_records), 1
                 ),
-                critical_ratio=round(day_critical / day_total, 4) if day_total else 0.0,
+                urgent_review_ratio=round(day_urgent_review / day_total, 4) if day_total else 0.0,
             )
         )
 

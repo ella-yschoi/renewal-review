@@ -58,7 +58,7 @@
 }
 ```
 
-예상 결과: 보험료 +13.8% → `PREMIUM_INCREASE_HIGH` + `NOTES_CHANGED` → **High**.
+예상 결과: 보험료 +13.8% → `PREMIUM_INCREASE_HIGH` + `NOTES_CHANGED` → **Action Required**.
 
 **Home — 특약 제거 + 보험료 감소:**
 
@@ -83,7 +83,7 @@
 }
 ```
 
-예상 결과: 보험료 -4.5% → `PREMIUM_DECREASE` + `ENDORSEMENT_REMOVED` (FL01) → **Medium**.
+예상 결과: 보험료 -4.5% → `PREMIUM_DECREASE` + `ENDORSEMENT_REMOVED` (FL01) → **Review Recommended**.
 
 ---
 
@@ -121,10 +121,10 @@
 
 | 레벨 | 조건 |
 |------|------|
-| Critical | Premium Increase Critical 또는 Liability Limit Decrease 존재 |
-| High | Premium Increase High 또는 Coverage Dropped 존재 |
-| Medium | 플래그 1개 이상, Critical/High 조건 미충족 |
-| Low | 플래그 없음 |
+| Urgent Review | Premium Increase Critical 또는 Liability Limit Decrease 존재 |
+| Action Required | Premium Increase High 또는 Coverage Dropped 존재 |
+| Review Recommended | 플래그 1개 이상, Urgent Review/Action Required 조건 미충족 |
+| No Action Needed | 플래그 없음 |
 
 ### 에러 처리
 
@@ -166,10 +166,10 @@
 
 | 조건 | 상향 |
 |------|------|
-| 높은 신뢰도로 보장 "동등하지 않음" 판정 | → High 이상 |
-| 리스크 시그널 2개 이상 감지 | → High 이상 |
-| 특약 변경이 "제한(restriction)" | → High 이상 |
-| 위 조건 복합 충족 | → Critical |
+| 높은 신뢰도로 보장 "동등하지 않음" 판정 | → Action Required 이상 |
+| 리스크 시그널 2개 이상 감지 | → Action Required 이상 |
+| 특약 변경이 "제한(restriction)" | → Action Required 이상 |
+| 위 조건 복합 충족 | → Urgent Review |
 
 > 신뢰도 임계값은 디자인 단계에서 정의한다.
 
@@ -209,10 +209,10 @@
 ```python
 class BatchSummary(BaseModel):
     total: int
-    low: int = 0
-    medium: int = 0
-    high: int = 0
-    critical: int = 0
+    no_action_needed: int = 0
+    review_recommended: int = 0
+    action_required: int = 0
+    urgent_review: int = 0
     llm_analyzed: int = 0
     processing_time_ms: float = 0.0
 ```
@@ -274,10 +274,10 @@ main.py                      ← 라우터 등록
 | `timestamp` | `datetime` | `datetime.now(UTC)` |
 | `sample_size` | `int` | `len(pairs)` |
 | `total` | `int` | `BatchSummary.total` |
-| `low` | `int` | `BatchSummary.low` |
-| `medium` | `int` | `BatchSummary.medium` |
-| `high` | `int` | `BatchSummary.high` |
-| `critical` | `int` | `BatchSummary.critical` |
+| `no_action_needed` | `int` | `BatchSummary.no_action_needed` |
+| `review_recommended` | `int` | `BatchSummary.review_recommended` |
+| `action_required` | `int` | `BatchSummary.action_required` |
+| `urgent_review` | `int` | `BatchSummary.urgent_review` |
 | `llm_analyzed` | `int` | `BatchSummary.llm_analyzed` |
 | `processing_time_ms` | `float` | `BatchSummary.processing_time_ms` |
 
@@ -286,7 +286,7 @@ main.py                      ← 라우터 등록
 | 필드 | 타입 | 설명 |
 |------|------|------|
 | `timestamp` | `datetime` | 측정 시점 (= BatchRunRecord.timestamp) |
-| `metric_name` | `str` | `"critical_rate"`, `"high_rate"`, `"avg_processing_ms"` |
+| `metric_name` | `str` | `"urgent_review_rate"`, `"action_required_rate"`, `"avg_processing_ms"` |
 | `value` | `float` | 비율은 0.0~100.0% |
 
 **AnalyticsSummary** (`app/models/analytics.py`) — 종합 분석 결과:
@@ -295,7 +295,7 @@ main.py                      ← 라우터 등록
 |------|------|------|
 | `total_runs` | `int` | 총 배치 실행 횟수 |
 | `avg_processing_time_ms` | `float` | 평균 처리 시간 (소수점 1자리 반올림) |
-| `risk_distribution` | `dict[str, float]` | 누적 리스크 비율 (%) — `{"low": 15.2, ...}` |
+| `risk_distribution` | `dict[str, float]` | 누적 리스크 비율 (%) — `{"no_action_needed": 15.2, ...}` |
 | `trends` | `list[TrendPoint]` | 시계열 (timestamp 오름차순) |
 
 ### 데이터 흐름
@@ -357,10 +357,10 @@ record = BatchRunRecord(
     id=job_id,
     sample_size=len(pairs),
     total=summary.total,
-    low=summary.low,
-    medium=summary.medium,
-    high=summary.high,
-    critical=summary.critical,
+    no_action_needed=summary.no_action_needed,
+    review_recommended=summary.review_recommended,
+    action_required=summary.action_required,
+    urgent_review=summary.urgent_review,
     llm_analyzed=summary.llm_analyzed,
     processing_time_ms=summary.processing_time_ms,
 )
@@ -379,18 +379,18 @@ _jobs[job_id]["status"] = JobStatus.COMPLETED
 | 입력 | `total_runs` | `avg_processing_time_ms` | `risk_distribution` | `trends` |
 |------|-------------|--------------------------|---------------------|----------|
 | 빈 리스트 | 0 | 0.0 | 전부 0 | `[]` |
-| 1건 `[{total:100, low:15, med:45, high:29, crit:11, time:850}]` | 1 | 850.0 | `{"low": 15.0, "medium": 45.0, "high": 29.0, "critical": 11.0}` | 3개 TrendPoint |
+| 1건 `[{total:100, no_action:15, review:45, action:29, urgent:11, time:850}]` | 1 | 850.0 | `{"no_action_needed": 15.0, "review_recommended": 45.0, "action_required": 29.0, "urgent_review": 11.0}` | 3개 TrendPoint |
 | 3건+ | N | `sum(time) / N` 반올림 1자리 | 전체 건수 기준 누적 비율 | 시점별 3 metric × N |
 
 **risk_distribution 계산:**
-- 3회 실행: [{total:100, low:15}, {total:200, low:40}, {total:50, low:10}]
-- 누적: total=350, low=65 → low_rate = 65/350 * 100 = 18.6%
+- 3회 실행: [{total:100, no_action_needed:15}, {total:200, no_action_needed:40}, {total:50, no_action_needed:10}]
+- 누적: total=350, no_action_needed=65 → no_action_needed_rate = 65/350 * 100 = 18.6%
 - 모든 비율: `round(x, 1)`, total_sum=0이면 전부 0.0
 
 **trends 생성:**
 - 각 BatchRunRecord마다 3개 TrendPoint:
-  - `critical_rate` = `round(critical / total * 100, 1)` (total=0이면 0.0)
-  - `high_rate` = `round(high / total * 100, 1)` (total=0이면 0.0)
+  - `urgent_review_rate` = `round(urgent_review / total * 100, 1)` (total=0이면 0.0)
+  - `action_required_rate` = `round(action_required / total * 100, 1)` (total=0이면 0.0)
   - `avg_processing_ms` = processing_time_ms
 - timestamp 오름차순 정렬
 
@@ -414,7 +414,7 @@ _jobs[job_id]["status"] = JobStatus.COMPLETED
 
 **analytics.html** — `dashboard.html` 패턴을 따름:
 1. `{% extends "base.html" %}` 상속
-2. `stats-grid` 4칸 (Total Runs, Avg Time, Critical Rate, High Rate)
+2. `stats-grid` 4칸 (Total Runs, Avg Time, Urgent Review Rate, Action Required Rate)
 3. `.progress-bar` risk distribution (dashboard 패턴과 동일)
 4. `<table>` history 목록 (Run ID, Time, Sample, Total, Low, Med, High, Crit, Processing Time)
 5. 빈 상태: "No batch runs yet. Run a batch from Dashboard first."
@@ -450,9 +450,9 @@ def analytics_page(request: Request):
 | 테스트 | 입력 | 검증 |
 |--------|------|------|
 | `test_empty_history` | `[]` | total_runs=0, trends=[], distribution 전부 0 |
-| `test_single_run` | 1건 (total=100, low=15, med=45, high=29, crit=11) | total_runs=1, critical_rate=11.0, high_rate=29.0 |
+| `test_single_run` | 1건 (total=100, no_action=15, review=45, action=29, urgent=11) | total_runs=1, urgent_review_rate=11.0, action_required_rate=29.0 |
 | `test_multiple_runs` | 3건 (각기 다른 분포) | 누적 비율 정확, trends 9개, timestamp 오름차순 |
-| `test_risk_distribution_percentage` | 2건: [{total:100,low:20}, {total:200,low:60}] | low_rate = 26.7 |
+| `test_risk_distribution_percentage` | 2건: [{total:100,no_action_needed:20}, {total:200,no_action_needed:60}] | no_action_needed_rate = 26.7 |
 | `test_history_fifo_limit` | 101건 추가 | 길이 100, 가장 오래된 것 제거됨 |
 
 **API 통합 테스트:**
