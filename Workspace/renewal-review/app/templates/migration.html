@@ -1,9 +1,9 @@
 {% extends "base.html" %}
-{% block title %}V1 vs V2 Migration — Renewal Review{% endblock %}
+{% block title %}Basic vs LLM Analytics Migration — Renewal Review{% endblock %}
 
 {% block content %}
 <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px;">
-  <h1 style="font-size:20px;">V1 vs V2 Migration Comparison</h1>
+  <h1 style="font-size:20px;">Basic vs LLM Analytics Migration</h1>
   <div style="display:flex; gap:8px;">
     <button class="btn btn-primary" onclick="runComparison(50)">Compare (50)</button>
     <button class="btn btn-secondary" onclick="runComparison(200)">Compare (200)</button>
@@ -34,25 +34,25 @@
 
   <div style="display:grid; grid-template-columns:1fr 1fr; gap:16px;">
     <div class="card">
-      <h2>V1 — Rule-Based</h2>
-      <p style="font-size:12px; color:#718096; margin-bottom:8px;" id="v1-time"></p>
+      <h2>Basic Analytics</h2>
+      <p style="font-size:12px; color:#718096; margin-bottom:8px;" id="basic-time"></p>
       <table>
-        <tr><td>Low</td><td id="v1-low"></td></tr>
-        <tr><td>Medium</td><td id="v1-medium"></td></tr>
-        <tr><td>High</td><td id="v1-high"></td></tr>
-        <tr><td>Critical</td><td id="v1-critical"></td></tr>
+        <tr><td>Low</td><td id="basic-low"></td></tr>
+        <tr><td>Medium</td><td id="basic-medium"></td></tr>
+        <tr><td>High</td><td id="basic-high"></td></tr>
+        <tr><td>Critical</td><td id="basic-critical"></td></tr>
       </table>
     </div>
     <div class="card">
-      <h2>V2 — LLM Hybrid</h2>
-      <p style="font-size:12px; color:#718096; margin-bottom:8px;" id="v2-time"></p>
+      <h2>LLM Analytics</h2>
+      <p style="font-size:12px; color:#718096; margin-bottom:8px;" id="llm-time"></p>
       <table>
-        <tr><td>Low</td><td id="v2-low"></td></tr>
-        <tr><td>Medium</td><td id="v2-medium"></td></tr>
-        <tr><td>High</td><td id="v2-high"></td></tr>
-        <tr><td>Critical</td><td id="v2-critical"></td></tr>
+        <tr><td>Low</td><td id="llm-low"></td></tr>
+        <tr><td>Medium</td><td id="llm-medium"></td></tr>
+        <tr><td>High</td><td id="llm-high"></td></tr>
+        <tr><td>Critical</td><td id="llm-critical"></td></tr>
       </table>
-      <p style="font-size:12px; color:#805ad5; margin-top:8px;" id="v2-llm-pct"></p>
+      <p style="font-size:12px; color:#805ad5; margin-top:8px;" id="llm-pct"></p>
     </div>
   </div>
 
@@ -72,8 +72,8 @@
       <thead>
         <tr>
           <th>Policy #</th>
-          <th>V1 Risk</th>
-          <th>V2 Risk</th>
+          <th>Basic Risk</th>
+          <th>LLM Risk</th>
           <th>Flags</th>
           <th>LLM Insights</th>
         </tr>
@@ -89,21 +89,21 @@
 function renderResult(d) {
   document.getElementById('sample-size').textContent = d.sample_size;
   document.getElementById('risk-changes').textContent = d.delta.risk_level_changes;
-  document.getElementById('llm-analyzed').textContent = d.v2.llm_analyzed;
+  document.getElementById('llm-analyzed').textContent = d.llm.llm_analyzed;
   document.getElementById('new-insights').textContent = d.delta.new_llm_insights;
 
-  document.getElementById('v1-time').textContent = d.v1.processing_time_ms + ' ms';
-  document.getElementById('v1-low').textContent = d.v1.distribution.low;
-  document.getElementById('v1-medium').textContent = d.v1.distribution.medium;
-  document.getElementById('v1-high').textContent = d.v1.distribution.high;
-  document.getElementById('v1-critical').textContent = d.v1.distribution.critical;
+  document.getElementById('basic-time').textContent = d.basic.processing_time_ms + ' ms';
+  document.getElementById('basic-low').textContent = d.basic.distribution.low;
+  document.getElementById('basic-medium').textContent = d.basic.distribution.medium;
+  document.getElementById('basic-high').textContent = d.basic.distribution.high;
+  document.getElementById('basic-critical').textContent = d.basic.distribution.critical;
 
-  document.getElementById('v2-time').textContent = d.v2.processing_time_ms + ' ms';
-  document.getElementById('v2-low').textContent = d.v2.distribution.low;
-  document.getElementById('v2-medium').textContent = d.v2.distribution.medium;
-  document.getElementById('v2-high').textContent = d.v2.distribution.high;
-  document.getElementById('v2-critical').textContent = d.v2.distribution.critical;
-  document.getElementById('v2-llm-pct').textContent = d.v2.llm_analyzed_pct + '% policies analyzed by LLM';
+  document.getElementById('llm-time').textContent = d.llm.processing_time_ms + ' ms';
+  document.getElementById('llm-low').textContent = d.llm.distribution.low;
+  document.getElementById('llm-medium').textContent = d.llm.distribution.medium;
+  document.getElementById('llm-high').textContent = d.llm.distribution.high;
+  document.getElementById('llm-critical').textContent = d.llm.distribution.critical;
+  document.getElementById('llm-pct').textContent = d.llm.llm_analyzed_pct + '% policies analyzed by LLM';
 
   document.getElementById('delta-risk').textContent = d.delta.risk_level_changes;
   document.getElementById('delta-insights').textContent = d.delta.new_llm_insights;
@@ -116,16 +116,16 @@ function renderResult(d) {
     d.examples.forEach(ex => {
       const flags = ex.flags.map(f => '<span class="flag-tag">'+f+'</span>').join(' ');
       let insights = '—';
-      if (ex.v2_insights && ex.v2_insights.length > 0) {
-        insights = ex.v2_insights.map(i =>
+      if (ex.llm_insights && ex.llm_insights.length > 0) {
+        insights = ex.llm_insights.map(i =>
           '<span class="flag-tag" style="background:#e9d8fd;color:#553c9a;">'+i.type+'</span> ' +
           i.finding + ' <span style="font-size:11px;color:#718096;">('+Math.round(i.confidence*100)+'%)</span>'
         ).join('<br>');
       }
       body.innerHTML += '<tr>' +
         '<td style="font-weight:500;"><a href="/ui/review/'+ex.policy_number+'" style="color:#3182ce;">'+ex.policy_number+'</a></td>' +
-        '<td><span class="badge badge-'+ex.v1_risk+'">'+ex.v1_risk+'</span></td>' +
-        '<td><span class="badge badge-'+ex.v2_risk+'">'+ex.v2_risk+'</span></td>' +
+        '<td><span class="badge badge-'+ex.basic_risk+'">'+ex.basic_risk+'</span></td>' +
+        '<td><span class="badge badge-'+ex.llm_risk+'">'+ex.llm_risk+'</span></td>' +
         '<td>'+flags+'</td>' +
         '<td style="font-size:12px;">'+insights+'</td>' +
         '</tr>';

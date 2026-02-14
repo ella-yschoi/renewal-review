@@ -44,6 +44,11 @@ Analytics 모듈은 기존 계층 구조를 따라 3개 레이어로 구성:
 
 ## 5. UI
 
+파이프라인 네이밍: V1/V2 → **Basic Analytics** (규칙 기반) / **LLM Analytics** (규칙+LLM).
+
+- `review.html` — 리뷰 상세에서 파이프라인 라벨 표시 (Basic Analytics / LLM Analytics)
+- `migration.html` — Basic vs LLM 비교 대시보드. element ID: `basic-*`, `llm-*`. JS에서 `d.basic.*`, `d.llm.*` 참조
+
 ## 6. Error Handling
 
 ## 7. Testing Strategy

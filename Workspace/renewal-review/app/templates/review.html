@@ -175,7 +175,7 @@
 {% if result.llm_insights %}
 <div class="card" style="border-left:4px solid #805ad5;">
   <h2 style="color:#805ad5;">LLM Insights ({{ result.llm_insights|length }})</h2>
-  <p style="font-size:11px; color:#805ad5; margin-bottom:10px;">V2 hybrid pipeline — analyzed by LLM for unstructured text signals</p>
+  <p style="font-size:11px; color:#805ad5; margin-bottom:10px;">LLM Analytics — analyzed by LLM for unstructured text signals</p>
   <table>
     <thead>
       <tr><th>Type</th><th>Finding</th><th>Confidence</th><th>Reasoning</th></tr>
@@ -195,7 +195,7 @@
 {% else %}
 <div class="card" style="border-left:4px solid #cbd5e0;">
   <h2 style="color:#718096;">LLM Insights</h2>
-  <p style="font-size:12px; color:#a0aec0;">V1 rule-based only — no unstructured text requiring LLM analysis</p>
+  <p style="font-size:12px; color:#a0aec0;">Basic Analytics (rule-based only) — no unstructured text requiring LLM analysis</p>
 </div>
 {% endif %}
 {% endblock %}
