@@ -86,7 +86,7 @@ async def migration_comparison(sample: int = Query(50, ge=1)) -> dict:
         "status": "running",
         "processed": 0,
         "total": total_steps,
-        "phase": "V1",
+        "phase": "basic",
         "result": None,
         "error": None,
     }
@@ -100,65 +100,67 @@ async def migration_comparison(sample: int = Query(50, ge=1)) -> dict:
 
                 n = len(pairs)
 
-                v1_start = time.perf_counter()
-                v1_results = []
+                basic_start = time.perf_counter()
+                basic_results = []
                 for i, p in enumerate(pairs):
-                    v1_results.append(process_pair(p, llm_client=None))
+                    basic_results.append(process_pair(p, llm_client=None))
                     _migration_jobs[job_id]["processed"] = i + 1
-                v1_time = (time.perf_counter() - v1_start) * 1000
+                basic_time = (time.perf_counter() - basic_start) * 1000
 
-                _migration_jobs[job_id]["phase"] = "V2"
+                _migration_jobs[job_id]["phase"] = "llm"
                 mock_client = MockLLMClient()
-                v2_start = time.perf_counter()
-                v2_results = []
+                llm_start = time.perf_counter()
+                llm_results = []
                 for i, p in enumerate(pairs):
-                    v2_results.append(process_pair(p, llm_client=mock_client))
+                    llm_results.append(process_pair(p, llm_client=mock_client))
                     _migration_jobs[job_id]["processed"] = n + i + 1
-                v2_time = (time.perf_counter() - v2_start) * 1000
+                llm_time = (time.perf_counter() - llm_start) * 1000
 
-                return v1_results, v1_time, v2_results, v2_time
+                return basic_results, basic_time, llm_results, llm_time
 
-            v1_results, v1_time, v2_results, v2_time = await loop.run_in_executor(None, do_work)
+            basic_results, basic_time, llm_results, llm_time = await loop.run_in_executor(
+                None, do_work
+            )
 
             store = get_results_store()
-            for r in v2_results:
+            for r in llm_results:
                 store[r.policy_number] = r
 
             examples = []
             risk_changes = 0
-            llm_analyzed = sum(1 for r in v2_results if r.llm_insights)
-            new_insights = sum(len(r.llm_insights) for r in v2_results)
+            llm_analyzed = sum(1 for r in llm_results if r.llm_insights)
+            new_insights = sum(len(r.llm_insights) for r in llm_results)
 
-            for v1, v2 in zip(v1_results, v2_results, strict=True):
-                if v1.risk_level != v2.risk_level:
+            for basic, llm in zip(basic_results, llm_results, strict=True):
+                if basic.risk_level != llm.risk_level:
                     risk_changes += 1
                     examples.append(
                         {
-                            "policy_number": v1.policy_number,
-                            "v1_risk": v1.risk_level.value,
-                            "v2_risk": v2.risk_level.value,
-                            "v2_insights": [
+                            "policy_number": basic.policy_number,
+                            "basic_risk": basic.risk_level.value,
+                            "llm_risk": llm.risk_level.value,
+                            "llm_insights": [
                                 {
                                     "type": i.analysis_type,
                                     "finding": i.finding,
                                     "confidence": i.confidence,
                                 }
-                                for i in v2.llm_insights
+                                for i in llm.llm_insights
                             ],
-                            "flags": [f.value for f in v2.diff.flags],
+                            "flags": [f.value for f in llm.diff.flags],
                         }
                     )
 
             _migration_jobs[job_id]["status"] = "completed"
             _migration_jobs[job_id]["result"] = {
                 "sample_size": len(pairs),
-                "v1": {
-                    "processing_time_ms": round(v1_time, 1),
-                    "distribution": _risk_dist(v1_results),
+                "basic": {
+                    "processing_time_ms": round(basic_time, 1),
+                    "distribution": _risk_dist(basic_results),
                 },
-                "v2": {
-                    "processing_time_ms": round(v2_time, 1),
-                    "distribution": _risk_dist(v2_results),
+                "llm": {
+                    "processing_time_ms": round(llm_time, 1),
+                    "distribution": _risk_dist(llm_results),
                     "llm_analyzed": llm_analyzed,
                     "llm_analyzed_pct": round(llm_analyzed / len(pairs) * 100, 1),
                     "total_insights": new_insights,
@@ -166,7 +168,7 @@ async def migration_comparison(sample: int = Query(50, ge=1)) -> dict:
                 "delta": {
                     "risk_level_changes": risk_changes,
                     "new_llm_insights": new_insights,
-                    "latency_overhead_ms": round(v2_time - v1_time, 1),
+                    "latency_overhead_ms": round(llm_time - basic_time, 1),
                 },
                 "examples": examples[:10],
             }

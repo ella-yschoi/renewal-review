@@ -160,18 +160,37 @@ cat /tmp/exp_subagent_tests.txt
 cat /tmp/exp_teams_tests.txt
 ```
 
+### 토큰 사용량 (Langfuse)
+
+Langfuse 대시보드에서 세션별 토큰 사용량을 확인한다.
+
+```bash
+# Langfuse API로 세션 데이터 조회
+curl -s -u "$CC_LANGFUSE_PUBLIC_KEY:$CC_LANGFUSE_SECRET_KEY" \
+  "$CC_LANGFUSE_HOST/api/public/sessions" | jq '.data[] | {name, totalTokens: .usage.totalTokens}'
+```
+
+기록할 항목:
+- **Input tokens**: 프롬프트 + 컨텍스트로 전송한 토큰
+- **Output tokens**: 모델이 생성한 토큰
+- **Total tokens**: 합계
+- **비용 추정**: input × $15/1M + output × $75/1M (Opus 기준)
+
 ### 기록 템플릿
 
 | 지표 | SubAgent | Agent Teams | Winner |
 |------|----------|-------------|--------|
-| 소요 시간 (초) | 354 (~5.9분) |  |  |
-| 토큰 사용량 | _(Langfuse 확인 필요)_ |  |  |
-| 커밋 수 | 1 |  |  |
-| 생성/수정 파일 수 | 8 |  |  |
-| 추가된 줄 수 | 334 |  |  |
-| 테스트 수 | 5 (신규) |  |  |
-| 전체 테스트 통과? | 73/73 |  |  |
-| 수정 횟수 | 8 (ruff fix) |  |  |
+| 소요 시간 (초) | 354 (~5.9분) | 318 (~5.3분) | Teams |
+| 토큰 사용량 (input) | _(Langfuse 확인)_ | _(Langfuse 확인)_ | — |
+| 토큰 사용량 (output) | _(Langfuse 확인)_ | _(Langfuse 확인)_ | — |
+| 토큰 사용량 (total) | _(Langfuse 확인)_ | _(Langfuse 확인)_ | — |
+| 비용 추정 ($) | _(Langfuse 확인)_ | _(Langfuse 확인)_ | — |
+| 커밋 수 | 1 | 1 | 동일 |
+| 생성/수정 파일 수 | 8 | 8 | 동일 |
+| 추가된 줄 수 | 334 | 335 | 동일 |
+| 테스트 수 | 5 (신규) | 5 (신규) | 동일 |
+| 전체 테스트 통과? | 73/73 | 73/73 | 동일 |
+| ruff 수정 횟수 | 8 | 0 | Teams |
 | 완성도 (1-5) |  |  |  |
 | 코드 품질 (1-5) |  |  |  |
 
