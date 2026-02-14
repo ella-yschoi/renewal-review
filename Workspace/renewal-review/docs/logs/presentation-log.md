@@ -51,3 +51,15 @@ _8 files changed, 335 insertions(+)_
 > **Context**: 동일 과제를 두 가지 오케스트레이션 모델로 수행한 결과 비교. SubAgent는 Task tool 기반 fire-and-forget, Teams는 TeamCreate/TaskCreate 기반 구조적 협업.
 > **Result**: 시간(354 vs 318초), 코드량(334 vs 335줄), 테스트(73/73) 모두 거의 동일. 차이는 병렬화 전략과 오케스트레이션 오버헤드.
 > **Insight**: 두 방식 모두 6분 안에 production-ready 모듈을 생성했다. **차이는 "만드는 속도"가 아니라 "조율하는 방식"에 있다.** 소규모는 SubAgent(오버헤드 적음, 병렬화 자유), 대규모는 Teams(태스크 추적, 의존성 관리, 확장성)가 유리.
+
+---
+
+### 2026-02-14 14:32 | `experiment/manual-baseline` | (manual control)
+
+**feat: implement Smart Quote Generator — manual baseline for loop comparison**
+
+_5 files created, 2 files modified, ~318 lines added, 8 new tests_
+
+> **Context**: 자동 루프(641초)와 비교하기 위한 대조군. 동일한 Smart Quote Generator 과제를 Claude Code 세션에서 수동 오케스트레이션으로 구현. 코드 작성 → ruff/pytest/semgrep 수동 실행 → Agent B/C subagent로 삼각 검증 수동 실행.
+> **Result**: 549초(~9분)에 완료. Agent B가 첫 시도에서 잘못된 모듈(Analytics)을 리뷰하여 삼각 검증 1회 실패 → 프롬프트 수정 후 재실행하여 PASS. 사람 개입 1회 발생.
+> **Insight**: 자동 루프는 92초 더 걸렸지만 사람 개입 0. 수동 방식은 더 빨랐지만 Agent B 프롬프트 실수를 사람이 감지하고 수정해야 했다. **자동화의 가치는 속도가 아니라 "잠들어도 돌아가는" 신뢰성에 있다.**

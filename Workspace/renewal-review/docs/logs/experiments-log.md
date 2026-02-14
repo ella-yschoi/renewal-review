@@ -288,3 +288,43 @@ SubAgent 방식(실험 A)과 Agent Teams 방식의 생산성 비교 실험(실�
 현재 실험의 가치는 "동일 과제, 동일 결과, 다른 조율 방식" — 차이가 없다는 것 자체가 인사이트다. 한계를 솔직하게 명시하고 "대규모에서는 이런 차이가 예상된다"는 가설을 제시하는 것이 정직하고 과학적인 접근. 추가 실험을 한다면 **한계 1번(과제 크기 확대)**이 ROI가 가장 높다.
 
 ---
+
+## 2026-02-14 14:32 | `experiment/manual-baseline`
+
+### 무엇을 했는가
+
+실험 3 대조군 — Smart Quote Generator를 수동 방식(Claude Code 세션 내 수동 오케스트레이션)으로 구현. 자동 루프(641초)와 동일한 과제를 수동으로 실행하여 비교.
+
+1. **wt-feat-1에 브랜치 세팅**: `experiment/manual-baseline` from main. 실험 문서 복사, `uv sync --extra dev`, 데이터 생성.
+2. **수동 구현**: requirements를 읽고 직접 코드 작성 — `app/models/quote.py`(17줄), `app/engine/quote_generator.py`(141줄), `app/routes/quotes.py`(18줄), `app/main.py` 수정, `tests/test_quote_generator.py`(142줄).
+3. **품질 게이트**: ruff PASS, 82/82 pytest PASS, semgrep PASS.
+4. **삼각 검증 (1차 시도)**: Agent B가 잘못된 모듈(Analytics)을 리뷰 → Agent C가 FAIL 판정.
+5. **삼각 검증 (2차 시도)**: Agent B 프롬프트를 수정하여 재실행 → 올바른 blind review → Agent C TRIANGULAR_PASS.
+
+총 소요: **549초 (~9분 9초)**.
+
+#### 자동 루프 vs 수동 비교
+
+| 지표 | 자동 루프 | 수동 (본 실험) | Delta |
+|------|-----------|-------------|-------|
+| 소요 시간 | 641초 | 549초 | 수동 -92초 |
+| 반복 횟수 | 1 | 1 (+삼각 재실행) | 동일 |
+| Phase 2 실패 | 0 | 0 | 동일 |
+| Phase 3 실패 | 0 | 1 (Agent B 오류) | 자동 +1 |
+| 사람 개입 | 0 | 1 | 자동 우위 |
+| 테스트 | 81/81 | 82/82 | - |
+| 삼각 검증 | PASS | PASS (2차) | 동일 |
+
+### 왜 했는가
+
+자동 루프의 가치를 정량적으로 비교하기 위한 대조군. "자동화했을 때 얼마나 빠르고 신뢰할 수 있는가"를 보여주려면 동일 과제의 수동 실행 데이터가 필요.
+
+### 어떻게 했는가
+
+- Claude Code 세션 내에서 직접 코드 작성 (파일 5개 + main.py 수정)
+- ruff/pytest/semgrep 수동 실행 후 결과 확인
+- Agent B/C를 Task tool subagent로 실행 (자동 루프에서는 `claude --print -p`)
+- Agent B 첫 실행에서 잘못된 모듈 리뷰 → 프롬프트에 파일 목록을 더 명시적으로 지정하여 재실행
+- 이 "Agent B 프롬프트 실수 → 수동 감지 → 재실행"이 수동 방식의 오버헤드이자 자동 루프 대비 약점
+
+---
