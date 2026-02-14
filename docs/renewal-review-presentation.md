@@ -215,6 +215,64 @@ renewal-review/
 
 ---
 
+## 6. Experiment — SubAgent vs Agent Teams
+
+동일한 구현 과제("Analytics 모듈 추가")를 두 가지 오케스트레이션 방식으로 수행하여 정량 비교.
+
+### 과제
+
+배치 실행 이력 저장 + 트렌드 분석. 모델 3종, 서비스 1개, API 2개, 배치 수정, 테스트 5개 — 총 ~300줄.
+
+### 실험 A: SubAgent 방식
+
+오케스트레이터가 Task tool로 subagent를 디스패치. 결과를 받아서 통합.
+
+```
+오케스트레이터
+  ├─ [1] 리서치 subagent (Explore) → 기존 코드 패턴 분석
+  ├─ [2] 모델+서비스 subagent ─┐
+  │                             ├─ 병렬 실행
+  ├─ [3] 라우트+main subagent ──┘
+  └─ [4] 테스트 subagent → 2,3 완료 후 실행
+```
+
+**핵심**: 오케스트레이터가 인터페이스 스펙(필드명, import 경로, 함수 시그니처)을 프롬프트에 명시 → 의존성 있는 작업도 병렬 가능.
+
+### 실험 B: Agent Teams 방식
+
+TeamCreate로 팀 생성. TaskCreate/TaskUpdate로 태스크 관리. 팀원끼리 SendMessage로 협조.
+
+```
+팀 리더 (오케스트레이터)
+  ├─ TaskCreate: #1 모델+서비스, #2 라우트+배치, #3 테스트
+  ├─ 의존성: #1 → #2 → #3
+  │
+  ├─ [spawn] modeler → task #1 완료 → shutdown
+  ├─ [spawn] router  → task #2 완료 → shutdown
+  └─ [spawn] tester  → task #3 완료 → shutdown
+```
+
+**핵심**: 태스크 의존성이 명시적(blockedBy). 각 팀원이 독립 agent로 convention을 직접 읽고 작업.
+
+### 비교 결과
+
+| 지표 | SubAgent | Agent Teams |
+|------|----------|-------------|
+| 소요 시간 | 354초 (~6분) | 318초 (~5분) |
+| 생성 코드 | 334줄, 8파일 | 335줄, 8파일 |
+| 테스트 | 73개 전체 통과 | 73개 전체 통과 |
+| 린트 수정 | 1회 (ruff format) | 0회 |
+| 병렬화 | 모델+라우트 동시 | 순차 (의존성) |
+
+### 인사이트
+
+> **소규모 과제(~300줄)에서는 SubAgent가 실용적** — 병렬화 자유롭고 오버헤드 적음.
+> **Agent Teams는 대규모 프로젝트에서 진가 발휘** — 태스크 추적, 의존성 관리, 팀원 확장이 체계적.
+>
+> 두 방식 모두 6분 안에 production-ready 모듈(모델+서비스+API+테스트)을 생성. 차이는 "만드는 속도"가 아니라 "조율하는 방식"에 있다.
+
+---
+
 ## Demo Flow
 
 1. **Dashboard** → Run Sample (100) → 통계/분포 확인
@@ -223,3 +281,5 @@ renewal-review/
 4. **Migration** → Compare (50) → V1 vs V2 delta 확인
 5. Risk 변경된 정책 클릭 → "규칙만으로는 medium이었는데, LLM이 notes에서 위험 신호를 찾아서 high로 올렸다"
 6. Langfuse 대시보드 → LLM trace 확인
+7. **Analytics** → 배치 여러 번 실행 후 /ui/analytics → 이력 테이블 + 리스크 분포 차트 + 일별 트렌드
+8. **실험 비교** → SubAgent vs Teams git diff --stat 나란히 비교 → "동일 결과, 다른 조율 방식"

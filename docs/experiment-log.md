@@ -39,6 +39,43 @@
 
 ---
 
+## 2026-02-13 23:50 | `experiment/subagent-analytics`
+
+### 무엇을 했는가
+
+실험 A — SubAgent 방식으로 Analytics 모듈을 구현했다. 기존 renewal-review 파이프라인에 배치 실행 이력 저장과 트렌드 분석 기능을 추가.
+
+생성/수정한 구성요소:
+- Pydantic 모델 3종 (BatchRunRecord, TrendPoint, AnalyticsSummary)
+- 비즈니스 로직 (compute_trends — 일별 그룹핑, 리스크 분포 집계)
+- API 라우트 2개 (GET /analytics/history, /analytics/trends)
+- 배치 라우트 수정 (실행 완료 시 history 자동 저장)
+- 테스트 5개 (0건/1건/3건+ 케이스 + 라우트 2개)
+
+결과: 기존 68개 + 신규 5개 = 73개 테스트 전체 통과.
+
+### 왜 했는가
+
+SubAgent 방식과 Agent Teams 방식의 생산성 비교 실험(실험 A). 동일한 구현 과제를 두 가지 접근법으로 수행하여 시간, 토큰, 품질을 정량 비교하기 위한 첫 번째 실험.
+
+### 어떻게 했는가
+
+**SubAgent 4단계 파이프라인:**
+
+1. **리서치 subagent** (Explore 타입) — 기존 코드 패턴 조사. models/routes/engine/tests의 import 패턴, 네이밍 컨벤션, DB 모델 구조, main.py 라우터 등록 방식을 분석하여 구조화된 요약 반환.
+
+2. **모델+서비스 subagent** (general-purpose 타입) — `app/models/analytics.py`와 `app/engine/analytics.py` 작성. 리서치 결과를 기반으로 기존 패턴을 정확히 따르는 코드 생성.
+
+3. **라우트+main subagent** (general-purpose 타입) — `app/routes/analytics.py` 생성, `app/routes/batch.py` 수정(history 저장), `app/main.py` 수정(라우터 등록). 2번과 병렬 실행.
+
+4. **테스트 subagent** (general-purpose 타입) — `tests/test_analytics.py` 작성. 2, 3번 완료 후 실행.
+
+**병렬화 포인트:** 2번(모델+서비스)과 3번(라우트+main)은 서로 다른 파일을 다루므로 동시에 디스패치. 오케스트레이터가 각 subagent에게 충분한 인터페이스 정보(모델 필드명, import 경로, 함수 시그니처)를 프롬프트에 명시하여 의존성 없이 독립 작업 가능하게 함.
+
+**수정 과정:** ruff check에서 import 정렬(I001), datetime.UTC alias(UP017), 라인 길이(E501) 이슈 발견 → `ruff --fix`로 자동 수정 5건, 수동 수정 3건.
+
+---
+
 ## 2026-02-14 00:10 | `experiment/teams-analytics`
 
 ### 무엇을 했는가
@@ -76,5 +113,44 @@ SubAgent 방식(실험 A)과 Agent Teams 방식의 생산성 비교 실험(실�
 - 의존성 때문에 순차 실행이 강제됨 (modeler → router → tester)
 - SubAgent 방식에서는 modeler와 router를 병렬 디스패치할 수 있었으나, Teams에서는 blockedBy로 순차 처리
 - 팀 리더가 각 팀원의 완료를 확인하고 다음 팀원을 스폰하는 오케스트레이션 오버헤드 발생
+
+---
+
+## 2026-02-14 00:20 | 실험 A vs B 비교 분석
+
+### 정량 비교
+
+| 지표 | SubAgent (A) | Agent Teams (B) | Winner |
+|------|-------------|-----------------|--------|
+| 소요 시간 | 354초 (~5m54s) | 318초 (~5m18s) | Teams |
+| 커밋 수 | 1 | 1 | 동일 |
+| 생성/수정 파일 | 8 | 8 | 동일 |
+| 추가된 줄 | 334 | 335 | 동일 |
+| 테스트 수 | 5 (73 total) | 5 (73 total) | 동일 |
+| 전체 테스트 통과 | Yes | Yes | 동일 |
+| 린트 수정 횟수 | 1 (ruff format) | 0 | Teams |
+| pre-commit 통과 | Yes | Yes | 동일 |
+
+### 정성 분석
+
+**SubAgent 방식의 강점:**
+- **병렬화 유연성** — 오케스트레이터가 인터페이스 스펙을 프롬프트에 직접 명시하면, 의존 관계가 있는 작업도 병렬로 디스패치 가능. 모델+서비스와 라우트+main을 동시에 진행.
+- **낮은 오버헤드** — Task tool 한 번 호출로 subagent가 작업하고 결과를 바로 반환. 팀 생성, 태스크 등록, 메시지 전송 같은 조정 과정이 없음.
+- **오케스트레이터의 통제력** — 모든 코드의 정확한 내용을 오케스트레이터가 지시. 결과를 즉시 검증하고 수정 가능.
+
+**Agent Teams 방식의 강점:**
+- **구조적 태스크 관리** — TaskCreate/TaskUpdate/blockedBy로 의존성이 명시적. 작업 상태 추적이 체계적.
+- **독립적 팀원** — 각 팀원이 convention.md를 직접 읽고 기존 패턴을 따름. 오케스트레이터가 모든 코드를 프롬프트에 넣지 않아도 됨.
+- **확장 가능성** — 팀원 수를 늘리거나 역할을 세분화하기 쉬움. 복잡한 프로젝트에서 유리.
+
+**이 실험에서의 한계:**
+- 과제 크기가 ~300줄로 작아서 두 방식 간 극적 차이가 나지 않음
+- Teams의 의존성 설정(blockedBy)이 순차 실행을 강제해 병렬화 이점을 활용 못함
+- SubAgent의 린트 수정 1회는 프롬프트에서 ruff format 규칙을 더 명시했으면 방지 가능했음
+- 동일 세션에서 두 실험을 진행했기 때문에, Teams 실험 시 이미 코드 구조/패턴 지식이 컨텍스트에 남아 있는 캐리오버 효과가 있을 수 있음
+
+### 결론
+
+소규모 과제(~300줄)에서는 **SubAgent가 더 실용적**. 병렬화가 자유롭고 오버헤드가 적다. Agent Teams는 여러 사람이 참여하거나 태스크 간 복잡한 의존성이 있는 대규모 프로젝트에서 진가를 발휘할 것으로 예상.
 
 ---
