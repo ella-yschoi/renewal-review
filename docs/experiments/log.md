@@ -38,3 +38,63 @@
 - **테스트 검증**: `RR_DB_URL=""` 환경변수로 DB 경로를 비활성화한 상태에서 기존 68개 테스트 전부 통과 확인. ruff check도 통과.
 
 ---
+
+## 2026-02-14 00:00 | `experiment/subagent-analytics`
+
+### 무엇을 했는가
+
+**실험 A 완료 — SubAgent 방식으로 Analytics 모듈 구현.**
+
+`wt-feat-1` 워크트리에서 동일 과제(Batch Monitoring 모듈 추가)를 SubAgent 방식으로 실행했다. 4개의 subagent를 파이프라인으로 조합해서 모델/서비스/라우트/테스트를 생성.
+
+#### 정량 결과
+
+| 지표 | SubAgent | Agent Teams | Winner |
+|------|----------|-------------|--------|
+| 소요 시간 | **354초 (~5.9분)** | _(미실행)_ | — |
+| 커밋 수 | 1 | — | — |
+| 생성/수정 파일 | 8 (코드 6 + 문서 2) | — | — |
+| 추가된 줄 | 334 | — | — |
+| 신규 테스트 | 5개 | — | — |
+| 전체 테스트 통과 | 73/73 (기존 68 + 신규 5) | — | — |
+| ruff check | 통과 (수정 후) | — | — |
+
+#### 생성된 파일
+
+| 파일 | 줄 수 | 역할 |
+|------|-------|------|
+| `app/models/analytics.py` | 29 | Pydantic 모델 3종 (BatchRunRecord, TrendPoint, AnalyticsSummary) |
+| `app/engine/analytics.py` | 54 | compute_trends 서비스 — 일별 그룹핑, 리스크 분포 집계 |
+| `app/routes/analytics.py` | 22 | GET /analytics/history, /analytics/trends |
+| `app/routes/batch.py` | +18 | 배치 실행 완료 시 history 자동 저장 |
+| `app/main.py` | +2 | analytics 라우터 등록 |
+| `tests/test_analytics.py` | 116 | 5개 테스트 (empty/single/multi + 라우트 2개) |
+| `docs/design-doc.md` | +56 | Architecture, Data Model 등 6개 섹션 업데이트 |
+| `docs/experiment-log.md` | +37 | 실험 로그 엔트리 |
+
+### 왜 했는가
+
+SubAgent vs Agent Teams 비교 실험의 첫 번째 그룹. 동일 과제를 두 방식으로 수행하여 시간·토큰·품질을 정량 비교하기 위함. 프레젠테이션에서 "어떤 Agent 패턴이 언제 적합한가"를 데이터로 보여주기 위한 근거.
+
+### 어떻게 했는가
+
+**SubAgent 4단계 파이프라인:**
+
+1. **리서치 subagent** (Explore) — 기존 코드 패턴 조사. models/routes/engine/tests의 import 패턴, 네이밍 컨벤션, DB 모델 구조, main.py 라우터 등록 방식 분석. 구조화된 요약 반환.
+
+2. **모델+서비스 subagent** (general-purpose) — `app/models/analytics.py`와 `app/engine/analytics.py` 작성. 리서치 결과 기반으로 기존 패턴을 정확히 따르는 코드 생성.
+
+3. **라우트+main subagent** (general-purpose) — `app/routes/analytics.py` 생성, `app/routes/batch.py` 수정, `app/main.py` 수정. **2번과 병렬 실행** — 서로 다른 파일을 다루므로 동시 디스패치 가능.
+
+4. **테스트 subagent** (general-purpose) — `tests/test_analytics.py` 작성. 2, 3번 완료 후 순차 실행 (생성된 코드를 참조해야 하므로).
+
+**병렬화 전략:** 오케스트레이터가 각 subagent에게 모델 필드명, import 경로, 함수 시그니처를 프롬프트에 명시 → 의존성 없이 독립 작업 가능하게 함. 2번과 3번이 동시에 실행되어 전체 시간 단축.
+
+**린트 수정:** ruff check에서 import 정렬(I001), datetime.UTC alias(UP017), 라인 길이(E501) 발견 → `ruff --fix` 자동 수정 5건, 수동 수정 3건.
+
+**코드 품질 관찰:**
+- 기존 패턴(Pydantic 모델 분리, TestClient 사용, conftest fixture 스타일)을 정확히 따름
+- compute_trends의 edge case(빈 리스트, 단건, 다건) 커버
+- 불필요한 over-engineering 없이 요구사항만 구현
+
+---

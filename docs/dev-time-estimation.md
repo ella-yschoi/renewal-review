@@ -25,7 +25,7 @@
 | 1D. Batch + API | 배치 처리, FastAPI 라우트 | 30분 | 4시간 | async 처리, 에러 핸들링 |
 | 2A. LLM Client + Prompts | 3종 프롬프트, Langfuse | 30분 | 5시간 | 프롬프트 엔지니어링 반복 |
 | 2B. Analyzer + Aggregator | LLM 투입 판단, 결과 종합 | 30분 | 5시간 | 오케스트레이션 로직 |
-| 2C. Eval + Migration | 골든셋, V1/V2 비교 | 20분 | 3시간 | eval 파이프라인 |
+| 2C. Eval + Migration | 골든셋, Basic/LLM 비교 | 20분 | 3시간 | eval 파이프라인 |
 | Frontend | Jinja2 UI 3페이지 | 45분 | 6시간 | HTML/CSS, 인터랙션 |
 | Testing | 68개 테스트 | 포함 | 포함 | 각 Phase에 포함 |
 
