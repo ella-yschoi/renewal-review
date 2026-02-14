@@ -114,3 +114,12 @@ def test_analytics_trends_route(_clear_history: None):
     data = response.json()
     assert data["total_runs"] == 1
     assert data["total_policies_reviewed"] == 10
+
+
+def test_history_fifo_limit(_clear_history: None):
+    store = get_history_store()
+    for i in range(105):
+        store.append(_make_record(job_id=f"job-{i}"))
+    assert len(store) == 100
+    assert store[0].job_id == "job-5"
+    assert store[-1].job_id == "job-104"
