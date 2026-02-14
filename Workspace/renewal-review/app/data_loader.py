@@ -47,8 +47,7 @@ def _load_from_db() -> list[RenewalPair]:
     try:
         rows = asyncio.run(_fetch())
     except RuntimeError:
-        loop = asyncio.get_event_loop()
-        rows = loop.run_until_complete(_fetch())
+        return _load_from_json()
 
     pairs = []
     for row in rows:

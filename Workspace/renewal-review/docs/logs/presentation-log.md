@@ -8,6 +8,18 @@
 
 ---
 
+### 2026-02-14 00:47 | `main` | 삼각 검증 실험
+
+**실험 C: 삼각 검증(Triangular Verification)으로 코드 품질 검증**
+
+_3 files generated: blind-review.md, discrepancy-report.md, experiment log_
+
+> **Context**: 실험 A/B는 "얼마나 빠르게 만드는가"를 비교했다. 실험 C는 "만든 코드가 요구사항대로인가"를 검증한다. 3개 에이전트를 컨텍스트 격리하여 코드→설명→요구사항 역추적 방식으로 "의도 불일치"를 자동 탐지.
+> **Result**: ruff+pytest+semgrep이 0개 잡은 상태에서, 삼각 검증은 Intent Mismatch 2건(FIFO 100건 미구현, 타임존 불일치), Missing Feature 2건, Extra Feature 3건을 추가 발견. Precision 78%. 소요 시간 ~19분.
+> **Insight**: 기존 도구는 "코드가 깨졌는가"만 체크한다. 삼각 검증은 "코드가 의도대로인가"를 체크한다. FIFO 100건 제한이 빠진 건 테스트에도, 린터에도, 보안 스캐너에도 안 잡히지만 — 요구사항 문서와 코드 설명을 삼각 비교하면 바로 드러난다.
+
+---
+
 ### 2026-02-14 00:00 | `experiment/subagent-analytics` | `17b2756`
 
 **feat: add analytics module via subagent experiment**

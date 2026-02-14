@@ -15,7 +15,9 @@ Analytics 모듈은 기존 계층 구조를 따라 3개 레이어로 구성:
 - `app/engine/analytics.py` — 비즈니스 로직 (compute_trends)
 - `app/routes/analytics.py` — API 엔드포인트 (/analytics/history, /analytics/trends)
 
-배치 실행 후 `app/routes/batch.py`의 `_process()` 내부에서 BatchRunRecord를 생성하여 analytics history store에 추가.
+히스토리 저장소는 `deque(maxlen=100)`으로 FIFO 100건 제한 적용. 배치 실행 후 `app/routes/batch.py`의 `_process()` 내부에서 BatchRunRecord를 생성하여 analytics history store에 추가. 100건 초과 시 가장 오래된 레코드가 자동 제거됨.
+
+`app/data_loader.py`는 DB 로드 실패(비동기 컨텍스트 충돌) 시 JSON 파일로 폴백.
 
 ## 2. Data Model
 
@@ -53,8 +55,9 @@ Analytics 모듈은 기존 계층 구조를 따라 3개 레이어로 구성:
 
 ## 7. Testing Strategy
 
-`tests/test_analytics.py` — 5개 테스트:
+`tests/test_analytics.py` — 6개 테스트:
 - compute_trends: empty(0건), single(1건), multiple(3건+) 케이스
 - 라우트: /analytics/history 빈 응답, /analytics/trends 데이터 응답
+- FIFO: 105건 추가 후 100건 유지 + 가장 오래된 5건 제거 확인
 
 ## 8. Tech Stack
