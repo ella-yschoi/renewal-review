@@ -51,15 +51,28 @@ def dashboard(request: Request, page: int = Query(1, ge=1)):
     )
 
 
+_BACK_LINKS = {
+    "quotes": ("/ui/quotes", "Back to Quote Generator"),
+}
+_DEFAULT_BACK = ("/", "Back to Dashboard")
+
+
 @router.get("/ui/review/{policy_number}")
-def review_detail(request: Request, policy_number: str):
+def review_detail(request: Request, policy_number: str, ref: str = Query("")):
     store = get_results_store()
     result = store.get(policy_number)
     if result is None:
         raise HTTPException(status_code=404, detail=f"No review found for {policy_number}")
+    back_url, back_label = _BACK_LINKS.get(ref, _DEFAULT_BACK)
     return templates.TemplateResponse(
         "review.html",
-        {"request": request, "active": "dashboard", "result": result},
+        {
+            "request": request,
+            "active": ref or "dashboard",
+            "result": result,
+            "back_url": back_url,
+            "back_label": back_label,
+        },
     )
 
 
