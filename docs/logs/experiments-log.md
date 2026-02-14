@@ -288,3 +288,28 @@ SubAgent 방식(실험 A)과 Agent Teams 방식의 생산성 비교 실험(실�
 현재 실험의 가치는 "동일 과제, 동일 결과, 다른 조율 방식" — 차이가 없다는 것 자체가 인사이트다. 한계를 솔직하게 명시하고 "대규모에서는 이런 차이가 예상된다"는 가설을 제시하는 것이 정직하고 과학적인 접근. 추가 실험을 한다면 **한계 1번(과제 크기 확대)**이 ROI가 가장 높다.
 
 ---
+
+## 2026-02-14 14:30 | `experiment/self-correcting-loop`
+
+### 무엇을 했는가
+
+실험 3 (Self-Correcting Agent Loop) 준비 — 브랜치 세팅, 실험 문서 복사, 자동화 스크립트 2개 작성.
+
+1. **브랜치 생성**: `wt-experiment` 워크트리에서 `experiment/self-correcting-loop` 브랜치를 main 기반으로 생성. 기존 `experiment/wt-exp`(초기 커밋)에서 전환하여 renewal-review 전체 파일 확보.
+2. **실험 문서 복사**: 계획서(`3-self-correcting-agent-loop.md`), 요구사항(`3-requirements-quote-generator.md`), PROMPT(`3-PROMPT-quote-generator.md`) 3개를 워크트리에 복사.
+3. **`scripts/triangular-verify.sh` 작성** (50줄): Agent B(blind review) → Agent C(discrepancy report) → PASS/FAIL 판정. `unset CLAUDECODE`로 nested claude 호출 가능하게 처리.
+4. **`scripts/self-correcting-loop.sh` 작성** (110줄): Ralph-style while 루프. Phase 1(구현) → Phase 2(ruff+pytest+semgrep) → Phase 3(삼각 검증) → Phase 4(완료). 실패 시 피드백을 다음 반복에 전달. `max_iterations` 안전장치, 타이밍 로그 기록.
+5. **검증**: `bash -n` 구문 검사 통과, `chmod +x` 실행 권한 부여.
+
+### 왜 했는가
+
+실험 1(agent 병렬 협업)과 실험 2(삼각 검증)를 하나의 자동화 파이프라인으로 통합하는 실험의 사전 준비. "기능을 PROMPT.md에 정의하면, 코드 작성 → 품질 검증 → 의도 검증 → 자가 수정까지 사람 개입 없이 돌아가는 파이프라인"을 만드는 것이 목표. 실험 과제는 Smart Quote Generator(보험 대안 견적 생성) — analytics 모듈과 다른 비즈니스 로직으로 삼각 검증의 의미를 유지.
+
+### 어떻게 했는가
+
+- **브랜치 전략**: `git checkout -b experiment/self-correcting-loop main`으로 main 기반 브랜치 생성. 워크트리가 초기 커밋에 있었으므로 main에서 분기해야 모든 프로젝트 파일이 존재.
+- **스크립트 설계**: 계획서의 의사코드를 실제 셸 스크립트로 구현. `set -euo pipefail`로 안전성 확보. Phase 2의 품질 게이트는 ruff → pytest → semgrep 순서로 비용이 낮은 것부터 실행 (fast-fail). Phase 간 피드백 전달은 `/tmp/self-correcting-loop-feedback.txt` 파일 경유.
+- **Claude CLI 호환**: `unset CLAUDECODE`를 스크립트 시작에 배치하여, 사용자가 터미널에서 실행할 때 nested claude 호출이 가능하도록 처리. `claude --print -p "..."` 형식으로 비대화형 실행.
+- **로깅**: `log()` 함수로 stdout + 파일(`docs/logs/loop-execution.log`)에 동시 기록. 각 iteration의 소요 시간 측정.
+
+---

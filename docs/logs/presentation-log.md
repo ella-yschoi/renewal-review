@@ -51,3 +51,15 @@ _8 files changed, 335 insertions(+)_
 > **Context**: 동일 과제를 두 가지 오케스트레이션 모델로 수행한 결과 비교. SubAgent는 Task tool 기반 fire-and-forget, Teams는 TeamCreate/TaskCreate 기반 구조적 협업.
 > **Result**: 시간(354 vs 318초), 코드량(334 vs 335줄), 테스트(73/73) 모두 거의 동일. 차이는 병렬화 전략과 오케스트레이션 오버헤드.
 > **Insight**: 두 방식 모두 6분 안에 production-ready 모듈을 생성했다. **차이는 "만드는 속도"가 아니라 "조율하는 방식"에 있다.** 소규모는 SubAgent(오버헤드 적음, 병렬화 자유), 대규모는 Teams(태스크 추적, 의존성 관리, 확장성)가 유리.
+
+---
+
+### 2026-02-14 14:30 | `experiment/self-correcting-loop` | (initial setup)
+
+**chore: add self-correcting loop scripts and experiment docs**
+
+_5 files added: 3 experiment docs + 2 shell scripts_
+
+> **Context**: 실험 1(병렬 협업)과 실험 2(삼각 검증)를 하나의 자동화 파이프라인으로 통합하는 실험 3의 준비 단계. Ralph Wiggum 반복 루프 패턴에 삼각 검증을 내장하여, PROMPT.md 하나로 기능 정의 → 구현 → 품질 검증 → 의도 검증 → 자가 수정까지 사람 개입 없이 완료하는 파이프라인을 설계.
+> **Result**: `triangular-verify.sh`(Agent B+C 순차 실행, PASS/FAIL 판정)과 `self-correcting-loop.sh`(4-phase while 루프, max-iterations 안전장치, 피드백 전달) 작성 완료. 실험 과제는 Smart Quote Generator — 보험 대안 견적 자동 생성.
+> **Insight**: 실험 2에서 삼각 검증이 "이슈를 발견"했다면, 실험 3은 "발견 즉시 자동 수정"까지 닫는다. 핵심은 실패 메시지를 다음 반복의 입력으로 전달하는 피드백 루프 — 완벽한 첫 시도 대신 반복을 통한 수렴.
