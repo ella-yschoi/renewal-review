@@ -1,12 +1,12 @@
 from pathlib import Path
 
-from fastapi import APIRouter, HTTPException, Query, Request
+from fastapi import APIRouter, Depends, HTTPException, Query, Request
 from fastapi.templating import Jinja2Templates
 
-from app.engine.analytics import compute_trends
-from app.models.review import ReviewResult, RiskLevel
-from app.routes.analytics import get_history_store
-from app.routes.reviews import get_results_store
+from app.adaptor.storage.memory import InMemoryHistoryStore, InMemoryReviewStore
+from app.domain.models.review import BatchSummary, ReviewResult, RiskLevel
+from app.domain.services.analytics import compute_trends
+from app.infra.deps import get_history_store, get_last_summary, get_review_store
 
 router = APIRouter(tags=["ui"])
 
@@ -24,8 +24,12 @@ PAGE_SIZE = 50
 
 
 @router.get("/")
-def dashboard(request: Request, page: int = Query(1, ge=1)):
-    store = get_results_store()
+def dashboard(
+    request: Request,
+    page: int = Query(1, ge=1),
+    store: InMemoryReviewStore = Depends(get_review_store),
+    last_summary: BatchSummary | None = Depends(get_last_summary),
+):
     all_results = sorted(store.values(), key=lambda r: _RISK_SEVERITY[r.risk_level], reverse=True)
 
     total = len(all_results)
@@ -34,15 +38,12 @@ def dashboard(request: Request, page: int = Query(1, ge=1)):
     start = (page - 1) * PAGE_SIZE
     results = all_results[start : start + PAGE_SIZE]
 
-    # get last batch summary from batch route
-    from app.routes.batch import _last_summary
-
     return templates.TemplateResponse(
         "dashboard.html",
         {
             "request": request,
             "active": "dashboard",
-            "summary": _last_summary,
+            "summary": last_summary,
             "results": results,
             "page": page,
             "total_pages": total_pages,
@@ -59,8 +60,12 @@ _DEFAULT_BACK = ("/", "Back to Dashboard")
 
 
 @router.get("/ui/review/{policy_number}")
-def review_detail(request: Request, policy_number: str, ref: str = Query("")):
-    store = get_results_store()
+def review_detail(
+    request: Request,
+    policy_number: str,
+    ref: str = Query(""),
+    store: InMemoryReviewStore = Depends(get_review_store),
+):
     result = store.get(policy_number)
     if result is None:
         raise HTTPException(status_code=404, detail=f"No review found for {policy_number}")
@@ -78,18 +83,24 @@ def review_detail(request: Request, policy_number: str, ref: str = Query("")):
 
 
 @router.get("/ui/analytics")
-def analytics_page(request: Request):
-    history = get_history_store()
-    summary = compute_trends(history)
+def analytics_page(
+    request: Request,
+    history: InMemoryHistoryStore = Depends(get_history_store),
+):
+    records = history.list()
+    summary = compute_trends(records)
     return templates.TemplateResponse(
         "analytics.html",
-        {"request": request, "active": "analytics", "history": history, "summary": summary},
+        {"request": request, "active": "analytics", "history": records, "summary": summary},
     )
 
 
 @router.get("/ui/quotes")
-def quotes_page(request: Request, page: int = Query(1, ge=1)):
-    store = get_results_store()
+def quotes_page(
+    request: Request,
+    page: int = Query(1, ge=1),
+    store: InMemoryReviewStore = Depends(get_review_store),
+):
     flagged: list[ReviewResult] = [
         r for r in store.values() if r.diff.flags and r.pair is not None
     ]
@@ -115,8 +126,11 @@ def quotes_page(request: Request, page: int = Query(1, ge=1)):
 
 
 @router.get("/ui/portfolio")
-def portfolio_page(request: Request, page: int = Query(1, ge=1)):
-    store = get_results_store()
+def portfolio_page(
+    request: Request,
+    page: int = Query(1, ge=1),
+    store: InMemoryReviewStore = Depends(get_review_store),
+):
     all_results = sorted(store.values(), key=lambda r: _RISK_SEVERITY[r.risk_level], reverse=True)
     total = len(all_results)
     total_pages = max(1, (total + PAGE_SIZE - 1) // PAGE_SIZE)

@@ -1,6 +1,6 @@
-from app.models.diff import DiffFlag, DiffResult, FieldChange
-from app.models.policy import PolicyType, RenewalPair
-from app.models.review import BatchSummary, RiskLevel
+from app.domain.models.diff import DiffFlag, DiffResult, FieldChange
+from app.domain.models.policy import PolicyType, RenewalPair
+from app.domain.models.review import BatchSummary, RiskLevel
 
 
 def test_auto_pair_structure(auto_pair: RenewalPair):

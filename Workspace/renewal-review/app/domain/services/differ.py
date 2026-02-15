@@ -1,5 +1,5 @@
-from app.models.diff import DiffResult, FieldChange
-from app.models.policy import (
+from app.domain.models.diff import DiffResult, FieldChange
+from app.domain.models.policy import (
     AutoCoverages,
     HomeCoverages,
     PolicySnapshot,

@@ -1,11 +1,13 @@
 from pydantic import BaseModel
 
+from app.domain.models.enums import QuoteStrategy
+
 
 class CoverageAdjustment(BaseModel):
     field: str
     original_value: str
     proposed_value: str
-    strategy: str
+    strategy: QuoteStrategy
 
 
 class QuoteRecommendation(BaseModel):

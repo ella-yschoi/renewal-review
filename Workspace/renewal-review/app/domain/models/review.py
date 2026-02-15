@@ -2,8 +2,9 @@ from enum import StrEnum
 
 from pydantic import BaseModel
 
-from app.models.diff import DiffResult
-from app.models.policy import RenewalPair
+from app.domain.models.diff import DiffResult
+from app.domain.models.enums import AnalysisType
+from app.domain.models.policy import RenewalPair
 
 
 class RiskLevel(StrEnum):
@@ -14,7 +15,7 @@ class RiskLevel(StrEnum):
 
 
 class LLMInsight(BaseModel):
-    analysis_type: str
+    analysis_type: AnalysisType | str
     finding: str
     confidence: float
     reasoning: str = ""

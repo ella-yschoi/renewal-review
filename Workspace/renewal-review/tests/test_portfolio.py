@@ -1,9 +1,7 @@
 from fastapi.testclient import TestClient
 
-from app.engine.portfolio_analyzer import analyze_portfolio
-from app.main import app
-from app.models.diff import DiffResult
-from app.models.policy import (
+from app.domain.models.diff import DiffResult
+from app.domain.models.policy import (
     AutoCoverages,
     Endorsement,
     HomeCoverages,
@@ -11,7 +9,9 @@ from app.models.policy import (
     PolicyType,
     RenewalPair,
 )
-from app.models.review import ReviewResult, RiskLevel
+from app.domain.models.review import ReviewResult, RiskLevel
+from app.domain.services.portfolio_analyzer import analyze_portfolio
+from app.main import app
 
 client = TestClient(app)
 
@@ -218,7 +218,7 @@ def test_single_policy_error():
 
 
 def test_missing_policy_error():
-    from app.routes.reviews import get_results_store
+    from app.infra.deps import get_review_store as get_results_store
 
     store = get_results_store()
     store.clear()

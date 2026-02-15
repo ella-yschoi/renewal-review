@@ -1,5 +1,5 @@
-from app.engine.parser import parse_pair, parse_snapshot
-from app.models.policy import PolicyType, RenewalPair
+from app.domain.models.policy import PolicyType, RenewalPair
+from app.domain.services.parser import parse_pair, parse_snapshot
 
 
 def test_parse_auto_snapshot(auto_pair_raw: dict):

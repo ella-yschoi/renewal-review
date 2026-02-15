@@ -9,6 +9,18 @@
 
 ---
 
+### 2026-02-15 12:39 | `experiment/portfolio-aggregator` | uncommitted
+
+**refactor: hexagonal architecture + design patterns (Enum, Config, Immutability, DI)**
+
+_45 files changed, 765 insertions(+), 578 deletions(-)_
+
+> **Context**: BMS 교체 가능성을 대비하여 도메인 로직이 외부 시스템(BMS 데이터 포맷, LLM 프로바이더, DB)에 의존하지 않도록 헥사고날 아키텍처를 적용. 동시에 코드베이스 전반의 일관성을 높이기 위해 4가지 디자인 패턴(Enum 중앙화, Config 중앙화, Immutability, DI)을 함께 적용. 기존 `engine/`, `models/`, `routes/`, `llm/` 플랫 구조에서 `domain/`, `application/`, `api/`, `adaptor/`, `infra/` 5-레이어 구조로 전환.
+> **Result**: 의존성 방향 `api/ → application/ → domain/ ← adaptor/` 확립. domain/에서 외부 레이어 import 0건 달성. 8단계 리팩토링(디렉토리 이동 → 포트 정의 → Enum/Config → Immutability → 어댑터 분리 → DI 와이어링 → 테스트 업데이트 → convention/design-doc 반영) 전 과정에서 100/100 테스트 유지. ruff 0, semgrep 0, 경계 위반 0건.
+> **Insight**: 헥사고날 아키텍처의 가치는 "현재 코드가 예뻐지는 것"이 아니라 "미래의 변경이 한 레이어에서 끝나는 것" — BMS가 바뀌면 `adaptor/persistence/`에 새 loader 하나 추가하면 끝, domain/은 한 줄도 안 건드린다.
+
+---
+
 ### 2026-02-15 12:03 | `main` | `9d71b37`
 
 **refactor: rollback coverage similarity and portfolio LLM points**

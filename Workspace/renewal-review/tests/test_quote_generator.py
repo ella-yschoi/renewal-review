@@ -3,17 +3,17 @@ from pathlib import Path
 
 from fastapi.testclient import TestClient
 
-from app.engine.differ import compute_diff
-from app.engine.quote_generator import PROTECTED_FIELDS, generate_quotes
-from app.engine.rules import flag_diff
-from app.main import app
-from app.models.policy import (
+from app.domain.models.policy import (
     AutoCoverages,
     HomeCoverages,
     PolicySnapshot,
     PolicyType,
     RenewalPair,
 )
+from app.domain.services.differ import compute_diff
+from app.domain.services.quote_generator import PROTECTED_FIELDS, generate_quotes
+from app.domain.services.rules import flag_diff
+from app.main import app
 
 client = TestClient(app)
 SAMPLES_DIR = Path(__file__).parent.parent / "data" / "samples"
@@ -228,8 +228,8 @@ def test_quote_route_home():
 
 
 def test_personalize_quotes_with_mock():
-    from app.llm.mock import MockLLMClient
-    from app.llm.quote_advisor import personalize_quotes
+    from app.adaptor.llm.mock import MockLLMClient
+    from app.adaptor.llm.quote_advisor import personalize_quotes
 
     pair = _make_home_pair()
     diff = _diff_with_flags(pair)
@@ -244,7 +244,7 @@ def test_personalize_quotes_with_mock():
 
 
 def test_personalize_quotes_llm_error():
-    from app.llm.quote_advisor import personalize_quotes
+    from app.adaptor.llm.quote_advisor import personalize_quotes
 
     class ErrorClient:
         def complete(self, prompt: str, trace_name: str) -> dict:
@@ -261,8 +261,8 @@ def test_personalize_quotes_llm_error():
 
 
 def test_personalize_quotes_empty_list():
-    from app.llm.mock import MockLLMClient
-    from app.llm.quote_advisor import personalize_quotes
+    from app.adaptor.llm.mock import MockLLMClient
+    from app.adaptor.llm.quote_advisor import personalize_quotes
 
     pair = _make_auto_pair()
     client_mock = MockLLMClient()
@@ -277,3 +277,20 @@ def test_broker_tip_default_empty():
     quotes = generate_quotes(pair, diff)
     for q in quotes:
         assert q.broker_tip == ""
+
+
+def test_personalize_quotes_malformed_response():
+    from app.adaptor.llm.quote_advisor import personalize_quotes
+
+    class MalformedClient:
+        def complete(self, prompt: str, trace_name: str) -> dict:
+            return {"quotes": [{"bad_field": "no quote_id"}]}
+
+    pair = _make_home_pair()
+    diff = _diff_with_flags(pair)
+    quotes = generate_quotes(pair, diff)
+    original_tradeoffs = [q.trade_off for q in quotes]
+
+    result = personalize_quotes(MalformedClient(), quotes, pair)
+    assert [q.trade_off for q in result] == original_tradeoffs
+    assert all(q.broker_tip == "" for q in result)

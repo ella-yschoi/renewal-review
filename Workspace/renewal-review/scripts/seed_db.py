@@ -9,8 +9,8 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 from app.config import settings  # noqa: E402
-from app.db import Base, get_engine, get_session_factory  # noqa: E402
-from app.models.db_models import RenewalPairRow  # noqa: E402
+from app.infra.db import Base, get_engine, get_session_factory  # noqa: E402
+from app.infra.db_models import RenewalPairRow  # noqa: E402
 
 
 async def seed():

@@ -1,9 +1,9 @@
-from app.engine.batch import process_pair
-from app.engine.differ import compute_diff
-from app.engine.rules import flag_diff
-from app.llm.analyzer import analyze_pair, generate_summary, should_analyze
-from app.llm.mock import MockLLMClient
-from app.models.policy import RenewalPair
+from app.adaptor.llm.mock import MockLLMClient
+from app.application.batch import process_pair
+from app.application.llm_analysis import analyze_pair, generate_summary, should_analyze
+from app.domain.models.policy import RenewalPair
+from app.domain.services.differ import compute_diff
+from app.domain.services.rules import flag_diff
 
 
 def test_should_analyze_with_notes(home_pair: RenewalPair):
@@ -12,7 +12,7 @@ def test_should_analyze_with_notes(home_pair: RenewalPair):
 
 
 def test_should_analyze_no_triggers():
-    from app.models.policy import PolicySnapshot
+    from app.domain.models.policy import PolicySnapshot
 
     prior = PolicySnapshot(
         policy_number="CLEAN-001",
@@ -98,3 +98,43 @@ def test_process_pair_with_llm_generates_natural_summary(home_pair: RenewalPair)
     result = process_pair(home_pair, llm_client=client)
     assert "Risk:" not in result.summary
     assert "Flags:" not in result.summary
+
+
+def test_analyze_notes_malformed_response(home_pair: RenewalPair):
+    class MalformedClient:
+        def complete(self, prompt: str, trace_name: str) -> dict:
+            return {"unexpected_key": "bad data"}
+
+    diff = compute_diff(home_pair)
+    diff = flag_diff(diff, home_pair)
+    insights = analyze_pair(MalformedClient(), diff, home_pair)
+    malformed = [i for i in insights if i.analysis_type == "risk_signal_extractor"]
+    assert len(malformed) >= 1
+    assert all(i.confidence == 0.0 for i in malformed)
+
+
+def test_analyze_endorsement_malformed_response(auto_pair: RenewalPair):
+    class MalformedClient:
+        def complete(self, prompt: str, trace_name: str) -> dict:
+            return {"unexpected_key": "bad data"}
+
+    diff = compute_diff(auto_pair)
+    diff = flag_diff(diff, auto_pair)
+    has_endorsement_desc = any(
+        c.field.startswith("endorsement_description_") for c in diff.changes
+    )
+    if has_endorsement_desc:
+        insights = analyze_pair(MalformedClient(), diff, auto_pair)
+        endorsement_insights = [i for i in insights if i.analysis_type == "endorsement_comparison"]
+        assert all(i.confidence == 0.0 for i in endorsement_insights)
+
+
+def test_generate_summary_malformed_response(home_pair: RenewalPair):
+    class MalformedClient:
+        def complete(self, prompt: str, trace_name: str) -> dict:
+            return {"not_summary": "bad"}
+
+    result = process_pair(home_pair, llm_client=None)
+    result.pair = home_pair
+    summary = generate_summary(MalformedClient(), result)
+    assert summary is None

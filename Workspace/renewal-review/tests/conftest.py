@@ -3,8 +3,8 @@ from pathlib import Path
 
 import pytest
 
-from app.engine.parser import parse_pair
-from app.models.policy import RenewalPair
+from app.domain.models.policy import RenewalPair
+from app.domain.services.parser import parse_pair
 
 SAMPLES_DIR = Path(__file__).parent.parent / "data" / "samples"
 

@@ -1,6 +1,6 @@
 from enum import StrEnum
 
-from pydantic import BaseModel
+from pydantic import BaseModel, ConfigDict
 
 
 class DiffFlag(StrEnum):
@@ -22,6 +22,8 @@ class DiffFlag(StrEnum):
 
 
 class FieldChange(BaseModel):
+    model_config = ConfigDict(frozen=True)
+
     field: str
     prior_value: str
     renewal_value: str

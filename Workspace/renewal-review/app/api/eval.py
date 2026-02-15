@@ -4,13 +4,14 @@ import time
 import uuid
 from pathlib import Path
 
-from fastapi import APIRouter, HTTPException, Query
+from fastapi import APIRouter, Depends, HTTPException, Query
 
+from app.adaptor.storage.memory import InMemoryReviewStore
+from app.application.batch import process_pair
 from app.data_loader import load_pairs
-from app.engine.batch import process_pair
-from app.engine.parser import parse_pair
-from app.models.review import RiskLevel
-from app.routes.reviews import get_results_store
+from app.domain.models.review import RiskLevel
+from app.domain.services.parser import parse_pair
+from app.infra.deps import get_review_store
 
 router = APIRouter(tags=["eval"])
 
@@ -82,7 +83,10 @@ def _risk_dist(results: list) -> dict[str, int]:
 
 
 @router.post("/migration/comparison")
-async def migration_comparison(sample: int = Query(50, ge=1)) -> dict:
+async def migration_comparison(
+    sample: int = Query(50, ge=1),
+    store: InMemoryReviewStore = Depends(get_review_store),
+) -> dict:
     pairs = load_pairs(sample)
     if not pairs:
         raise HTTPException(status_code=404, detail="No data found. Run data/generate.py first.")
@@ -103,7 +107,7 @@ async def migration_comparison(sample: int = Query(50, ge=1)) -> dict:
             loop = asyncio.get_event_loop()
 
             def do_work():
-                from app.llm.mock import MockLLMClient
+                from app.adaptor.llm.mock import MockLLMClient
 
                 n = len(pairs)
 
@@ -129,7 +133,6 @@ async def migration_comparison(sample: int = Query(50, ge=1)) -> dict:
                 None, do_work
             )
 
-            store = get_results_store()
             for r in llm_results:
                 store[r.policy_number] = r
 

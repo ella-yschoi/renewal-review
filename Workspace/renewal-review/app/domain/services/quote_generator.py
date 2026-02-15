@@ -1,6 +1,8 @@
-from app.models.diff import DiffResult
-from app.models.policy import PolicyType, RenewalPair
-from app.models.quote import CoverageAdjustment, QuoteRecommendation
+from app.config import settings
+from app.domain.models.diff import DiffResult
+from app.domain.models.enums import QuoteStrategy
+from app.domain.models.policy import PolicyType, RenewalPair
+from app.domain.models.quote import CoverageAdjustment, QuoteRecommendation
 
 PROTECTED_FIELDS = {
     "bodily_injury_limit",
@@ -12,34 +14,35 @@ PROTECTED_FIELDS = {
 
 
 def _auto_raise_deductible(pair: RenewalPair) -> QuoteRecommendation | None:
+    cfg = settings.quotes
     cov = pair.renewal.auto_coverages
     if cov is None:
         return None
 
     adjustments: list[CoverageAdjustment] = []
-    if cov.collision_deductible < 1000:
+    if cov.collision_deductible < cfg.auto_collision_deductible:
         adjustments.append(
             CoverageAdjustment(
                 field="collision_deductible",
                 original_value=str(cov.collision_deductible),
-                proposed_value="1000",
-                strategy="raise_deductible",
+                proposed_value=str(cfg.auto_collision_deductible),
+                strategy=QuoteStrategy.RAISE_DEDUCTIBLE,
             )
         )
-    if cov.comprehensive_deductible < 500:
+    if cov.comprehensive_deductible < cfg.auto_comprehensive_deductible:
         adjustments.append(
             CoverageAdjustment(
                 field="comprehensive_deductible",
                 original_value=str(cov.comprehensive_deductible),
-                proposed_value="500",
-                strategy="raise_deductible",
+                proposed_value=str(cfg.auto_comprehensive_deductible),
+                strategy=QuoteStrategy.RAISE_DEDUCTIBLE,
             )
         )
 
     if not adjustments:
         return None
 
-    savings_pct = 10.0
+    savings_pct = cfg.savings_raise_deductible_auto
     savings_dollar = round(pair.renewal.premium * savings_pct / 100, 2)
     return QuoteRecommendation(
         quote_id="",
@@ -62,7 +65,7 @@ def _auto_drop_optional(pair: RenewalPair) -> QuoteRecommendation | None:
                 field="rental_reimbursement",
                 original_value="True",
                 proposed_value="False",
-                strategy="drop_optional",
+                strategy=QuoteStrategy.DROP_OPTIONAL,
             )
         )
     if cov.roadside_assistance:
@@ -71,14 +74,14 @@ def _auto_drop_optional(pair: RenewalPair) -> QuoteRecommendation | None:
                 field="roadside_assistance",
                 original_value="True",
                 proposed_value="False",
-                strategy="drop_optional",
+                strategy=QuoteStrategy.DROP_OPTIONAL,
             )
         )
 
     if not adjustments:
         return None
 
-    savings_pct = 4.0
+    savings_pct = settings.quotes.savings_drop_optional
     savings_dollar = round(pair.renewal.premium * savings_pct / 100, 2)
     return QuoteRecommendation(
         quote_id="",
@@ -94,18 +97,19 @@ def _auto_reduce_medical(pair: RenewalPair) -> QuoteRecommendation | None:
     if cov is None:
         return None
 
-    if cov.medical_payments <= 2000:
+    cfg = settings.quotes
+    if cov.medical_payments <= cfg.auto_medical_min:
         return None
 
     adjustments = [
         CoverageAdjustment(
             field="medical_payments",
             original_value=str(cov.medical_payments),
-            proposed_value="2000",
-            strategy="reduce_medical",
+            proposed_value=str(cfg.auto_medical_min),
+            strategy=QuoteStrategy.REDUCE_MEDICAL,
         )
     ]
-    savings_pct = 2.5
+    savings_pct = cfg.savings_reduce_medical
     savings_dollar = round(pair.renewal.premium * savings_pct / 100, 2)
     return QuoteRecommendation(
         quote_id="",
@@ -121,18 +125,19 @@ def _home_raise_deductible(pair: RenewalPair) -> QuoteRecommendation | None:
     if cov is None:
         return None
 
-    if cov.deductible >= 2500:
+    cfg = settings.quotes
+    if cov.deductible >= cfg.home_deductible:
         return None
 
     adjustments = [
         CoverageAdjustment(
             field="deductible",
             original_value=str(cov.deductible),
-            proposed_value="2500",
-            strategy="raise_deductible",
+            proposed_value=str(cfg.home_deductible),
+            strategy=QuoteStrategy.RAISE_DEDUCTIBLE,
         )
     ]
-    savings_pct = 12.5
+    savings_pct = cfg.savings_raise_deductible_home
     savings_dollar = round(pair.renewal.premium * savings_pct / 100, 2)
     return QuoteRecommendation(
         quote_id="",
@@ -156,10 +161,10 @@ def _home_drop_water_backup(pair: RenewalPair) -> QuoteRecommendation | None:
             field="water_backup",
             original_value="True",
             proposed_value="False",
-            strategy="drop_water_backup",
+            strategy=QuoteStrategy.DROP_WATER_BACKUP,
         )
     ]
-    savings_pct = 3.0
+    savings_pct = settings.quotes.savings_drop_water_backup
     savings_dollar = round(pair.renewal.premium * savings_pct / 100, 2)
     return QuoteRecommendation(
         quote_id="",
@@ -175,7 +180,8 @@ def _home_reduce_personal_property(pair: RenewalPair) -> QuoteRecommendation | N
     if cov is None:
         return None
 
-    target = cov.coverage_a_dwelling * 0.5
+    cfg = settings.quotes
+    target = cov.coverage_a_dwelling * cfg.home_personal_property_ratio
     if cov.coverage_c_personal_property <= target:
         return None
 
@@ -184,10 +190,10 @@ def _home_reduce_personal_property(pair: RenewalPair) -> QuoteRecommendation | N
             field="coverage_c_personal_property",
             original_value=str(cov.coverage_c_personal_property),
             proposed_value=str(target),
-            strategy="reduce_personal_property",
+            strategy=QuoteStrategy.REDUCE_PERSONAL_PROPERTY,
         )
     ]
-    savings_pct = 4.0
+    savings_pct = cfg.savings_reduce_personal_property
     savings_dollar = round(pair.renewal.premium * savings_pct / 100, 2)
     return QuoteRecommendation(
         quote_id="",

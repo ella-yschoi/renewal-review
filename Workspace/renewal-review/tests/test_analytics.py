@@ -3,10 +3,10 @@ from datetime import UTC, datetime
 import pytest
 from starlette.testclient import TestClient
 
-from app.engine.analytics import compute_trends
+from app.domain.models.analytics import BatchRunRecord
+from app.domain.services.analytics import compute_trends
+from app.infra.deps import get_history_store
 from app.main import app
-from app.models.analytics import BatchRunRecord
-from app.routes.analytics import get_history_store
 
 
 def _make_record(
