@@ -249,6 +249,30 @@ LLM 분석 결과에 따라 rule_risk보다 높은 level로 상향. 하향은 �
 | Boolean coverage 제거 | True → False | `coverage_dropped` |
 | Boolean coverage 추가 | False → True | `coverage_added` |
 
+### Quote Generator 전략 (`app/engine/quote_generator.py`)
+
+정책 타입별 최대 3개 전략을 독립 적용하여 대안 견적 생성.
+
+**Auto 전략**:
+
+| 전략 | 절감률 | 조건 (건너뛰기) |
+|------|--------|----------------|
+| `raise_deductible` | 10% | collision_deductible ≥ 1000 AND comprehensive_deductible ≥ 500 |
+| `drop_optional` | 4% | rental_reimbursement=False AND roadside_assistance=False |
+| `reduce_medical` | 2.5% | medical_payments ≤ 2000 |
+
+**Home 전략**:
+
+| 전략 | 절감률 | 조건 (건너뛰기) |
+|------|--------|----------------|
+| `raise_deductible` | 12.5% | deductible ≥ 2500 |
+| `drop_water_backup` | 3% | water_backup=False |
+| `reduce_personal_property` | 4% | coverage_c ≤ dwelling × 0.5 |
+
+**보호 필드** — 어떤 전략에서도 절대 변경 불가:
+
+`bodily_injury_limit`, `property_damage_limit`, `coverage_e_liability`, `uninsured_motorist`, `coverage_a_dwelling`
+
 ---
 
 ## 5. API Surface
@@ -428,7 +452,62 @@ should_analyze(diff, pair) ──▶ True?
 
 ---
 
-## 10. Testing & Tech Stack
+## 10. Tech Stack
+
+### Runtime
+
+| 항목 | 버전 / 값 |
+|------|-----------|
+| Python | ≥ 3.13 (`requires-python` in pyproject.toml) |
+| 패키지 매니저 | uv |
+| 웹 프레임워크 | FastAPI ≥ 0.115 |
+| ASGI 서버 | uvicorn ≥ 0.34 |
+| ORM | SQLAlchemy ≥ 2.0 (asyncio) |
+| 검증 | Pydantic ≥ 2.10 |
+| 템플릿 | Jinja2 ≥ 3.1 |
+| LLM | OpenAI ≥ 2.18 (기본), Anthropic ≥ 0.43 (선택) |
+| Observability | Langfuse ≥ 3.14 |
+| DB 드라이버 | asyncpg ≥ 0.30, psycopg ≥ 3.1 |
+
+### Dev Dependencies
+
+| 패키지 | 버전 | 용도 |
+|--------|------|------|
+| pytest | ≥ 8.3 | 테스트 프레임워크 |
+| hypothesis | ≥ 6.120 | Property-based 테스트 |
+| httpx | ≥ 0.28 | TestClient (FastAPI 테스트 의존성) |
+| ruff | ≥ 0.9 | Linter + formatter |
+
+### 환경변수 (`RR_` prefix, `app/config.py`)
+
+| 변수 | 기본값 | 설명 |
+|------|--------|------|
+| `RR_LLM_ENABLED` | `false` | LLM 분석 활성화 |
+| `RR_LLM_PROVIDER` | `"openai"` | LLM provider (`openai` \| `anthropic`) |
+| `RR_DATA_PATH` | `"data/renewals.json"` | 데이터 파일 경로 |
+| `RR_DB_URL` | `""` | PostgreSQL URL (비어있으면 JSON 모드) |
+| `LANGFUSE_PUBLIC_KEY` | — | 설정 시 Langfuse tracing 자동 활성화 |
+
+### Ruff 설정 (`pyproject.toml`)
+
+- target: Python 3.13
+- line-length: 99
+- lint rules: E, F, I, N, UP, B, SIM
+
+### Data 디렉토리
+
+```
+data/
+├── renewals.json             # 전체 정책 데이터 (generate.py로 생성)
+└── samples/
+    ├── auto_pair.json        # Auto 정책 샘플 (테스트/데모)
+    ├── home_pair.json        # Home 정책 샘플
+    └── golden_eval.json      # Golden eval 5개 시나리오
+```
+
+---
+
+## 11. Testing
 
 ### 테스트 현황
 
@@ -461,50 +540,3 @@ should_analyze(diff, pair) ──▶ True?
 | 5 | Inflation guard with endorsement description update and 10% premium increase |
 
 `POST /eval/run`으로 실행. 각 케이스에 대해 expected_min_risk와 expected_flags를 실제 결과와 대조하여 accuracy 산출.
-
-### Runtime Dependencies
-
-| 패키지 | 용도 |
-|--------|------|
-| FastAPI | 웹 프레임워크 |
-| uvicorn | ASGI 서버 |
-| Pydantic / pydantic-settings | 모델 검증 + 환경변수 설정 |
-| Jinja2 | HTML 템플릿 렌더링 |
-| python-dotenv | .env 파일 로드 |
-| SQLAlchemy[asyncio] | ORM + async DB |
-| asyncpg | PostgreSQL async 드라이버 |
-| psycopg[binary] | PostgreSQL sync 폴백 |
-| openai | OpenAI API 클라이언트 |
-| langfuse | LLM observability |
-
-### Dev Dependencies
-
-| 패키지 | 용도 |
-|--------|------|
-| pytest | 테스트 프레임워크 |
-| hypothesis | Property-based 테스트 |
-| httpx | TestClient 의존성 |
-| ruff | Linter + formatter |
-
-### Optional (LLM)
-
-| 패키지 | 용도 |
-|--------|------|
-| openai | OpenAI provider |
-| anthropic | Anthropic provider |
-| langfuse | LLM tracing |
-
-### 환경변수 (RR_ prefix)
-
-| 변수 | 기본값 | 설명 |
-|------|--------|------|
-| `RR_LLM_ENABLED` | `false` | LLM 분석 활성화 |
-| `RR_LLM_PROVIDER` | `"openai"` | LLM provider (`openai` \| `anthropic`) |
-| `RR_DATA_PATH` | `"data/renewals.json"` | 데이터 파일 경로 |
-| `RR_DB_URL` | `""` | PostgreSQL URL (비어있으면 JSON 모드) |
-
-### Ruff 설정 (`pyproject.toml`)
-
-- target: Python 3.13
-- line-length: 99
-- lint rules: E, F, I, N, UP, B, SIM
