@@ -5,6 +5,23 @@
 
 ---
 
+## 2026-02-15 12:03 | `main`
+
+### 무엇을 했는가
+LLM 적용 포인트 6개를 4가지 기준(입력 형태, 의미 해석 필요성, Rule 대안의 한계, 출력 품질 차이)으로 평가하여, rule-based로 충분한 2개를 rollback. 12개 파일 수정, 54줄 추가 / 432줄 삭제. 96 tests passed, ruff all checks passed.
+
+- **Coverage Similarity 제거**: `_analyze_coverage()` 함수, COVERAGE_SIMILARITY 프롬프트, mock, 테스트 삭제. aggregator.py에서 "NOT equivalent" 조건 제거. 입력이 이미 boolean으로 정규화되어 있어 `if prior == True and renewal == False` 1줄로 해결되는 문제에 LLM API를 호출하고 있었음.
+- **Portfolio Analysis 제거**: `portfolio_advisor.py` 파일 삭제, PORTFOLIO_ANALYSIS 프롬프트/mock 삭제, PortfolioSummary에서 LLM 필드 4개(llm_verdict, llm_recommendations, llm_action_items, llm_enriched) 삭제, routes/portfolio.py에서 LLM enrichment 호출 제거, portfolio.html에서 LLM 분기 3곳(verdict, recommendations, action items) 제거, 테스트 4건 삭제. JS에 이미 4단계 verdict + FLAG_ACTIONS 매핑이 잘 작동하고 있었음.
+- **문서 업데이트**: design-doc.md 전체 LLM 관련 섹션 4개 포인트로 정리(프롬프트 6→4개, 테스트 101→96개), rule-vs-llm-ratio.md 전면 재작성(Rollback 근거 섹션 추가, 비율 수치 업데이트).
+
+### 왜 했는가
+프레젠테이션에서 "왜 이 부분에 LLM을 적용했는가"를 근거와 함께 설명하려면, 각 포인트가 rule-based로는 해결하기 어려운 문제인지 평가해야 한다. 4가지 기준(입력 형태, 의미 해석, rule 대안 한계, 출력 품질 차이) 중 3개 이상 "LLM 적합"인 포인트만 유지하고, 나머지는 rollback하여 "LLM을 적용한 이유가 명확한" 상태로 만들었다. 핵심 메시지: "LLM은 비정형 텍스트 해석과 다중 맥락 합성에만 적용했다. 구조화된 입력의 결정적 판단은 rule-based가 더 정확하고 비용 효율적이다."
+
+### 어떻게 했는가
+평가 프레임워크 4가지 기준을 6개 포인트에 적용. Coverage Similarity(4/4 Rule)와 Portfolio Analysis(3.5/4 Rule)를 rollback 대상으로 선정. 기존 rule-based 로직(rules.py의 coverage_dropped flag, JS의 verdict/FLAG_ACTIONS)이 이미 해당 케이스를 커버하므로 기능 손실 없이 코드를 제거. aggregator.py의 risk upgrade 조건에서 coverage 관련 조건만 제거하고, endorsement restriction + risk signal 복합 조건은 유지.
+
+---
+
 ## 2026-02-15 01:32 | `experiment/portfolio-aggregator`
 
 ### 무엇을 했는가
