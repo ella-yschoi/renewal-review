@@ -1,12 +1,20 @@
-from app.llm.client import LLMClientProtocol
-from app.llm.prompts import (
+from pydantic import ValidationError
+
+from app.adaptor.llm.prompts import (
     ENDORSEMENT_COMPARISON,
     REVIEW_SUMMARY,
     RISK_SIGNAL_EXTRACTOR,
 )
-from app.models.diff import DiffResult
-from app.models.policy import RenewalPair
-from app.models.review import LLMInsight, ReviewResult
+from app.adaptor.llm.schemas import (
+    EndorsementComparisonResponse,
+    ReviewSummaryResponse,
+    RiskSignalExtractorResponse,
+)
+from app.domain.models.diff import DiffResult
+from app.domain.models.enums import AnalysisType
+from app.domain.models.policy import RenewalPair
+from app.domain.models.review import LLMInsight, ReviewResult
+from app.domain.ports.llm import LLMPort
 
 
 def should_analyze(diff: DiffResult, pair: RenewalPair) -> bool:
@@ -19,35 +27,44 @@ def should_analyze(diff: DiffResult, pair: RenewalPair) -> bool:
     return bool(endorsement_desc_changes)
 
 
-def _analyze_notes(client: LLMClientProtocol, notes: str) -> list[LLMInsight]:
+def _analyze_notes(client: LLMPort, notes: str) -> list[LLMInsight]:
     prompt = RISK_SIGNAL_EXTRACTOR.format(notes=notes)
     result = client.complete(prompt, trace_name="risk_signal_extractor")
 
     if "error" in result:
         return [
             LLMInsight(
-                analysis_type="risk_signal_extractor",
+                analysis_type=AnalysisType.RISK_SIGNAL_EXTRACTOR,
                 finding=f"Analysis failed: {result['error']}",
                 confidence=0.0,
             )
         ]
 
+    try:
+        parsed = RiskSignalExtractorResponse.model_validate(result)
+    except ValidationError:
+        return [
+            LLMInsight(
+                analysis_type=AnalysisType.RISK_SIGNAL_EXTRACTOR,
+                finding="Malformed LLM response",
+                confidence=0.0,
+            )
+        ]
+
     insights = []
-    for signal in result.get("signals", []):
+    for signal in parsed.signals:
         insights.append(
             LLMInsight(
-                analysis_type="risk_signal_extractor",
-                finding=signal.get("description", ""),
-                confidence=result.get("confidence", 0.5),
-                reasoning=result.get("summary", ""),
+                analysis_type=AnalysisType.RISK_SIGNAL_EXTRACTOR,
+                finding=signal.description,
+                confidence=parsed.confidence,
+                reasoning=parsed.summary,
             )
         )
     return insights
 
 
-def _analyze_endorsement(
-    client: LLMClientProtocol, prior_desc: str, renewal_desc: str
-) -> LLMInsight:
+def _analyze_endorsement(client: LLMPort, prior_desc: str, renewal_desc: str) -> LLMInsight:
     prompt = ENDORSEMENT_COMPARISON.format(
         prior_endorsement=prior_desc, renewal_endorsement=renewal_desc
     )
@@ -55,21 +72,29 @@ def _analyze_endorsement(
 
     if "error" in result:
         return LLMInsight(
-            analysis_type="endorsement_comparison",
+            analysis_type=AnalysisType.ENDORSEMENT_COMPARISON,
             finding=f"Analysis failed: {result['error']}",
             confidence=0.0,
         )
 
-    change_type = result.get("change_type", "unknown")
+    try:
+        parsed = EndorsementComparisonResponse.model_validate(result)
+    except ValidationError:
+        return LLMInsight(
+            analysis_type=AnalysisType.ENDORSEMENT_COMPARISON,
+            finding="Malformed LLM response",
+            confidence=0.0,
+        )
+
     return LLMInsight(
-        analysis_type="endorsement_comparison",
-        finding=f"Change type: {change_type}",
-        confidence=result.get("confidence", 0.5),
-        reasoning=result.get("reasoning", ""),
+        analysis_type=AnalysisType.ENDORSEMENT_COMPARISON,
+        finding=f"Change type: {parsed.change_type}",
+        confidence=parsed.confidence,
+        reasoning=parsed.reasoning,
     )
 
 
-def generate_summary(client: LLMClientProtocol, result: ReviewResult) -> str | None:
+def generate_summary(client: LLMPort, result: ReviewResult) -> str | None:
     if result.pair is None:
         return None
 
@@ -113,14 +138,13 @@ def generate_summary(client: LLMClientProtocol, result: ReviewResult) -> str | N
         response = client.complete(prompt, trace_name="review_summary")
         if "error" in response:
             return None
-        return response.get("summary")
-    except Exception:
+        parsed = ReviewSummaryResponse.model_validate(response)
+        return parsed.summary
+    except (ValidationError, Exception):
         return None
 
 
-def analyze_pair(
-    client: LLMClientProtocol, diff: DiffResult, pair: RenewalPair
-) -> list[LLMInsight]:
+def analyze_pair(client: LLMPort, diff: DiffResult, pair: RenewalPair) -> list[LLMInsight]:
     insights: list[LLMInsight] = []
 
     # notes analysis

@@ -1,11 +1,11 @@
 from fastapi import APIRouter, HTTPException
 from pydantic import ValidationError
 
+from app.application.batch import process_pair
 from app.config import settings
-from app.engine.batch import process_pair
-from app.engine.parser import parse_pair
-from app.engine.quote_generator import generate_quotes
-from app.models.quote import QuoteRecommendation
+from app.domain.models.quote import QuoteRecommendation
+from app.domain.services.parser import parse_pair
+from app.domain.services.quote_generator import generate_quotes
 
 router = APIRouter(prefix="/quotes", tags=["quotes"])
 
@@ -25,8 +25,8 @@ def generate(raw_pair: dict) -> list[QuoteRecommendation]:
     quotes = generate_quotes(pair, result.diff)
 
     if settings.llm_enabled and quotes:
+        from app.adaptor.llm.quote_advisor import personalize_quotes
         from app.llm.client import LLMClient
-        from app.llm.quote_advisor import personalize_quotes
 
         client = LLMClient()
         quotes = personalize_quotes(client, quotes, pair)

@@ -23,7 +23,7 @@ import time
 from dotenv import load_dotenv
 from langfuse import Evaluation, Langfuse
 
-from app.llm.prompts import (
+from app.adaptor.llm.prompts import (
     COVERAGE_SIMILARITY,
     ENDORSEMENT_COMPARISON,
     RISK_SIGNAL_EXTRACTOR,

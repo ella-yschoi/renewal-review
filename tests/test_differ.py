@@ -3,15 +3,7 @@ import copy
 from hypothesis import given, settings
 from hypothesis import strategies as st
 
-from app.engine.differ import (
-    compute_diff,
-    diff_auto_coverages,
-    diff_endorsements,
-    diff_home_coverages,
-    diff_vehicles,
-)
-from app.engine.parser import parse_pair
-from app.models.policy import (
+from app.domain.models.policy import (
     AutoCoverages,
     Endorsement,
     HomeCoverages,
@@ -19,6 +11,14 @@ from app.models.policy import (
     RenewalPair,
     Vehicle,
 )
+from app.domain.services.differ import (
+    compute_diff,
+    diff_auto_coverages,
+    diff_endorsements,
+    diff_home_coverages,
+    diff_vehicles,
+)
+from app.domain.services.parser import parse_pair
 
 
 def test_identical_auto_pair_no_changes(auto_pair_raw: dict):

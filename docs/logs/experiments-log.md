@@ -5,6 +5,31 @@
 
 ---
 
+## 2026-02-15 12:37 | `experiment/portfolio-aggregator`
+
+### 무엇을 했는가
+헥사고날 아키텍처 + 디자인 패턴 4종을 기존 flat 구조(`engine/`, `models/`, `routes/`, `llm/`)에 적용하여 전체 앱을 `domain/`, `application/`, `api/`, `adaptor/`, `infra/` 5개 레이어로 리팩토링. 8단계 실행, 44개 파일 변경(740줄 추가, 578줄 삭제), 100/100 테스트 유지.
+
+**구조 변경**: `git mv`로 33개+ 파일을 새 디렉토리 구조로 이동. 구 디렉토리(`engine/`, `models/`, `routes/`) 삭제.
+
+**디자인 패턴 4종 적용**:
+1. **Enum**: `enums.py`에 6개 StrEnum 중앙 정의(Severity, UnbundleRisk, QuoteStrategy, AnalysisType, FlagType). 모든 bare string 리터럴 → enum 교체.
+2. **Config 중앙화**: `config.py`에 4개 중첩 설정 클래스(RuleThresholds, QuoteConfig, PortfolioThresholds, LLMConfig). rules.py/quote_generator.py/portfolio_analyzer.py의 매직넘버 12개+ 제거.
+3. **Immutability**: `FieldChange`에 `frozen=True` 적용. `rules.py`를 functional 스타일로 리라이트 — `c.flag = X` 직접 mutation 제거 → `model_copy(update={"flag": X})`.
+4. **DI**: `infra/deps.py`에 싱글턴 스토어 3개(Review/History/Job), 모든 route에서 `Depends()` 사용. 모듈 레벨 global dict/deque 전면 제거.
+
+**포트 & 어댑터**: `domain/ports/`에 Protocol 3개(LLMPort, ReviewStore, DataSourcePort). `adaptor/llm/`에 OpenAI/Anthropic 클라이언트 분리, `adaptor/persistence/`에 JSON/DB 로더 분리, `adaptor/storage/memory.py`에 인메모리 구현체 3종.
+
+검증: ruff 0 errors, pytest 100/100 passed, semgrep 0 findings (305 rules). `domain/` → 외부 import 0건 (헥사고날 경계 검증 통과).
+
+### 왜 했는가
+BMS(Broker Management System) 교체 시나리오 대비. 현재 flat 구조에서는 데이터 포맷 변경 시 도메인 로직, 라우트, LLM 코드가 모두 영향을 받음. 헥사고날 아키텍처로 의존성 방향을 `api/ → application/ → domain/ ← adaptor/`로 잡으면, 외부 시스템 변경이 `adaptor/`에서 흡수되고 도메인 로직은 무변경. 프레젠테이션에서 "코드를 빠르게 만드는 것"을 넘어 "유지보수 가능한 구조를 자동화하는 것"을 보여주기 위한 작업.
+
+### 어떻게 했는가
+8단계 순차 실행, 각 단계마다 `ruff check` + `pytest` 통과 확인. Step 1(파일 이동)에서 linter 훅이 import 편집을 되돌리는 문제 발생 → Python bulk replacement 스크립트로 해결. Step 4(immutability)에서 `_flag_changes` → `_detect_flag` + `_flag_changes` 2단 분리로 깔끔한 functional 패턴 구현. Step 6(DI)에서 ruff B008 규칙(Depends() in defaults)과 충돌 → `pyproject.toml`에 `extend-immutable-calls` 추가. convention.md에 헥사고날 레이어 규칙 + 디자인 패턴 4개 규칙 추가.
+
+---
+
 ## 2026-02-15 12:03 | `main`
 
 ### 무엇을 했는가

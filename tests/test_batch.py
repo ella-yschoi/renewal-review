@@ -1,7 +1,7 @@
-from app.engine.batch import assign_risk_level, process_batch, process_pair
-from app.models.diff import DiffFlag
-from app.models.policy import RenewalPair
-from app.models.review import RiskLevel
+from app.application.batch import assign_risk_level, process_batch, process_pair
+from app.domain.models.diff import DiffFlag
+from app.domain.models.policy import RenewalPair
+from app.domain.models.review import RiskLevel
 
 
 def test_process_pair_auto(auto_pair: RenewalPair):

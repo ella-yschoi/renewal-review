@@ -1,6 +1,6 @@
 from collections import defaultdict
 
-from app.models.analytics import AnalyticsSummary, BatchRunRecord, TrendPoint
+from app.domain.models.analytics import AnalyticsSummary, BatchRunRecord, TrendPoint
 
 
 def compute_trends(records: list[BatchRunRecord]) -> AnalyticsSummary:

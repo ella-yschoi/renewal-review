@@ -1,6 +1,6 @@
 from typing import Any
 
-from app.models.policy import (
+from app.domain.models.policy import (
     AutoCoverages,
     Driver,
     Endorsement,

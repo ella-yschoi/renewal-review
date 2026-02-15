@@ -1,15 +1,15 @@
-from app.engine.differ import compute_diff
-from app.engine.rules import (
-    PREMIUM_THRESHOLD_CRITICAL,
-    PREMIUM_THRESHOLD_HIGH,
-    flag_diff,
-)
-from app.models.diff import DiffFlag
-from app.models.policy import (
+from app.config import settings
+from app.domain.models.diff import DiffFlag
+from app.domain.models.policy import (
     HomeCoverages,
     PolicySnapshot,
     RenewalPair,
 )
+from app.domain.services.differ import compute_diff
+from app.domain.services.rules import flag_diff
+
+PREMIUM_THRESHOLD_HIGH = settings.rules.premium_high_pct
+PREMIUM_THRESHOLD_CRITICAL = settings.rules.premium_critical_pct
 
 
 def _make_pair(prior_premium: float, renewal_premium: float, **kwargs) -> RenewalPair:

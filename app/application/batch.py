@@ -1,14 +1,14 @@
 import time
 from collections.abc import Callable
 
-from app.aggregator import aggregate
-from app.engine.differ import compute_diff
-from app.engine.rules import flag_diff
-from app.llm.analyzer import analyze_pair, generate_summary, should_analyze
-from app.llm.client import LLMClientProtocol
-from app.models.diff import DiffFlag
-from app.models.policy import RenewalPair
-from app.models.review import BatchSummary, ReviewResult, RiskLevel
+from app.application.llm_analysis import analyze_pair, generate_summary, should_analyze
+from app.domain.models.diff import DiffFlag
+from app.domain.models.policy import RenewalPair
+from app.domain.models.review import BatchSummary, ReviewResult, RiskLevel
+from app.domain.ports.llm import LLMPort
+from app.domain.services.aggregator import aggregate
+from app.domain.services.differ import compute_diff
+from app.domain.services.rules import flag_diff
 
 URGENT_REVIEW_FLAGS = {DiffFlag.PREMIUM_INCREASE_CRITICAL, DiffFlag.LIABILITY_LIMIT_DECREASE}
 ACTION_REQUIRED_FLAGS = {DiffFlag.PREMIUM_INCREASE_HIGH, DiffFlag.COVERAGE_DROPPED}
@@ -25,7 +25,7 @@ def assign_risk_level(flags: list[DiffFlag]) -> RiskLevel:
     return RiskLevel.NO_ACTION_NEEDED
 
 
-def process_pair(pair: RenewalPair, llm_client: LLMClientProtocol | None = None) -> ReviewResult:
+def process_pair(pair: RenewalPair, llm_client: LLMPort | None = None) -> ReviewResult:
     diff = compute_diff(pair)
     diff = flag_diff(diff, pair)
     rule_risk = assign_risk_level(diff.flags)
@@ -57,7 +57,7 @@ def process_pair(pair: RenewalPair, llm_client: LLMClientProtocol | None = None)
     return result
 
 
-def enrich_with_llm(result: ReviewResult, client: LLMClientProtocol) -> None:
+def enrich_with_llm(result: ReviewResult, client: LLMPort) -> None:
     if not result.pair or not result.diff.flags:
         return
 
@@ -76,7 +76,7 @@ def enrich_with_llm(result: ReviewResult, client: LLMClientProtocol) -> None:
 
 def process_batch(
     pairs: list[RenewalPair],
-    llm_client: LLMClientProtocol | None = None,
+    llm_client: LLMPort | None = None,
     on_progress: Callable[[int, int], None] | None = None,
 ) -> tuple[list[ReviewResult], BatchSummary]:
     start = time.perf_counter()

@@ -1,5 +1,6 @@
-from app.models.diff import DiffResult
-from app.models.review import LLMInsight, ReviewResult, RiskLevel
+from app.domain.models.diff import DiffResult
+from app.domain.models.enums import AnalysisType
+from app.domain.models.review import LLMInsight, ReviewResult, RiskLevel
 
 RISK_ORDER = [
     RiskLevel.NO_ACTION_NEEDED,
@@ -24,7 +25,7 @@ def aggregate(
     risk_signals = [
         i
         for i in llm_insights
-        if i.analysis_type == "risk_signal_extractor" and i.confidence >= 0.7
+        if i.analysis_type == AnalysisType.RISK_SIGNAL_EXTRACTOR and i.confidence >= 0.7
     ]
     if len(risk_signals) >= 2:
         final_risk = _max_risk(final_risk, RiskLevel.ACTION_REQUIRED)

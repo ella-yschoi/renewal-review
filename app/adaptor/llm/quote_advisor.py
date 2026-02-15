@@ -1,9 +1,12 @@
 import json
 
-from app.llm.client import LLMClientProtocol
-from app.llm.prompts import QUOTE_PERSONALIZATION
-from app.models.policy import RenewalPair
-from app.models.quote import QuoteRecommendation
+from pydantic import ValidationError
+
+from app.adaptor.llm.prompts import QUOTE_PERSONALIZATION
+from app.adaptor.llm.schemas import QuotePersonalizationResponse
+from app.domain.models.policy import RenewalPair
+from app.domain.models.quote import QuoteRecommendation
+from app.domain.ports.llm import LLMPort
 
 
 def _build_policy_context(pair: RenewalPair) -> str:
@@ -60,7 +63,7 @@ def _build_quotes_json(quotes: list[QuoteRecommendation]) -> str:
 
 
 def personalize_quotes(
-    client: LLMClientProtocol,
+    client: LLMPort,
     quotes: list[QuoteRecommendation],
     pair: RenewalPair,
 ) -> list[QuoteRecommendation]:
@@ -79,14 +82,17 @@ def personalize_quotes(
     except Exception:
         return quotes
 
-    llm_quotes = {q["quote_id"]: q for q in response.get("quotes", []) if "quote_id" in q}
+    try:
+        parsed = QuotePersonalizationResponse.model_validate(response)
+    except ValidationError:
+        return quotes
+
+    llm_quotes = {q.quote_id: q for q in parsed.quotes}
 
     for quote in quotes:
         if quote.quote_id in llm_quotes:
             llm_q = llm_quotes[quote.quote_id]
-            if "trade_off" in llm_q:
-                quote.trade_off = llm_q["trade_off"]
-            if "broker_tip" in llm_q:
-                quote.broker_tip = llm_q["broker_tip"]
+            quote.trade_off = llm_q.trade_off
+            quote.broker_tip = llm_q.broker_tip
 
     return quotes

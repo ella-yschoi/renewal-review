@@ -1,9 +1,11 @@
 from pydantic import BaseModel
 
+from app.domain.models.enums import FlagType, Severity, UnbundleRisk
+
 
 class CrossPolicyFlag(BaseModel):
-    flag_type: str
-    severity: str
+    flag_type: FlagType
+    severity: Severity
     description: str
     affected_policies: list[str]
 
@@ -14,7 +16,7 @@ class BundleAnalysis(BaseModel):
     is_bundle: bool
     bundle_discount_eligible: bool
     carrier_mismatch: bool
-    unbundle_risk: str
+    unbundle_risk: UnbundleRisk
 
 
 class PortfolioSummary(BaseModel):

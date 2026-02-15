@@ -1,6 +1,8 @@
-from app.models.policy import PolicyType
-from app.models.portfolio import BundleAnalysis, CrossPolicyFlag, PortfolioSummary
-from app.models.review import ReviewResult, RiskLevel
+from app.config import settings
+from app.domain.models.enums import FlagType, Severity, UnbundleRisk
+from app.domain.models.policy import PolicyType
+from app.domain.models.portfolio import BundleAnalysis, CrossPolicyFlag, PortfolioSummary
+from app.domain.models.review import ReviewResult, RiskLevel
 
 
 def _build_bundle_analysis(
@@ -20,13 +22,13 @@ def _build_bundle_analysis(
     carrier_mismatch = len(carriers) > 1
     bundle_discount_eligible = is_bundle and not carrier_mismatch
 
-    unbundle_risk = "low"
+    unbundle_risk = UnbundleRisk.LOW
     if is_bundle:
         risk_levels = [r.risk_level for r in results]
         if RiskLevel.ACTION_REQUIRED in risk_levels or RiskLevel.URGENT_REVIEW in risk_levels:
-            unbundle_risk = "high"
+            unbundle_risk = UnbundleRisk.HIGH
         elif RiskLevel.REVIEW_RECOMMENDED in risk_levels:
-            unbundle_risk = "medium"
+            unbundle_risk = UnbundleRisk.MEDIUM
 
     return BundleAnalysis(
         has_auto=has_auto,
@@ -67,8 +69,8 @@ def _detect_duplicate_coverage(results: list[ReviewResult]) -> list[CrossPolicyF
     if auto_with_medical and home_with_medical:
         flags.append(
             CrossPolicyFlag(
-                flag_type="duplicate_medical",
-                severity="warning",
+                flag_type=FlagType.DUPLICATE_MEDICAL,
+                severity=Severity.WARNING,
                 description=(
                     "Both auto medical payments and home medical coverage "
                     "(Coverage F) are active. Review for potential overlap."
@@ -80,8 +82,8 @@ def _detect_duplicate_coverage(results: list[ReviewResult]) -> list[CrossPolicyF
     if auto_with_roadside and home_with_roadside:
         flags.append(
             CrossPolicyFlag(
-                flag_type="duplicate_roadside",
-                severity="info",
+                flag_type=FlagType.DUPLICATE_ROADSIDE,
+                severity=Severity.INFO,
                 description=(
                     "Roadside assistance is present on both auto policy "
                     "and home endorsements. Consider consolidating."
@@ -94,6 +96,7 @@ def _detect_duplicate_coverage(results: list[ReviewResult]) -> list[CrossPolicyF
 
 
 def _calculate_exposure_flags(results: list[ReviewResult]) -> list[CrossPolicyFlag]:
+    cfg = settings.portfolio
     flags: list[CrossPolicyFlag] = []
     total_liability = 0.0
     affected: list[str] = []
@@ -106,7 +109,6 @@ def _calculate_exposure_flags(results: list[ReviewResult]) -> list[CrossPolicyFl
             total_liability += snap.home_coverages.coverage_e_liability
             affected.append(r.policy_number)
         elif snap.policy_type == PolicyType.AUTO and snap.auto_coverages:
-            # bodily_injury_limit format: "100/300" — first number × 1000
             bi_str = snap.auto_coverages.bodily_injury_limit.split("/")[0]
             total_liability += float(bi_str) * 1000
             affected.append(r.policy_number)
@@ -114,26 +116,26 @@ def _calculate_exposure_flags(results: list[ReviewResult]) -> list[CrossPolicyFl
     if not affected:
         return flags
 
-    if total_liability > 500_000:
+    if total_liability > cfg.high_liability:
         flags.append(
             CrossPolicyFlag(
-                flag_type="high_liability_exposure",
-                severity="info",
+                flag_type=FlagType.HIGH_LIABILITY_EXPOSURE,
+                severity=Severity.INFO,
                 description=(
                     f"Total liability exposure is ${total_liability:,.0f}, "
-                    "exceeding $500,000. Consider umbrella policy review."
+                    f"exceeding ${cfg.high_liability:,.0f}. Consider umbrella policy review."
                 ),
                 affected_policies=affected,
             )
         )
-    elif total_liability < 200_000:
+    elif total_liability < cfg.low_liability:
         flags.append(
             CrossPolicyFlag(
-                flag_type="low_liability_exposure",
-                severity="warning",
+                flag_type=FlagType.LOW_LIABILITY_EXPOSURE,
+                severity=Severity.WARNING,
                 description=(
                     f"Total liability exposure is ${total_liability:,.0f}, "
-                    "below $200,000. Client may be underinsured."
+                    f"below ${cfg.low_liability:,.0f}. Client may be underinsured."
                 ),
                 affected_policies=affected,
             )
@@ -145,6 +147,7 @@ def _calculate_exposure_flags(results: list[ReviewResult]) -> list[CrossPolicyFl
 def _detect_premium_concentration(
     results: list[ReviewResult], total_premium: float, premium_change_pct: float
 ) -> list[CrossPolicyFlag]:
+    cfg = settings.portfolio
     flags: list[CrossPolicyFlag] = []
 
     if total_premium > 0:
@@ -152,11 +155,11 @@ def _detect_premium_concentration(
             if not r.pair:
                 continue
             pct = r.pair.renewal.premium / total_premium
-            if pct >= 0.70:
+            if pct >= cfg.concentration_pct:
                 flags.append(
                     CrossPolicyFlag(
-                        flag_type="premium_concentration",
-                        severity="warning",
+                        flag_type=FlagType.PREMIUM_CONCENTRATION,
+                        severity=Severity.WARNING,
                         description=(
                             f"Policy {r.policy_number} represents "
                             f"{pct:.0%} of total portfolio premium. "
@@ -166,12 +169,12 @@ def _detect_premium_concentration(
                     )
                 )
 
-    if abs(premium_change_pct) >= 15.0:
+    if abs(premium_change_pct) >= cfg.portfolio_change_pct:
         all_policies = [r.policy_number for r in results]
         flags.append(
             CrossPolicyFlag(
-                flag_type="high_portfolio_increase",
-                severity="critical",
+                flag_type=FlagType.HIGH_PORTFOLIO_INCREASE,
+                severity=Severity.CRITICAL,
                 description=f"Total portfolio premium changed by {premium_change_pct:+.1f}%. "
                 "Review all policies for retention risk.",
                 affected_policies=all_policies,
@@ -185,10 +188,8 @@ def analyze_portfolio(
     policy_numbers: list[str],
     results_store: dict[str, ReviewResult],
 ) -> PortfolioSummary:
-    # Deduplicate
     unique_numbers = list(dict.fromkeys(policy_numbers))
 
-    # Look up results
     results: list[ReviewResult] = []
     for pn in unique_numbers:
         result = results_store.get(pn)
@@ -196,7 +197,6 @@ def analyze_portfolio(
             raise ValueError(f"No review found for policy: {pn}")
         results.append(result)
 
-    # Premium calculations
     total_premium = sum(r.pair.renewal.premium for r in results if r.pair)
     total_prior_premium = sum(r.pair.prior.premium for r in results if r.pair)
     premium_change_pct = (
@@ -205,13 +205,11 @@ def analyze_portfolio(
         else 0.0
     )
 
-    # Risk breakdown
     risk_breakdown: dict[str, int] = {}
     for r in results:
         level = r.risk_level.value
         risk_breakdown[level] = risk_breakdown.get(level, 0) + 1
 
-    # Analyses
     bundle_analysis = _build_bundle_analysis(results)
     cross_policy_flags: list[CrossPolicyFlag] = []
     cross_policy_flags.extend(_detect_duplicate_coverage(results))

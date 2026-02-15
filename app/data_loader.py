@@ -1,57 +1,27 @@
-import json
-import random
-from pathlib import Path
-
 from app.config import settings
-from app.engine.parser import parse_pair
-from app.models.policy import RenewalPair
+from app.domain.models.policy import RenewalPair
+from app.domain.ports.data_source import DataSourcePort
 
-_cached_pairs: list[RenewalPair] | None = None
+_data_source: DataSourcePort | None = None
+
+
+def _get_data_source() -> DataSourcePort:
+    global _data_source
+    if _data_source is None:
+        if settings.db_url:
+            from app.adaptor.persistence.db_loader import DbDataSource
+
+            _data_source = DbDataSource()
+        else:
+            from app.adaptor.persistence.json_loader import JsonDataSource
+
+            _data_source = JsonDataSource()
+    return _data_source
 
 
 def load_pairs(sample: int | None = None) -> list[RenewalPair]:
-    global _cached_pairs
-    if _cached_pairs is None:
-        _cached_pairs = _load_from_db() if settings.db_url else _load_from_json()
-
-    if sample and sample < len(_cached_pairs):
-        return random.sample(_cached_pairs, sample)
-    return list(_cached_pairs)
+    return _get_data_source().load_pairs(sample)
 
 
-def _load_from_json() -> list[RenewalPair]:
-    data_path = Path(settings.data_path)
-    if not data_path.exists():
-        return []
-    raw = json.loads(data_path.read_text())
-    return [parse_pair(rp) for rp in raw]
-
-
-def _load_from_db() -> list[RenewalPair]:
-    from sqlalchemy import create_engine, select
-    from sqlalchemy.orm import Session
-
-    from app.models.db_models import RenewalPairRow
-
-    sync_url = settings.db_url.replace("+asyncpg", "+psycopg")
-    engine = create_engine(sync_url)
-
-    try:
-        with Session(engine) as session:
-            rows = session.execute(select(RenewalPairRow)).scalars().all()
-    except Exception:
-        engine.dispose()
-        return _load_from_json()
-
-    engine.dispose()
-
-    pairs = []
-    for row in rows:
-        pair = parse_pair({"prior": row.prior_json, "renewal": row.renewal_json})
-        pairs.append(pair)
-    return pairs
-
-
-def invalidate_cache():
-    global _cached_pairs
-    _cached_pairs = None
+def invalidate_cache() -> None:
+    _get_data_source().invalidate_cache()
