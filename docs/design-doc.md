@@ -91,11 +91,13 @@ Portfolio Risk Aggregator 모듈:
 
 ## 5. UI
 
-파이프라인 네이밍: V1/V2 → **Basic Analytics** (규칙 기반) / **LLM Analytics** (규칙+LLM).
+파이프라인 네이밍: V1/V2 → **Basic Analytics** (규칙 기반) / **AI Analytics** (규칙+AI).
 
-- `review.html` — 리뷰 상세에서 파이프라인 라벨 표시 (Basic Analytics / LLM Analytics)
+- `review.html` — 리뷰 상세에서 파이프라인 라벨 표시 (Policy Changes / AI Insights)
 - `quotes.html` — Quote Generator UI. flagged 정책 목록 표시, "Generate Quotes" 클릭 시 JS로 `/reviews/{policy_number}` → `/quotes/generate` 호출하여 대안 견적 표시. 라우트: `GET /ui/quotes`
-- `migration.html` — Basic vs LLM 비교 대시보드. element ID: `basic-*`, `llm-*`. JS에서 `d.basic.*`, `d.llm.*` 참조
+- `migration.html` — Basic vs. LLM Analytics 비교 대시보드 (라우트: `GET /ui/insight`). element ID: `basic-*`, `llm-*`. 브로커 친화적 라벨 (Policies Compared, AI Analyzed, Risk reassessments 등). 시간 표시 초 단위.
+- `analytics.html` — Review History + Risk Overview + Daily Summary. risk_distribution 키: `no_action_needed/review_recommended/action_required/urgent_review`. 시간 표시 초 단위.
+- `dashboard.html` — Review Sample/All 버튼, Quality Check, Risk Distribution 바. 시간 표시 초 단위.
 - `portfolio.html` — Portfolio Risk Aggregator UI. 체크박스 테이블로 정책 선택 (최소 2개), "Analyze Portfolio" 클릭 시 JS로 `POST /portfolio/analyze` 호출. 모달 결과 표시 순서: (1) Health Verdict 배너 — risk_breakdown + cross_policy_flags에서 JS로 도출한 한 줄 건강 요약 (red/yellow/blue/green 4단계), (2) stats grid (premium/change/count), (3) risk distribution bar — 라벨에 건수+퍼센트 표시, 바 세그먼트 안에 건수 (폭 ≥15%), (4) bundle analysis — 권고 문장 (번들 할인 확인/캐리어 통합/교차 판매) + unbundle risk 경고 + 기존 check/cross 그리드, (5) cross-policy flags — severity-colored left border cards + FLAG_ACTIONS 맵 기반 액션 라인, (6) Action Items 체크리스트 — 모든 섹션에서 도출된 액션을 priority별 정렬 (critical → warning → info) 번호 리스트. 체크박스 직접 클릭 시 행 하이라이트 동기화. 라우트: `GET /ui/portfolio`
 
 ## 6. Error Handling

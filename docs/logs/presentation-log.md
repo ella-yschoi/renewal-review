@@ -9,6 +9,18 @@
 
 ---
 
+### 2026-02-15 03:15 | `experiment/portfolio-aggregator` | `TBD`
+
+**fix: broker-friendly terminology audit and analytics key mismatch**
+
+_4 files changed, 61 insertions, 61 deletions_
+
+> **Context**: 데모 UI에 "Batch Run", "Job ID", "Eval", "LLM", "Delta", "Latency" 같은 개발자 용어가 산재. analytics 페이지는 risk_distribution 키 불일치로 500 에러. 브로커 데모 전에 전체 용어 정리 필요.
+> **Result**: 6개 템플릿 전체 감사 완료. 모든 라벨이 브로커가 즉시 이해할 수 있는 단어로 변환되고, 시간 표시가 ms에서 초 단위로 통일됨. analytics 500 에러 해결.
+> **Insight**: UI 용어 하나가 "이건 내가 쓰는 도구" vs "이건 개발자의 도구"를 결정한다 — 기술적 정확성보다 사용자 인지 비용이 데모 성패를 가른다.
+
+---
+
 ### 2026-02-15 02:30 | `experiment/portfolio-aggregator` | `TBD`
 
 **feat: broker-friendly portfolio modal, nav UX improvements, and bug fixes**
