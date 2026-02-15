@@ -50,6 +50,50 @@ Parse → Diff → Flag → Risk 판정    ← 100% rule-based (항상 실행)
 
 ---
 
+## Before → After 비율 변화
+
+### User-facing 출력 기준
+
+| # | 출력 | Before | After |
+|---|------|--------|-------|
+| 1 | Risk Level 판정 | Rule | Rule |
+| 2 | Diff flags | Rule | Rule |
+| 3 | **Review Summary** | Rule | **LLM** |
+| 4 | LLM Insights | LLM | LLM |
+| 5 | Quote 전략 + 절감액 | Rule | Rule |
+| 6 | **Quote Trade-off 텍스트** | Rule | **LLM** |
+| 7 | **Quote Broker Tip** | Rule | **LLM** |
+| 8 | **Portfolio Verdict** | Rule | **LLM** |
+| 9 | **Portfolio Recommendations** | Rule | **LLM** |
+| 10 | **Portfolio Action Items** | Rule | **LLM** |
+| 11 | Dashboard 테이블 | Rule | Rule |
+| 12 | Analytics 차트 | Rule | Rule |
+
+```
+Before:  LLM  1/12 ( 8%)  ·  Rule 11/12 (92%)
+After:   LLM  7/12 (58%)  ·  Rule  5/12 (42%)
+```
+
+### 코드량 기준
+
+```
+Before:  LLM 338줄 (14%)  ·  Rule 1,110줄 (46%)  ·  기타 962줄 (40%)
+After:   LLM 692줄 (24%)  ·  Rule 1,110줄 (39%)  ·  기타 1,060줄 (37%)
+                  ↑ +354줄 (+105% 성장)
+```
+
+### 함수 기준
+
+```
+Before:  LLM  8/50 (16%)  ·  Rule 40/50 (80%)  ·  Hybrid  2/50 (4%)
+After:   LLM 11/54 (20%)  ·  Rule 36/54 (67%)  ·  Hybrid  7/54 (13%)
+```
+
+> Rule-based 코드는 한 줄도 삭제하지 않고, LLM 레이어만 위에 얹은 구조.
+> 유저가 보는 출력 기준 8% → 58%로 LLM 비중이 크게 늘었지만, 엔진 코어는 그대로.
+
+---
+
 ## Before / After LLM 적용 비교
 
 ### 1. Review Summary (리뷰 요약)
