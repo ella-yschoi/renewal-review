@@ -9,6 +9,18 @@
 
 ---
 
+### 2026-02-15 03:45 | `experiment/portfolio-aggregator` | `TBD`
+
+**improve: unify button layouts and fix portfolio selection reset**
+
+_3 files changed, 26 insertions, 19 deletions_
+
+> **Context**: 데모 리허설 중 발견된 UX 문제들 — insight 페이지 200건 비교는 LLM 비용 과다, portfolio 테이블 공간 낭비 + 새로고침 시 이전 선택이 남아있음, Quality Check 결과가 제목과 분리.
+> **Result**: 3개 페이지 레이아웃 통일. Compare Sample (100) 단일 버튼, 테이블 full-width, 새로고침 시 선택 초기화 (페이지네이션은 유지), Quality Check 제목-정확도 한 줄 배치.
+> **Insight**: "사용자가 예상하는 상태"와 "실제 상태"의 불일치는 기능 버그보다 더 큰 혼란을 준다 — 새로고침했는데 이전 선택이 남아있는 건 기능이 아니라 버그.
+
+---
+
 ### 2026-02-15 03:15 | `experiment/portfolio-aggregator` | `TBD`
 
 **fix: broker-friendly terminology audit and analytics key mismatch**

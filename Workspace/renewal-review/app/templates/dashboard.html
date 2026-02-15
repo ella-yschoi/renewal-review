@@ -61,8 +61,11 @@
 
 <div id="eval-section" style="display:none;">
   <div class="card">
-    <h2>Quality Check</h2>
-    <p style="margin-bottom:8px; font-size:13px;" id="eval-accuracy"></p>
+    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:4px;">
+      <h2 style="margin:0;">Quality Check</h2>
+      <span style="font-size:14px; font-weight:600;" id="eval-accuracy"></span>
+    </div>
+    <p style="font-size:12px; color:#a0aec0; margin-bottom:8px;">Verifies review engine accuracy against known test scenarios</p>
     <table>
       <thead><tr><th>Policy</th><th>Description</th><th>Expected</th><th>Actual</th><th>Status</th></tr></thead>
       <tbody id="eval-body"></tbody>
