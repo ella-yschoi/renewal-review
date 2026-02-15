@@ -9,6 +9,18 @@
 
 ---
 
+### 2026-02-15 12:03 | `main` | `9d71b37`
+
+**refactor: rollback coverage similarity and portfolio LLM points**
+
+_12 files changed, 54 insertions(+), 432 deletions(-)_
+
+> **Context**: LLM 적용 포인트 6개를 "왜 여기에 LLM을 썼는가" 관점에서 재평가. 4가지 기준(입력 형태, 의미 해석 필요성, Rule 대안 한계, 출력 품질 차이)으로 각 포인트를 분석한 결과, Coverage Similarity(boolean 비교)와 Portfolio Analysis(100% 구조화된 입력 + 이미 잘 작동하는 JS rule-based fallback)는 LLM이 실질적 가치를 더하지 않음을 확인.
+> **Result**: LLM 포인트 6개 → 4개. 432줄 삭제하면서 기능 손실 0 — 기존 rule-based 로직이 이미 해당 케이스를 커버. Portfolio 페이지는 rule-based verdict/action items만 표시 (sparkle 제거). User-facing 출력 기준 LLM 비중 58% → 33%로 정리.
+> **Insight**: LLM 적용의 핵심은 "어디에 쓸 수 있는가"가 아니라 "어디에 안 쓸 것인가" — 구조화된 입력의 결정적 판단에 LLM을 넣는 건 비용만 추가하고 정확도는 같거나 떨어진다. "이것도 LLM으로"의 유혹을 이겨내는 것이 좋은 하이브리드 설계.
+
+---
+
 ### 2026-02-15 01:32 | `experiment/portfolio-aggregator` | uncommitted
 
 **feat: Langfuse LLM provider benchmark — OpenAI vs Anthropic (v1 + v2)**
