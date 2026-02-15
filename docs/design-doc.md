@@ -9,6 +9,7 @@
 - **Prior vs Renewal 비교**: 기존 정책과 갱신 정책의 모든 필드를 diff하고, 주의가 필요한 변경에 flag를 부여
 - **Rule + LLM 하이브리드**: 규칙 기반 risk 판정 후, 조건 충족 시 LLM이 notes·endorsement·coverage를 심층 분석하여 risk를 상향 조정
 - **대안 견적 생성**: flagged 정책에 대해 보장 조정 전략별 절감 견적(Quote)을 최대 3개 제안
+- **Portfolio Risk Aggregator**: 클라이언트의 복수 정책을 묶어 교차 분석 — 번들 할인, 중복 보장, 노출도 평가 + LLM enrichment
 
 **대상 사용자**: 보험 언더라이터, 갱신 심사 담당자
 
@@ -19,23 +20,16 @@
 ```
                           ┌─────────────────────────┐
                           │        FastAPI App       │
-                          │      (app/main.py)       │
                           └────────────┬────────────┘
                                        │
               ┌────────────────────────┼────────────────────────┐
               │                        │                        │
      ┌────────▼────────┐    ┌─────────▼─────────┐   ┌─────────▼─────────┐
      │   Routes Layer   │    │   Engine Layer     │   │    LLM Sidecar    │
-     │                  │    │                    │   │                   │
-     │ reviews.py       │    │ batch.py           │   │ analyzer.py       │
-     │ batch.py         │───▶│ differ.py          │◀──│ client.py         │
-     │ analytics.py     │    │ rules.py           │   │ prompts.py        │
-     │ quotes.py        │    │ analytics.py       │   │ mock.py           │
-     │ eval.py          │    │ quote_generator.py │   └─────────┬─────────┘
-     │ ui.py            │    │ parser.py          │             │
-     └────────┬─────────┘    └────────────────────┘    OpenAI / Anthropic
+     │                  │───▶│                    │◀──│                   │
+     └────────┬─────────┘    └────────────────────┘   └─────────┬─────────┘
+              │                                        OpenAI / Anthropic
               │                                        + Langfuse tracing
-              │
      ┌────────▼────────────────────────────────────┐
      │              Storage Layer                   │
      │                                              │
@@ -58,18 +52,19 @@ app/
 │
 ├── engine/
 │   ├── __init__.py
-│   ├── parser.py         # raw dict → PolicySnapshot / RenewalPair 변환
-│   ├── differ.py         # Prior ↔ Renewal 필드별 diff 계산
-│   ├── rules.py          # diff flags 부여 + premium/liability/coverage 규칙
-│   ├── batch.py          # process_pair, process_batch, assign_risk_level
-│   ├── analytics.py      # compute_trends — BatchRunRecord → AnalyticsSummary
-│   └── quote_generator.py # 정책 타입별 절감 전략 적용 → QuoteRecommendation
+│   ├── parser.py             # raw dict → PolicySnapshot / RenewalPair 변환
+│   ├── differ.py             # Prior ↔ Renewal 필드별 diff 계산
+│   ├── rules.py              # diff flags 부여 + premium/liability/coverage 규칙
+│   ├── batch.py              # process_pair, process_batch, assign_risk_level
+│   ├── analytics.py          # compute_trends — BatchRunRecord → AnalyticsSummary
+│   ├── quote_generator.py    # 정책 타입별 절감 전략 적용 → QuoteRecommendation
+│   └── portfolio_analyzer.py # 클라이언트 복수 정책 교차 분석 (bundle, flags)
 │
 ├── llm/
 │   ├── __init__.py
 │   ├── analyzer.py       # should_analyze, analyze_pair, generate_summary
 │   ├── client.py         # LLMClient — OpenAI/Anthropic + Langfuse
-│   ├── prompts.py        # 5개 프롬프트 템플릿
+│   ├── prompts.py        # 6개 프롬프트 템플릿
 │   ├── mock.py           # MockLLMClient — 테스트/migration 비교용
 │   ├── quote_advisor.py  # personalize_quotes — Quote LLM 개인화
 │   └── portfolio_advisor.py # enrich_portfolio — Portfolio LLM enrichment
@@ -90,8 +85,9 @@ app/
 │   ├── batch.py          # POST /batch/run, GET /batch/status/{job_id}, GET /batch/summary
 │   ├── analytics.py      # GET /analytics/history, GET /analytics/trends
 │   ├── quotes.py         # POST /quotes/generate
+│   ├── portfolio.py      # POST /portfolio/analyze
 │   ├── eval.py           # POST /eval/run, POST /migration/comparison, GET /migration/status/{job_id}
-│   └── ui.py             # GET /, /ui/review/{pn}, /ui/analytics, /ui/quotes, /ui/migration
+│   └── ui.py             # GET /, /ui/review/{pn}, /ui/analytics, /ui/quotes, /ui/portfolio, /ui/insight
 │
 └── templates/
     ├── base.html         # 공통 레이아웃 (nav, footer)
@@ -99,7 +95,8 @@ app/
     ├── review.html       # 리뷰 상세
     ├── analytics.html    # 분석 트렌드
     ├── quotes.html       # Quote Generator
-    └── migration.html    # Basic vs LLM 비교
+    ├── portfolio.html    # Portfolio Risk Aggregator
+    └── migration.html    # Basic vs LLM 비교 (LLM Insights)
 ```
 
 ### 데이터 흐름 요약
@@ -309,6 +306,7 @@ LLM 분석 결과에 따라 rule_risk보다 높은 level로 상향. 하향은 �
 | POST | `/reviews/compare` | 단건 정책 비교 | `ReviewResult` | 200, 422 |
 | GET | `/reviews/{policy_number}` | 리뷰 결과 조회 | `ReviewResult` | 200, 404 |
 | POST | `/quotes/generate` | 대안 견적 생성 | `list[QuoteRecommendation]` | 200, 422 |
+| POST | `/portfolio/analyze` | 포트폴리오 교차 분석 | `PortfolioSummary` | 200, 422 |
 
 ### Batch / Async
 
@@ -347,8 +345,9 @@ POST /batch/run  →  {"job_id": "abc12345", "status": "running"}
 | GET | `/` | Dashboard |
 | GET | `/ui/review/{policy_number}` | 리뷰 상세 |
 | GET | `/ui/analytics` | Analytics |
+| GET | `/ui/insight` | LLM Insights (Basic vs LLM 비교) |
 | GET | `/ui/quotes` | Quote Generator |
-| GET | `/ui/migration` | Basic vs LLM 비교 |
+| GET | `/ui/portfolio` | Portfolio Risk Aggregator |
 
 ---
 
@@ -360,11 +359,11 @@ POST /batch/run  →  {"job_id": "abc12345", "status": "running"}
 | 2 | Review Detail | `GET /ui/review/{pn}` | 단건 리뷰 상세 — diff, flags, risk level, LLM insights. 파이프라인 라벨 표시 (Basic Analytics / LLM Analytics). ref 파라미터로 돌아갈 페이지 결정 |
 | 3 | Analytics | `GET /ui/analytics` | 배치 이력 목록 + 트렌드 차트 (risk distribution, 일별 urgent_review_ratio) |
 | 4 | Quote Generator | `GET /ui/quotes` | flagged 정책 목록 표시. "Generate Quotes" 클릭 → `/reviews/{pn}` + `/quotes/generate` 호출하여 대안 견적 모달 표시. 페이지네이션 |
-| 5 | Migration | `GET /ui/migration` | Basic vs LLM 비교 대시보드. element ID: `basic-*`, `llm-*`. 비동기 실행 후 polling으로 결과 표시 |
+| 5 | LLM Insights | `GET /ui/insight` | Basic vs LLM 비교 대시보드. element ID: `basic-*`, `llm-*`. 비동기 실행 후 polling으로 결과 표시 |
 | 6 | Portfolio | `GET /ui/portfolio` | 정책 목록 표시, 복수 선택 → Analyze Portfolio 클릭 시 POST /portfolio/analyze 호출. LLM 활성화 시 verdict/recommendations/action items에 sparkle 표시, 비활성화 시 rule-based fallback |
-| 7 | Base Layout | — | 공통 nav (Dashboard, Analytics, Quotes, Portfolio, Migration), footer |
+| 7 | Base Layout | — | 공통 nav, footer |
 
-**네비게이션 순서**: Dashboard → Analytics → Quotes → Migration
+**네비게이션 순서**: Dashboard → Analytics → LLM Insights → Quote Generator → Portfolio
 
 ---
 
@@ -467,6 +466,7 @@ Quote의 hardcoded trade_off를 고객 맥락 기반 개인화 텍스트로 대�
 | 404 | `POST /migration/comparison` | 데이터 없음 |
 | 422 | `POST /reviews/compare` | 입력 JSON 파싱 실패 (KeyError, ValidationError) |
 | 422 | `POST /quotes/generate` | 입력 JSON 파싱 실패 |
+| 422 | `POST /portfolio/analyze` | 정책 수 부족 (< 2) 또는 리뷰 미존재 |
 
 ### Fallback 패턴
 
@@ -585,8 +585,8 @@ data/
 
 | 파일 | 테스트 수 | 검증 대상 |
 |------|----------|----------|
-| `tests/test_rules.py` | 15 | premium 임계값, flag 부여 규칙, liability/deductible/coverage/endorsement |
-| `tests/test_differ.py` | 13 | 필드별 diff 계산, 동일 정책 no-change, vehicle/endorsement/coverage 변경 |
+| `tests/test_rules.py` | 16 | premium 임계값, flag 부여 규칙, liability/deductible/coverage/endorsement |
+| `tests/test_differ.py` | 14 | 필드별 diff 계산, 동일 정책 no-change, vehicle/endorsement/coverage 변경 |
 | `tests/test_routes.py` | 9 | health, compare, get_review, batch run/status/summary |
 | `tests/test_parser.py` | 8 | snapshot/pair 파싱, vehicle/driver/endorsement, 날짜 정규화, notes |
 | `tests/test_quote_generator.py` | 11 | Auto/Home 전략, 이미 최적화된 케이스, liability 보호, 라우트 통합, LLM 개인화 |
