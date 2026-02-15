@@ -5,6 +5,19 @@
 
 ---
 
+## 2026-02-15 03:45 | `experiment/portfolio-aggregator`
+
+### 무엇을 했는가
+UI 레이아웃 개선 3건: insight 페이지 Compare 버튼 통일 (50/200 → 100 단일), portfolio 테이블 full-width + 버튼 같은 줄 배치 + 새로고침 시 선택 초기화, dashboard Quality Check 제목-정확도 같은 줄 배치 + 설명 텍스트 추가.
+
+### 왜 했는가
+데모 시 일관된 UX 필요. insight 페이지의 200건 비교는 프로덕션 LLM 비용 대비 불필요. portfolio 테이블 오른쪽 공간 낭비 및 버튼 위치 부자연스러움. Quality Check 결과가 제목과 분리되어 시인성 저하.
+
+### 어떻게 했는가
+3개 템플릿 수정. migration.html 버튼 단일화. portfolio.html에 `table-layout:fixed` + 컬럼 % 지정, flex로 헤더-버튼 같은 줄, `portfolio-navigating` sessionStorage 플래그로 새로고침 vs 페이지네이션 구분. dashboard.html에 flex로 제목-accuracy 같은 줄 + 회색 설명 추가.
+
+---
+
 ## 2026-02-15 03:15 | `experiment/portfolio-aggregator`
 
 ### 무엇을 했는가
