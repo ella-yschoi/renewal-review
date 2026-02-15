@@ -5,6 +5,27 @@
 
 ---
 
+## 2026-02-15 02:30 | `experiment/portfolio-aggregator`
+
+### 무엇을 했는가
+Portfolio 모달을 브로커 친화적으로 개선하고 UI/UX 버그 수정 및 네비게이션 정리. 변경 파일 6개:
+- `portfolio.html`: 체크박스 행 하이라이트 버그 수정, Health Verdict 배너(4단계 색상), Risk Distribution 건수+퍼센트 라벨, Bundle 권고 문장, Flag별 액션 라인(FLAG_ACTIONS 맵), Action Items 체크리스트(priority 정렬), sessionStorage 기반 크로스페이지 정책 선택
+- `analytics.html`: 누락 템플릿 복원 (500 에러 해결)
+- `base.html`: 네비게이션 순서 재배치 (분석→액션 그룹핑), "LLM Analytics" → "Analytics" 라벨 수정
+- `migration.html`: URL `/ui/migration` → `/ui/insight`, 제목에서 "Migration" 제거
+- `ui.py`: 라우트 URL 변경 + portfolio 라우트 추가
+- `design-doc.md`: UI 섹션에 portfolio.html 상세 기술 추가
+
+검증: ruff 0 errors, pytest 89/89 passed.
+
+### 왜 했는가
+자가 수정 루프로 생성된 Portfolio Aggregator의 백엔드는 완성됐지만, 모달이 raw 데이터만 보여줘서 브로커가 "이 포트폴리오가 괜찮은지?", "무엇을 해야 하는지?" 즉시 판단할 수 없었음. 또한 체크박스 버그, 페이지 간 선택 초기화, analytics 500 에러 등 실사용 시 발견되는 문제들을 수정하여 데모 가능한 수준으로 끌어올림.
+
+### 어떻게 했는가
+단일 파일(portfolio.html) 중심 JS+CSS 수정. 백엔드 API 변경 없이 프론트엔드에서 기존 데이터를 가공하여 브로커 관점의 정보(verdict, 권고, 액션 리스트)를 도출. 크로스페이지 선택은 sessionStorage로 해결 — 페이지 이동 시 선택 유지, DOMContentLoaded에서 복원. 네비게이션은 브로커 워크플로우(전체 현황 → 개별 액션) 순서로 재배치.
+
+---
+
 ## 2026-02-15 00:45 | `experiment/portfolio-aggregator`
 
 ### 무엇을 했는가
