@@ -5,7 +5,110 @@
 
 ---
 
-## 2026-02-14 14:45 | `experiment/self-correcting-loop`
+## 2026-02-15 01:32 | `experiment/portfolio-aggregator`
+
+### 무엇을 했는가
+Langfuse Datasets + Experiments SDK로 LLM provider 벤치마크 파이프라인 구축. gpt-4o-mini, claude-sonnet, claude-haiku 3개 모델을 3개 보험 분석 작업(risk-signal, endorsement, coverage) x 5개 테스트 케이스로 비교. 자동 스코어링(json_valid, key_match) 포함. 프롬프트 v1 실행 후 3가지 개선(signal 그룹핑 규칙, 빈 입력 처리, JSON 순수성)을 적용한 v2까지 총 90회 API 호출 실행.
+
+### 왜 했는가
+프로덕션 LLM provider 선정을 감이 아닌 정량 데이터로 결정하기 위해. 또한 Langfuse의 Dataset/Experiment 기능을 활용한 재현 가능한 벤치마크 프로세스를 확립하여, 프롬프트 변경 시 회귀 테스트를 자동화하기 위해.
+
+### 어떻게 했는가
+`scripts/langfuse_datasets.py`로 3개 Dataset(각 5개 item, golden_eval.json 기반 4개 + synthetic 1개) 등록. `scripts/langfuse_experiment.py`로 각 모델별 순차 실행, Langfuse `run_experiment` API + `Evaluation` 객체로 자동 스코어링. Anthropic 응답의 마크다운 코드블록 래핑 문제는 `_extract_json()` 후처리로 해결. v2 프롬프트 개선 후 재실험으로 v1 vs v2 비교.
+
+---
+
+## 2026-02-15 03:45 | `experiment/portfolio-aggregator`
+
+### 무엇을 했는가
+UI 레이아웃 개선 3건: insight 페이지 Compare 버튼 통일 (50/200 → 100 단일), portfolio 테이블 full-width + 버튼 같은 줄 배치 + 새로고침 시 선택 초기화, dashboard Quality Check 제목-정확도 같은 줄 배치 + 설명 텍스트 추가.
+
+### 왜 했는가
+데모 시 일관된 UX 필요. insight 페이지의 200건 비교는 프로덕션 LLM 비용 대비 불필요. portfolio 테이블 오른쪽 공간 낭비 및 버튼 위치 부자연스러움. Quality Check 결과가 제목과 분리되어 시인성 저하.
+
+### 어떻게 했는가
+3개 템플릿 수정. migration.html 버튼 단일화. portfolio.html에 `table-layout:fixed` + 컬럼 % 지정, flex로 헤더-버튼 같은 줄, `portfolio-navigating` sessionStorage 플래그로 새로고침 vs 페이지네이션 구분. dashboard.html에 flex로 제목-accuracy 같은 줄 + 회색 설명 추가.
+
+---
+
+## 2026-02-15 03:15 | `experiment/portfolio-aggregator`
+
+### 무엇을 했는가
+전체 템플릿(6개) 대상 브로커 친화적 용어 감사 및 수정. analytics.html의 risk_distribution 키 불일치 수정 (500 에러 해결).
+- analytics.html: `low/medium/high/critical` → `no_action_needed/review_recommended/action_required/urgent_review` (Jinja + JS), 시간 ms → 초, 헤더 용어 정리
+- dashboard.html: "Run Sample" → "Review Sample", "Run Eval" → "Quality Check", "Total Processed" → "Total Reviewed", 시간 ms → 초
+- migration.html: "vs" → "vs.", "LLM" → "AI", "Sample Size" → "Policies Compared", "Delta" → "Comparison", 시간 ms → 초
+- review.html: "Field Changes" → "Policy Changes", "LLM Insights" → "AI Insights"
+
+검증: ruff 0 errors, pytest 89/89 passed.
+
+### 왜 했는가
+데모 대상이 보험 브로커이므로, "Batch Run", "Job ID", "Eval", "LLM", "Delta", "Latency" 같은 개발자 용어가 혼란을 줄 수 있음. analytics.html은 risk_distribution 키가 이전 모델 키(`low/medium/high/critical`)를 참조하여 500 에러 발생.
+
+### 어떻게 했는가
+6개 템플릿을 순회하며 개발자 중심 용어를 식별, 브로커가 이해할 수 있는 단어로 치환. ms 단위 시간 표시를 전부 초 단위로 변환 (Jinja: `/ 1000 + "s"`, JS: `.toFixed(1) + 's'`). analytics.html의 Jinja 변수명과 JS getElementById를 실제 데이터 모델 필드에 맞춰 일괄 수정.
+
+---
+
+## 2026-02-15 02:30 | `experiment/portfolio-aggregator`
+
+### 무엇을 했는가
+Portfolio 모달을 브로커 친화적으로 개선하고 UI/UX 버그 수정 및 네비게이션 정리. 변경 파일 6개:
+- `portfolio.html`: 체크박스 행 하이라이트 버그 수정, Health Verdict 배너(4단계 색상), Risk Distribution 건수+퍼센트 라벨, Bundle 권고 문장, Flag별 액션 라인(FLAG_ACTIONS 맵), Action Items 체크리스트(priority 정렬), sessionStorage 기반 크로스페이지 정책 선택
+- `analytics.html`: 누락 템플릿 복원 (500 에러 해결)
+- `base.html`: 네비게이션 순서 재배치 (분석→액션 그룹핑), "LLM Analytics" → "Analytics" 라벨 수정
+- `migration.html`: URL `/ui/migration` → `/ui/insight`, 제목에서 "Migration" 제거
+- `ui.py`: 라우트 URL 변경 + portfolio 라우트 추가
+- `design-doc.md`: UI 섹션에 portfolio.html 상세 기술 추가
+
+검증: ruff 0 errors, pytest 89/89 passed.
+
+### 왜 했는가
+자가 수정 루프로 생성된 Portfolio Aggregator의 백엔드는 완성됐지만, 모달이 raw 데이터만 보여줘서 브로커가 "이 포트폴리오가 괜찮은지?", "무엇을 해야 하는지?" 즉시 판단할 수 없었음. 또한 체크박스 버그, 페이지 간 선택 초기화, analytics 500 에러 등 실사용 시 발견되는 문제들을 수정하여 데모 가능한 수준으로 끌어올림.
+
+### 어떻게 했는가
+단일 파일(portfolio.html) 중심 JS+CSS 수정. 백엔드 API 변경 없이 프론트엔드에서 기존 데이터를 가공하여 브로커 관점의 정보(verdict, 권고, 액션 리스트)를 도출. 크로스페이지 선택은 sessionStorage로 해결 — 페이지 이동 시 선택 유지, DOMContentLoaded에서 복원. 네비게이션은 브로커 워크플로우(전체 현황 → 개별 액션) 순서로 재배치.
+
+---
+
+## 2026-02-15 00:45 | `experiment/portfolio-aggregator`
+
+### 무엇을 했는가
+Self-Correcting Loop Run 2 — Portfolio Risk Aggregator 기능 구현. Skill 오케스트레이션(방법 B) 사용. 5개 파일 생성/수정:
+- `app/models/portfolio.py` (27줄): CrossPolicyFlag, BundleAnalysis, PortfolioSummary 모델
+- `app/engine/portfolio_analyzer.py` (182줄): analyze_portfolio + 번들분석 + 중복보장탐지 + 노출계산 + 보험료집중도
+- `app/routes/portfolio.py` (27줄): POST /portfolio/analyze 엔드포인트
+- `app/main.py` (수정): portfolio 라우터 등록
+- `tests/test_portfolio.py` (193줄): 8개 테스트 케이스
+
+검증 결과: ruff 0 errors, pytest 89/89 passed (기존 81 + 신규 8), semgrep 0 findings, TRIANGULAR_PASS.
+
+### 왜 했는가
+실험 3에서 Quote Generator로 검증한 자가 수정 루프 파이프라인의 **재사용성 증명**. 동일 파이프라인(PROMPT → 구현 → 품질 게이트 → 삼각 검증)에 다른 PROMPT를 투입하여, 완전히 다른 도메인(교차 정책 위험 분석)의 기능이 1회 반복 만에 자동 구현됨을 확인.
+
+### 어떻게 했는가
+Skill 오케스트레이션(방법 B) — Claude Code 세션 안에서 `self-correcting-loop` skill을 호출. Phase 1(직접 구현) → Phase 2(ruff/pytest/semgrep 직접 실행) → Phase 3(Task tool로 Agent B/C subagent 병렬 실행) → Phase 4(TRIANGULAR_PASS 확인). ruff line length 이슈는 Phase 2 내부에서 즉시 수정. 삼각 검증에서 advisory 이슈 3건(BI 파싱 edge case, 네이밍 불일치, pair-less 불일치) 발견되었으나 요구사항 위반은 없음.
+
+---
+
+## 2026-02-14 22:30 | `experiment/portfolio-aggregator`
+
+### 무엇을 했는가
+실험 4 (Portfolio Risk Aggregator) 사전 준비. 3개 파일 신규 작성, 2개 스크립트 파라미터화:
+- `docs/experiments/4-requirements-portfolio-aggregator.md`: FR-1~FR-9 (9개 기능 요구사항 + 8개 테스트 케이스)
+- `docs/experiments/4-PROMPT-portfolio-aggregator.md`: 자가 수정 루프용 에이전트 프롬프트
+- `docs/guide-self-correcting-loop.md`: 팀원용 Skill 사용 가이드
+- `scripts/self-correcting-loop.sh`, `scripts/triangular-verify.sh`: 환경변수(`PROMPT_FILE`, `REQUIREMENTS_FILE`)로 경로 주입 가능하도록 수정
+
+### 왜 했는가
+실험 3에서 검증한 자가 수정 루프 파이프라인의 **재사용성 증명**이 실험 4의 핵심 목표. Quote Generator와 완전히 다른 도메인(교차 정책 분석)의 기능을 동일 파이프라인으로 구현하여, PROMPT.md만 바꾸면 어떤 기능이든 자동 구현 가능함을 입증한다. 팀 가이드 작성으로 개인 도구에서 팀 도구로 전환.
+
+### 어떻게 했는가
+스크립트 하드코딩 경로를 `${VAR:-default}` 패턴으로 파라미터화 — 기존 experiment 3 기본값 유지하면서 새 실험 파일을 환경변수로 주입 가능. 팀 가이드는 전제 조건, 파이프라인 구조, 3단계 사용법, 삼각 검증 설명, 트러블슈팅까지 포함.
+
+---
+
+## 2026-02-14 15:30 | `experiment/self-correcting-loop`
 
 ### 무엇을 했는가
 Self-Correcting Loop Phase 1 — Smart Quote Generator 구현. 5개 파일 생성/수정:
@@ -31,7 +134,7 @@ Self-Correcting Loop Phase 1 — Smart Quote Generator 구현. 5개 파일 생�
 
 ---
 
-## 2026-02-14 14:42 | 실험 3 최종 비교 분석
+## 2026-02-14 14:45 | 실험 3 최종 비교 분석
 
 ### 자동 루프 vs 수동 대조군
 
@@ -111,7 +214,7 @@ Self-Correcting Loop Phase 1 — Smart Quote Generator 구현. 5개 파일 생�
 
 ---
 
-## 2026-02-14 01:42 | `main`
+## 2026-02-14 00:47 | `main`
 
 ### 무엇을 했는가
 
@@ -361,7 +464,7 @@ SubAgent vs Agent Teams 비교 실험의 첫 번째 그룹. 동일 과제를 두
 
 ---
 
-## 2026-02-13 18:52 | `main`
+## 2026-02-13 18:30 | `main`
 
 ### 무엇을 했는가
 

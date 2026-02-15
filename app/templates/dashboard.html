@@ -5,9 +5,9 @@
 <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px;">
   <h1 style="font-size:20px;">Dashboard</h1>
   <div style="display:flex; gap:8px;">
-    <button class="btn btn-primary" onclick="runBatch(100)">Run Sample (100)</button>
-    <button class="btn btn-secondary" onclick="runBatch()">Run All (8,000)</button>
-    <button class="btn btn-secondary" onclick="runEval()">Run Eval</button>
+    <button class="btn btn-primary" onclick="runBatch(100)">Review Sample (100)</button>
+    <button class="btn btn-secondary" onclick="runBatch()">Review All (8,000)</button>
+    <button class="btn btn-secondary" onclick="runEval()">Quality Check</button>
   </div>
 </div>
 
@@ -17,7 +17,7 @@
   <div class="stats-grid">
     <div class="stat-card">
       <div class="value" id="stat-total">{{ summary.total if summary else 0 }}</div>
-      <div class="label">Total Processed</div>
+      <div class="label">Total Reviewed</div>
     </div>
     <div class="stat-card">
       <div class="value" style="color:#22543d" id="stat-no-action-needed">{{ summary.no_action_needed if summary else 0 }}</div>
@@ -36,8 +36,8 @@
       <div class="label">Urgent Review</div>
     </div>
     <div class="stat-card">
-      <div class="value" id="stat-time">{{ "%.0f"|format(summary.processing_time_ms) if summary else "—" }}</div>
-      <div class="label">Time (ms)</div>
+      <div class="value" id="stat-time">{{ "%.1f"|format(summary.processing_time_ms / 1000) if summary else "—" }}s</div>
+      <div class="label">Review Time</div>
     </div>
   </div>
 
@@ -61,8 +61,11 @@
 
 <div id="eval-section" style="display:none;">
   <div class="card">
-    <h2>Eval Results</h2>
-    <p style="margin-bottom:8px; font-size:13px;" id="eval-accuracy"></p>
+    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:4px;">
+      <h2 style="margin:0;">Quality Check</h2>
+      <span style="font-size:14px; font-weight:600;" id="eval-accuracy"></span>
+    </div>
+    <p style="font-size:12px; color:#a0aec0; margin-bottom:8px;">Verifies review engine accuracy against known test scenarios</p>
     <table>
       <thead><tr><th>Policy</th><th>Description</th><th>Expected</th><th>Actual</th><th>Status</th></tr></thead>
       <tbody id="eval-body"></tbody>
@@ -111,7 +114,7 @@ function updateStats(s) {
   document.getElementById('stat-review-recommended').textContent = s.review_recommended;
   document.getElementById('stat-action-required').textContent = s.action_required;
   document.getElementById('stat-urgent-review').textContent = s.urgent_review;
-  document.getElementById('stat-time').textContent = Math.round(s.processing_time_ms);
+  document.getElementById('stat-time').textContent = (s.processing_time_ms / 1000).toFixed(1) + 's';
   const t = s.total || 1;
   document.getElementById('bar-no-action-needed').style.width = (s.no_action_needed/t*100)+'%';
   document.getElementById('bar-review-recommended').style.width = (s.review_recommended/t*100)+'%';
@@ -152,7 +155,7 @@ async function runBatch(sample) {
 
 async function runEval() {
   document.getElementById('loading').style.display = 'block';
-  document.getElementById('loading-text').textContent = 'Running eval...';
+  document.getElementById('loading-text').textContent = 'Running quality check...';
   const resp = await fetch('/eval/run', {method:'POST'});
   const data = await resp.json();
   document.getElementById('loading').style.display = 'none';

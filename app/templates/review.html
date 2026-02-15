@@ -161,7 +161,7 @@
 {% endif %}
 
 <div class="card">
-  <h2>Field Changes ({{ result.diff.changes|length }})</h2>
+  <h2>Policy Changes ({{ result.diff.changes|length }})</h2>
   <table>
     <thead>
       <tr><th>Field</th><th>Prior</th><th>Renewal</th><th>Change %</th><th>Flag</th></tr>
@@ -203,8 +203,8 @@
 </div>
 {% else %}
 <div class="card" style="border-left:4px solid #cbd5e0;">
-  <h2 style="color:#718096;">LLM Insights</h2>
-  <p style="font-size:12px; color:#a0aec0;">Basic Analytics (rule-based only) — no unstructured text requiring LLM analysis</p>
+  <h2 style="color:#718096;">AI Insights</h2>
+  <p style="font-size:12px; color:#a0aec0;">Standard review — no text analysis needed for this policy</p>
 </div>
 {% endif %}
 </div>

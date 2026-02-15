@@ -9,7 +9,79 @@
 
 ---
 
-### 2026-02-14 14:42 | 실험 3 최종 비교 — 자동 루프 vs 수동 대조군
+### 2026-02-15 01:32 | `experiment/portfolio-aggregator` | uncommitted
+
+**feat: Langfuse LLM provider benchmark — OpenAI vs Anthropic (v1 + v2)**
+
+_5 files changed (2 new scripts, 1 experiment doc, 1 prompt update, 1 .env symlink)_
+
+> **Context**: 프로젝트에서 LLM provider를 선정해야 하는데, "어떤 모델이 좋은지"를 감이 아닌 데이터로 판단하고 싶었다. Langfuse Datasets + Experiments SDK를 활용해 같은 테스트 데이터를 gpt-4o-mini, claude-sonnet, claude-haiku 세 모델에 동일하게 돌리고, 정확도(key_match), 속도(latency), 토큰 효율성을 자동 스코어링하는 파이프라인을 구축했다. 3개 보험 분석 작업(리스크 시그널 추출, 보증 조항 비교, 보장 동등성 판단) x 5개 테스트 케이스 x 3개 모델 = 총 45회 호출. v1 실험 후 프롬프트를 개선(signal 그룹핑 규칙, 빈 입력 처리, JSON 순수성)하여 v2까지 실행.
+> **Result**: (1) Sonnet이 정확도 1위(0.97)지만 Haiku가 90% 수준(0.93)을 1/10 가격 + 동일 속도로 달성 — 가성비 최적은 Haiku. (2) 프롬프트 v2에서 예상치 못한 발견: signal 그룹핑 규칙을 추가했더니 Sonnet 0.90→0.80, Haiku 0.80→0.70으로 하락. 모델이 규칙을 잘 따랐지만 expected_output이 새 규칙을 반영하지 않아서 "정답지가 틀린" 상황이 발생. (3) gpt-4o-mini는 명시적 규칙("빈 입력 = 삭제")에 가장 잘 반응(0.70→0.80), Anthropic 모델은 암묵적 추론으로 이미 처리하고 있었음.
+> **Insight**: LLM 평가에서 가장 어려운 건 프롬프트 엔지니어링이 아니라 "정답을 정의하는 것"이다 — 프롬프트를 개선했더니 점수가 떨어졌고, 원인은 모델이 아니라 정답지에 있었다.
+
+---
+
+### 2026-02-15 03:45 | `experiment/portfolio-aggregator` | `1cb5e26`
+
+**improve: unify button layouts and fix portfolio selection reset**
+
+_3 files changed, 26 insertions, 19 deletions_
+
+> **Context**: 데모 리허설 중 발견된 UX 문제들 — insight 페이지 200건 비교는 LLM 비용 과다, portfolio 테이블 공간 낭비 + 새로고침 시 이전 선택이 남아있음, Quality Check 결과가 제목과 분리.
+> **Result**: 3개 페이지 레이아웃 통일. Compare Sample (100) 단일 버튼, 테이블 full-width, 새로고침 시 선택 초기화 (페이지네이션은 유지), Quality Check 제목-정확도 한 줄 배치.
+> **Insight**: "사용자가 예상하는 상태"와 "실제 상태"의 불일치는 기능 버그보다 더 큰 혼란을 준다 — 새로고침했는데 이전 선택이 남아있는 건 기능이 아니라 버그.
+
+---
+
+### 2026-02-15 03:15 | `experiment/portfolio-aggregator` | `b22a258`
+
+**fix: broker-friendly terminology audit and analytics key mismatch**
+
+_4 files changed, 61 insertions, 61 deletions_
+
+> **Context**: 데모 UI에 "Batch Run", "Job ID", "Eval", "LLM", "Delta", "Latency" 같은 개발자 용어가 산재. analytics 페이지는 risk_distribution 키 불일치로 500 에러. 브로커 데모 전에 전체 용어 정리 필요.
+> **Result**: 6개 템플릿 전체 감사 완료. 모든 라벨이 브로커가 즉시 이해할 수 있는 단어로 변환되고, 시간 표시가 ms에서 초 단위로 통일됨. analytics 500 에러 해결.
+> **Insight**: UI 용어 하나가 "이건 내가 쓰는 도구" vs "이건 개발자의 도구"를 결정한다 — 기술적 정확성보다 사용자 인지 비용이 데모 성패를 가른다.
+
+---
+
+### 2026-02-15 02:30 | `experiment/portfolio-aggregator` | `1e02a34`
+
+**feat: broker-friendly portfolio modal, nav UX improvements, and bug fixes**
+
+_6 files changed (1 new, 5 modified, 1 deleted)_
+
+> **Context**: 자가 수정 루프가 만든 Portfolio Aggregator 백엔드는 정확하지만, UI가 raw JSON 수준이라 브로커가 "이게 문제인가? 뭘 해야 하나?"를 바로 판단할 수 없었음. AI가 코드를 생성하는 것과 그 결과물이 실제 사용자에게 가치 있는 것 사이의 간극을 메우는 작업.
+> **Result**: 모달이 한눈에 건강 상태(verdict), 권고 사항(bundle/flag 액션), 우선순위별 체크리스트(action items)를 보여줌. 페이지 간 선택 유지, 네비게이션 워크플로우 정렬까지 완료하여 데모 가능 수준 도달.
+> **Insight**: AI가 생성한 코드의 진짜 완성은 "돌아간다"가 아니라 "사용자가 바로 행동할 수 있다" — 백엔드 자동 생성 후에도 UX 레이어는 사람의 판단이 필요하다.
+
+---
+
+### 2026-02-15 00:45 | `experiment/portfolio-aggregator` | `de21fc1`
+
+**feat: add Portfolio Risk Aggregator — cross-policy analysis via self-correcting loop**
+
+_5 files changed, ~430 insertions_
+
+> **Context**: 실험 3에서 검증한 자가 수정 루프를 "한 번 쓰고 버리는 도구"가 아닌 "재사용 가능한 파이프라인"으로 증명하기 위해, 완전히 다른 도메인의 기능(교차 정책 분석)을 동일 파이프라인으로 구현. PROMPT.md와 requirements.md만 교체하고 Skill 오케스트레이션(방법 B)으로 실행.
+> **Result**: 1회 반복, 사람 개입 0회, 89/89 테스트 통과, TRIANGULAR_PASS. 번들 분석, 중복 보장 탐지, 총 노출 계산, 보험료 집중도 위험 — 4가지 교차 분석 기능이 자동 구현됨.
+> **Insight**: 파이프라인의 진짜 가치는 두 번째 실행에서 나온다 — "이 파이프라인을 만들었습니다"가 아니라 "이 파이프라인에 기능을 넣으면 나옵니다"가 설득력.
+
+---
+
+### 2026-02-14 22:30 | `experiment/portfolio-aggregator` | `41c0e85`
+
+**chore: set up experiment 4 — portfolio aggregator requirements, prompt, and team guide**
+
+_5 files changed (3 new, 2 modified)_
+
+> **Context**: 실험 3에서 만든 자가 수정 루프가 "한 번 쓰고 버리는 도구"가 아니라 "팀이 반복 사용하는 파이프라인"임을 증명하기 위해, 완전히 다른 도메인(교차 정책 위험 분석)의 기능을 준비. 스크립트를 파라미터화하고 팀 가이드를 작성하여 개인 실험에서 팀 도구로 전환.
+> **Result**: PROMPT.md + requirements.md 두 파일만 작성하면 누구나 자가 수정 루프를 돌릴 수 있는 환경 완성. 스크립트는 환경변수로 경로를 주입받아 실험 번호에 독립적.
+> **Insight**: 파이프라인의 가치는 첫 번째 실행이 아니라 두 번째 실행에서 증명된다 — 설정 변경 없이 새 기능을 투입할 수 있으면 그것이 진짜 자동화.
+
+---
+
+### 2026-02-14 14:45 | 실험 3 최종 비교 — 자동 루프 vs 수동 대조군
 
 **Self-Correcting Loop: 641초 자동 vs 549초 수동, 사람 개입 0 vs 1**
 
@@ -19,7 +91,7 @@
 
 ---
 
-### 2026-02-14 14:45 | `experiment/self-correcting-loop` | `pending`
+### 2026-02-14 15:30 | `experiment/self-correcting-loop` | `pending`
 
 **feat: implement Smart Quote Generator — auto/home alternative quotes**
 
@@ -43,7 +115,7 @@ _5 files added: 3 experiment docs + 2 shell scripts_
 
 ---
 
-### 2026-02-14 01:42 | `main` | 삼각 검증 실험
+### 2026-02-14 00:47 | `main` | 삼각 검증 실험
 
 **실험 C: 삼각 검증(Triangular Verification)으로 코드 품질 검증**
 

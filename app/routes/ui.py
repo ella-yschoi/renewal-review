@@ -53,6 +53,7 @@ def dashboard(request: Request, page: int = Query(1, ge=1)):
 
 _BACK_LINKS = {
     "quotes": ("/ui/quotes", "Back to Quote Generator"),
+    "portfolio": ("/ui/portfolio", "Back to Portfolio"),
 }
 _DEFAULT_BACK = ("/", "Back to Dashboard")
 
@@ -113,9 +114,31 @@ def quotes_page(request: Request, page: int = Query(1, ge=1)):
     )
 
 
-@router.get("/ui/migration")
-def migration_page(request: Request):
+@router.get("/ui/portfolio")
+def portfolio_page(request: Request, page: int = Query(1, ge=1)):
+    store = get_results_store()
+    all_results = sorted(store.values(), key=lambda r: _RISK_SEVERITY[r.risk_level], reverse=True)
+    total = len(all_results)
+    total_pages = max(1, (total + PAGE_SIZE - 1) // PAGE_SIZE)
+    page = min(page, total_pages)
+    start = (page - 1) * PAGE_SIZE
+    results = all_results[start : start + PAGE_SIZE]
+    return templates.TemplateResponse(
+        "portfolio.html",
+        {
+            "request": request,
+            "active": "portfolio",
+            "results": results,
+            "page": page,
+            "total_pages": total_pages,
+            "total_results": total,
+        },
+    )
+
+
+@router.get("/ui/insight")
+def insight_page(request: Request):
     return templates.TemplateResponse(
         "migration.html",
-        {"request": request, "active": "migration"},
+        {"request": request, "active": "insight"},
     )
