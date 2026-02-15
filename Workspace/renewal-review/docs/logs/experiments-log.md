@@ -22,19 +22,6 @@ LLM 적용 포인트 6개를 4가지 기준(입력 형태, 의미 해석 필요�
 
 ---
 
-## 2026-02-15 01:32 | `experiment/portfolio-aggregator`
-
-### 무엇을 했는가
-Langfuse Datasets + Experiments SDK로 LLM provider 벤치마크 파이프라인 구축. gpt-4o-mini, claude-sonnet, claude-haiku 3개 모델을 3개 보험 분석 작업(risk-signal, endorsement, coverage) x 5개 테스트 케이스로 비교. 자동 스코어링(json_valid, key_match) 포함. 프롬프트 v1 실행 후 3가지 개선(signal 그룹핑 규칙, 빈 입력 처리, JSON 순수성)을 적용한 v2까지 총 90회 API 호출 실행.
-
-### 왜 했는가
-프로덕션 LLM provider 선정을 감이 아닌 정량 데이터로 결정하기 위해. 또한 Langfuse의 Dataset/Experiment 기능을 활용한 재현 가능한 벤치마크 프로세스를 확립하여, 프롬프트 변경 시 회귀 테스트를 자동화하기 위해.
-
-### 어떻게 했는가
-`scripts/langfuse_datasets.py`로 3개 Dataset(각 5개 item, golden_eval.json 기반 4개 + synthetic 1개) 등록. `scripts/langfuse_experiment.py`로 각 모델별 순차 실행, Langfuse `run_experiment` API + `Evaluation` 객체로 자동 스코어링. Anthropic 응답의 마크다운 코드블록 래핑 문제는 `_extract_json()` 후처리로 해결. v2 프롬프트 개선 후 재실험으로 v1 vs v2 비교.
-
----
-
 ## 2026-02-15 03:45 | `experiment/portfolio-aggregator`
 
 ### 무엇을 했는가
@@ -85,6 +72,19 @@ Portfolio 모달을 브로커 친화적으로 개선하고 UI/UX 버그 수정 �
 
 ### 어떻게 했는가
 단일 파일(portfolio.html) 중심 JS+CSS 수정. 백엔드 API 변경 없이 프론트엔드에서 기존 데이터를 가공하여 브로커 관점의 정보(verdict, 권고, 액션 리스트)를 도출. 크로스페이지 선택은 sessionStorage로 해결 — 페이지 이동 시 선택 유지, DOMContentLoaded에서 복원. 네비게이션은 브로커 워크플로우(전체 현황 → 개별 액션) 순서로 재배치.
+
+---
+
+## 2026-02-15 01:32 | `experiment/portfolio-aggregator`
+
+### 무엇을 했는가
+Langfuse Datasets + Experiments SDK로 LLM provider 벤치마크 파이프라인 구축. gpt-4o-mini, claude-sonnet, claude-haiku 3개 모델을 3개 보험 분석 작업(risk-signal, endorsement, coverage) x 5개 테스트 케이스로 비교. 자동 스코어링(json_valid, key_match) 포함. 프롬프트 v1 실행 후 3가지 개선(signal 그룹핑 규칙, 빈 입력 처리, JSON 순수성)을 적용한 v2까지 총 90회 API 호출 실행.
+
+### 왜 했는가
+프로덕션 LLM provider 선정을 감이 아닌 정량 데이터로 결정하기 위해. 또한 Langfuse의 Dataset/Experiment 기능을 활용한 재현 가능한 벤치마크 프로세스를 확립하여, 프롬프트 변경 시 회귀 테스트를 자동화하기 위해.
+
+### 어떻게 했는가
+`scripts/langfuse_datasets.py`로 3개 Dataset(각 5개 item, golden_eval.json 기반 4개 + synthetic 1개) 등록. `scripts/langfuse_experiment.py`로 각 모델별 순차 실행, Langfuse `run_experiment` API + `Evaluation` 객체로 자동 스코어링. Anthropic 응답의 마크다운 코드블록 래핑 문제는 `_extract_json()` 후처리로 해결. v2 프롬프트 개선 후 재실험으로 v1 vs v2 비교.
 
 ---
 
