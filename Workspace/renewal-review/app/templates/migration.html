@@ -1,22 +1,19 @@
 {% extends "base.html" %}
-{% block title %}Basic vs LLM Analytics Migration — Renewal Review{% endblock %}
+{% block title %}Basic vs. LLM Analytics — Renewal Review{% endblock %}
 
 {% block content %}
 <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px;">
-  <h1 style="font-size:20px;">Basic vs LLM Analytics Migration</h1>
-  <div style="display:flex; gap:8px;">
-    <button class="btn btn-primary" onclick="runComparison(50)">Compare (50)</button>
-    <button class="btn btn-secondary" onclick="runComparison(200)">Compare (200)</button>
-  </div>
+  <h1 style="font-size:20px;">Basic vs. LLM Analytics</h1>
+  <button class="btn btn-primary" onclick="runComparison(100)">Compare Sample (100)</button>
 </div>
 
-<div id="loading"><div class="spinner"></div><p style="margin-top:8px;">Running comparison...</p></div>
+<div id="loading"><div class="spinner"></div><p style="margin-top:8px;">Comparing policies...</p></div>
 
 <div id="result" style="display:none;">
   <div class="stats-grid">
     <div class="stat-card">
       <div class="value" id="sample-size"></div>
-      <div class="label">Sample Size</div>
+      <div class="label">Policies Compared</div>
     </div>
     <div class="stat-card">
       <div class="value" style="color:#3182ce" id="risk-changes"></div>
@@ -24,7 +21,7 @@
     </div>
     <div class="stat-card">
       <div class="value" style="color:#805ad5" id="llm-analyzed"></div>
-      <div class="label">LLM Analyzed</div>
+      <div class="label">AI Analyzed</div>
     </div>
     <div class="stat-card">
       <div class="value" style="color:#d69e2e" id="new-insights"></div>
@@ -57,11 +54,11 @@
   </div>
 
   <div class="card">
-    <h2>Delta</h2>
+    <h2>Comparison</h2>
     <table>
-      <tr><td>Risk level changes</td><td id="delta-risk"></td></tr>
-      <tr><td>New LLM insights</td><td id="delta-insights"></td></tr>
-      <tr><td>Latency overhead</td><td id="delta-latency"></td></tr>
+      <tr><td>Risk reassessments</td><td id="delta-risk"></td></tr>
+      <tr><td>New AI findings</td><td id="delta-insights"></td></tr>
+      <tr><td>Additional time</td><td id="delta-latency"></td></tr>
     </table>
   </div>
 
@@ -92,22 +89,22 @@ function renderResult(d) {
   document.getElementById('llm-analyzed').textContent = d.llm.llm_analyzed;
   document.getElementById('new-insights').textContent = d.delta.new_llm_insights;
 
-  document.getElementById('basic-time').textContent = d.basic.processing_time_ms + ' ms';
+  document.getElementById('basic-time').textContent = (d.basic.processing_time_ms / 1000).toFixed(1) + 's';
   document.getElementById('basic-no-action-needed').textContent = d.basic.distribution.no_action_needed;
   document.getElementById('basic-review-recommended').textContent = d.basic.distribution.review_recommended;
   document.getElementById('basic-action-required').textContent = d.basic.distribution.action_required;
   document.getElementById('basic-urgent-review').textContent = d.basic.distribution.urgent_review;
 
-  document.getElementById('llm-time').textContent = d.llm.processing_time_ms + ' ms';
+  document.getElementById('llm-time').textContent = (d.llm.processing_time_ms / 1000).toFixed(1) + 's';
   document.getElementById('llm-no-action-needed').textContent = d.llm.distribution.no_action_needed;
   document.getElementById('llm-review-recommended').textContent = d.llm.distribution.review_recommended;
   document.getElementById('llm-action-required').textContent = d.llm.distribution.action_required;
   document.getElementById('llm-urgent-review').textContent = d.llm.distribution.urgent_review;
-  document.getElementById('llm-pct').textContent = d.llm.llm_analyzed_pct + '% policies analyzed by LLM';
+  document.getElementById('llm-pct').textContent = d.llm.llm_analyzed_pct + '% policies analyzed by AI';
 
   document.getElementById('delta-risk').textContent = d.delta.risk_level_changes;
   document.getElementById('delta-insights').textContent = d.delta.new_llm_insights;
-  document.getElementById('delta-latency').textContent = d.delta.latency_overhead_ms + ' ms';
+  document.getElementById('delta-latency').textContent = (d.delta.latency_overhead_ms / 1000).toFixed(1) + 's';
 
   const body = document.getElementById('examples-body');
   body.innerHTML = '';

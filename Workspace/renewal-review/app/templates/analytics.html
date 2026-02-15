@@ -1,0 +1,165 @@
+{% extends "base.html" %}
+{% block title %}Analytics — Renewal Review{% endblock %}
+
+{% block content %}
+<div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px;">
+  <h1 style="font-size:20px;">Analytics</h1>
+  <button class="btn btn-secondary" onclick="loadAnalytics()">Refresh</button>
+</div>
+
+<div id="empty-state" class="card" style="text-align:center; padding:40px; {% if history %}display:none{% endif %}">
+  <p style="color:#718096; font-size:14px;">No review data yet. Run a review from the <a href="/">Dashboard</a> to see analytics.</p>
+</div>
+
+<div id="analytics-content" style="{% if not history %}display:none{% endif %}">
+  <!-- Summary Stats -->
+  <div class="stats-grid" id="summary-stats">
+    <div class="stat-card">
+      <div class="value" id="stat-runs">{{ summary.total_runs }}</div>
+      <div class="label">Total Reviews</div>
+    </div>
+    <div class="stat-card">
+      <div class="value" id="stat-policies">{{ summary.total_policies_reviewed }}</div>
+      <div class="label">Policies Reviewed</div>
+    </div>
+    <div class="stat-card">
+      <div class="value" id="stat-avg-time">{{ "%.1f"|format(summary.avg_processing_time_ms / 1000) }}s</div>
+      <div class="label">Avg Review Time</div>
+    </div>
+    <div class="stat-card">
+      <div class="value" style="color:#9b2c2c" id="stat-urgent">{{ summary.risk_distribution.urgent_review }}</div>
+      <div class="label">Urgent Total</div>
+    </div>
+  </div>
+
+  <!-- Risk Distribution -->
+  <div class="card">
+    <h2>Risk Overview</h2>
+    <div style="display:flex; gap:16px; margin-top:12px;">
+      {% for level, label, color in [("no_action_needed", "No Action", "#c6f6d5"), ("review_recommended", "Review", "#fefcbf"), ("action_required", "Action", "#fed7d7"), ("urgent_review", "Urgent", "#9b2c2c")] %}
+      <div style="flex:1; text-align:center;">
+        <div style="background:#e2e8f0; border-radius:6px; height:120px; position:relative; overflow:hidden;">
+          {% set total = summary.risk_distribution.no_action_needed + summary.risk_distribution.review_recommended + summary.risk_distribution.action_required + summary.risk_distribution.urgent_review %}
+          {% set count = summary.risk_distribution[level] %}
+          {% set pct = (count / total * 100) if total else 0 %}
+          <div id="risk-bar-{{ level }}" class="risk-bar" style="
+            position:absolute; bottom:0; width:100%; border-radius:0 0 6px 6px;
+            height:{{ pct }}%;
+            background:{{ color }};
+          "></div>
+        </div>
+        <div style="margin-top:8px;">
+          <span class="badge badge-{{ level }}">{{ label }}</span>
+          <div style="font-size:18px; font-weight:700; margin-top:4px;" id="risk-count-{{ level }}">{{ count }}</div>
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+
+  <!-- Trends -->
+  {% if summary.trends %}
+  <div class="card">
+    <h2>Daily Summary</h2>
+    <table>
+      <thead>
+        <tr><th>Date</th><th>Reviews</th><th>Avg Time</th><th>Urgent Rate</th></tr>
+      </thead>
+      <tbody id="trends-body">
+        {% for t in summary.trends %}
+        <tr>
+          <td>{{ t.date }}</td>
+          <td>{{ t.total_runs }}</td>
+          <td>{{ "%.1f"|format(t.avg_processing_time_ms / 1000) }}s</td>
+          <td>
+            <div style="display:flex; align-items:center; gap:8px;">
+              <div class="progress-bar" style="flex:1; height:8px;">
+                <div class="progress-fill" style="width:{{ t.urgent_review_ratio * 100 }}%; background:{% if t.urgent_review_ratio > 0.1 %}#9b2c2c{% elif t.urgent_review_ratio > 0.05 %}#e53e3e{% else %}#48bb78{% endif %};"></div>
+              </div>
+              <span style="font-size:12px; color:#4a5568; min-width:40px;">{{ "%.1f"|format(t.urgent_review_ratio * 100) }}%</span>
+            </div>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% endif %}
+
+  <!-- Run History -->
+  <div class="card">
+    <h2>Review History</h2>
+    <table>
+      <thead>
+        <tr><th>Review #</th><th>Total</th><th>No Action</th><th>Review</th><th>Action</th><th>Urgent</th><th>Time</th><th>Date</th></tr>
+      </thead>
+      <tbody id="history-body">
+        {% for r in history|reverse %}
+        <tr>
+          <td style="font-family:monospace; font-size:12px;">{{ r.job_id }}</td>
+          <td>{{ r.total }}</td>
+          <td><span class="badge badge-no_action_needed">{{ r.no_action_needed }}</span></td>
+          <td><span class="badge badge-review_recommended">{{ r.review_recommended }}</span></td>
+          <td><span class="badge badge-action_required">{{ r.action_required }}</span></td>
+          <td><span class="badge badge-urgent_review">{{ r.urgent_review }}</span></td>
+          <td>{{ "%.1f"|format(r.processing_time_ms / 1000) }}s</td>
+          <td style="font-size:12px; color:#718096;">{{ r.created_at.strftime("%Y-%m-%d %H:%M") }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+async function loadAnalytics() {
+  const [historyResp, trendsResp] = await Promise.all([
+    fetch('/analytics/history'),
+    fetch('/analytics/trends')
+  ]);
+  const history = await historyResp.json();
+  const trends = await trendsResp.json();
+
+  if (history.length === 0) {
+    document.getElementById('empty-state').style.display = 'block';
+    document.getElementById('analytics-content').style.display = 'none';
+    return;
+  }
+
+  document.getElementById('empty-state').style.display = 'none';
+  document.getElementById('analytics-content').style.display = 'block';
+
+  document.getElementById('stat-runs').textContent = trends.total_runs;
+  document.getElementById('stat-policies').textContent = trends.total_policies_reviewed;
+  document.getElementById('stat-avg-time').textContent = (trends.avg_processing_time_ms / 1000).toFixed(1) + 's';
+  document.getElementById('stat-urgent').textContent = trends.risk_distribution.urgent_review;
+
+  const rd = trends.risk_distribution;
+  const total = rd.no_action_needed + rd.review_recommended + rd.action_required + rd.urgent_review || 1;
+  ['no_action_needed','review_recommended','action_required','urgent_review'].forEach(level => {
+    const pct = rd[level] / total * 100;
+    document.getElementById('risk-bar-' + level).style.height = pct + '%';
+    document.getElementById('risk-count-' + level).textContent = rd[level];
+  });
+
+  const tbody = document.getElementById('history-body');
+  tbody.innerHTML = '';
+  history.slice().reverse().forEach(r => {
+    const d = new Date(r.created_at);
+    const dateStr = d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0')+' '+String(d.getHours()).padStart(2,'0')+':'+String(d.getMinutes()).padStart(2,'0');
+    tbody.innerHTML += '<tr>'+
+      '<td style="font-family:monospace;font-size:12px;">'+r.job_id+'</td>'+
+      '<td>'+r.total+'</td>'+
+      '<td><span class="badge badge-no_action_needed">'+r.no_action_needed+'</span></td>'+
+      '<td><span class="badge badge-review_recommended">'+r.review_recommended+'</span></td>'+
+      '<td><span class="badge badge-action_required">'+r.action_required+'</span></td>'+
+      '<td><span class="badge badge-urgent_review">'+r.urgent_review+'</span></td>'+
+      '<td>'+(r.processing_time_ms / 1000).toFixed(1)+'s</td>'+
+      '<td style="font-size:12px;color:#718096;">'+dateStr+'</td>'+
+      '</tr>';
+  });
+}
+</script>
+{% endblock %}
