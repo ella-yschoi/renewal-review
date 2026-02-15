@@ -1,17 +1,3 @@
-COVERAGE_SIMILARITY = """You are an insurance coverage analyst.
-
-Compare the two coverage descriptions below and determine if they provide equivalent protection.
-
-Prior coverage: {prior_coverage}
-Renewal coverage: {renewal_coverage}
-
-Respond with ONLY valid JSON — no markdown, no code blocks, no extra text:
-{{
-  "equivalent": true/false,
-  "confidence": 0.0-1.0,
-  "reasoning": "Brief explanation of differences or equivalence"
-}}"""
-
 ENDORSEMENT_COMPARISON = """You are an insurance endorsement analyst.
 
 Compare these two endorsement descriptions from the same policy's prior and renewal terms.
@@ -96,39 +82,9 @@ QUOTE_PERSONALIZATION = (
     '{{"quotes": [{{"quote_id": "Q1", "trade_off": "...", "broker_tip": "..."}}]}}'
 )
 
-PORTFOLIO_ANALYSIS = (
-    "You are an insurance portfolio analyst advising a broker.\n"
-    "\n"
-    "Portfolio overview:\n"
-    "{portfolio_overview}\n"
-    "\n"
-    "Risk breakdown:\n"
-    "{risk_breakdown}\n"
-    "\n"
-    "Bundle analysis:\n"
-    "{bundle_analysis}\n"
-    "\n"
-    "Cross-policy flags:\n"
-    "{cross_policy_flags}\n"
-    "\n"
-    "Individual policies:\n"
-    "{individual_policies}\n"
-    "\n"
-    "Based on this portfolio data, provide:\n"
-    "1. A verdict (1-2 sentence executive summary of the portfolio's status)\n"
-    "2. Recommendations (specific bundle/strategy suggestions with estimated impact)\n"
-    "3. Action items (prioritized by HIGH/MEDIUM/LOW with specific policy references)\n"
-    "\n"
-    "Respond with ONLY valid JSON — no markdown, no code blocks, no extra text:\n"
-    '{{"verdict": "...", "recommendations": ["...", "..."], '
-    '"action_items": ["HIGH: ...", "MEDIUM: ...", "LOW: ..."]}}'
-)
-
 PROMPT_MAP = {
-    "coverage_similarity": COVERAGE_SIMILARITY,
     "endorsement_comparison": ENDORSEMENT_COMPARISON,
     "risk_signal_extractor": RISK_SIGNAL_EXTRACTOR,
     "review_summary": REVIEW_SUMMARY,
     "quote_personalization": QUOTE_PERSONALIZATION,
-    "portfolio_analysis": PORTFOLIO_ANALYSIS,
 }

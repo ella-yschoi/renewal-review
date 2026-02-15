@@ -4,18 +4,18 @@
 
 | 구분 | 라인 | 비율 |
 |------|------|------|
-| **Rule-based** (engine/) | 1,110 | **39%** |
-| **LLM** (llm/) | 692 | **24%** |
-| **Hybrid/통합** (routes, aggregator) | 644 | 23% |
-| **인프라** (models, config) | ~416 | 14% |
+| **Rule-based** (engine/) | 1,110 | **42%** |
+| **LLM** (llm/) | 499 | **19%** |
+| **Hybrid/통합** (routes, aggregator) | 644 | 25% |
+| **인프라** (models, config) | ~370 | 14% |
 
 ## 함수 기준
 
 | 구분 | 함수 수 | 비율 |
 |------|---------|------|
-| **Pure rule-based** | 36 | **67%** |
-| **Pure LLM** | 11 | **20%** |
-| **Hybrid** | 7 | 13% |
+| **Pure rule-based** | 36 | **69%** |
+| **Pure LLM** | 8 | **15%** |
+| **Hybrid** | 8 | 16% |
 
 ## 파이프라인 단계별
 
@@ -26,27 +26,32 @@ Parse → Diff → Flag → Risk 판정    ← 100% rule-based (항상 실행)
                          │
                     Aggregate        ← hybrid (rule 기반 + LLM 신호로 상향)
                          │
-              Summary / Quotes /     ← LLM enrichment (lazy 또는 즉시)
-              Portfolio
+              Summary / Quotes       ← LLM enrichment (lazy 또는 즉시)
 ```
 
-## LLM 6개 적용 포인트
+## LLM 4개 적용 포인트
 
 | LLM 호출 | 대상 | 트리거 |
 |----------|------|--------|
 | Risk Signal Extraction | notes 분석 | notes 변경 시 |
 | Endorsement Comparison | 특약 비교 | endorsement 변경 시 |
-| Coverage Similarity | 보장 비교 | coverage 삭제 시 |
 | Review Summary | 리뷰 요약 | flags 있는 정책 (lazy) |
 | Quote Personalization | 견적 개인화 | quotes 생성 시 |
-| Portfolio Analysis | 포트폴리오 분석 | analyze 클릭 시 |
+
+## Rollback한 2개 포인트
+
+| 포인트 | Rollback 근거 |
+|--------|--------------|
+| Coverage Similarity | boolean 비교 = 1줄 if문, LLM 불필요. 입력이 구조화되어 있어 의미 해석 불필요 |
+| Portfolio Analysis | 100% 구조화된 입력(premium, risk levels, flags). JS에 이미 4단계 verdict + FLAG_ACTIONS 매핑 존재 |
 
 ## 핵심 포인트
 
 - **코어 엔진은 100% rule-based** — 파싱, diff, 플래깅, 초기 risk 판정 전부
 - **LLM은 additive** — `RR_LLM_ENABLED=false`(기본값)이면 LLM 없이 완전히 동작
 - **실패해도 안전** — 모든 LLM 호출이 실패하면 rule-based fallback으로 복귀
-- **비율 요약**: 전통적 프로그래밍 **~61%** / AI 기반 로직 **~24%** / 인프라 **~15%**
+- **LLM 적용 기준**: 비정형 텍스트 해석 + 다중 맥락 합성에만 적용. 구조화된 입력의 결정적 판단은 rule-based
+- **비율 요약**: 전통적 프로그래밍 **~67%** / AI 기반 로직 **~19%** / 인프라 **~14%**
 
 ---
 
@@ -63,34 +68,35 @@ Parse → Diff → Flag → Risk 판정    ← 100% rule-based (항상 실행)
 | 5 | Quote 전략 + 절감액 | Rule | Rule |
 | 6 | **Quote Trade-off 텍스트** | Rule | **LLM** |
 | 7 | **Quote Broker Tip** | Rule | **LLM** |
-| 8 | **Portfolio Verdict** | Rule | **LLM** |
-| 9 | **Portfolio Recommendations** | Rule | **LLM** |
-| 10 | **Portfolio Action Items** | Rule | **LLM** |
+| 8 | Portfolio Verdict | Rule | Rule |
+| 9 | Portfolio Recommendations | Rule | Rule |
+| 10 | Portfolio Action Items | Rule | Rule |
 | 11 | Dashboard 테이블 | Rule | Rule |
 | 12 | Analytics 차트 | Rule | Rule |
 
 ```
 Before:  LLM  1/12 ( 8%)  ·  Rule 11/12 (92%)
-After:   LLM  7/12 (58%)  ·  Rule  5/12 (42%)
+After:   LLM  4/12 (33%)  ·  Rule  8/12 (67%)
 ```
 
 ### 코드량 기준
 
 ```
 Before:  LLM 338줄 (14%)  ·  Rule 1,110줄 (46%)  ·  기타 962줄 (40%)
-After:   LLM 692줄 (24%)  ·  Rule 1,110줄 (39%)  ·  기타 1,060줄 (37%)
-                  ↑ +354줄 (+105% 성장)
+After:   LLM 499줄 (19%)  ·  Rule 1,110줄 (42%)  ·  기타 1,014줄 (39%)
+                  ↑ +161줄 (+48% 성장)
 ```
 
 ### 함수 기준
 
 ```
 Before:  LLM  8/50 (16%)  ·  Rule 40/50 (80%)  ·  Hybrid  2/50 (4%)
-After:   LLM 11/54 (20%)  ·  Rule 36/54 (67%)  ·  Hybrid  7/54 (13%)
+After:   LLM  8/52 (15%)  ·  Rule 36/52 (69%)  ·  Hybrid  8/52 (16%)
 ```
 
 > Rule-based 코드는 한 줄도 삭제하지 않고, LLM 레이어만 위에 얹은 구조.
-> 유저가 보는 출력 기준 8% → 58%로 LLM 비중이 크게 늘었지만, 엔진 코어는 그대로.
+> 유저가 보는 출력 기준 8% → 33%로 LLM 비중이 늘었지만, 엔진 코어는 그대로.
+> Portfolio는 rule-based가 충분히 정확하여 LLM 적용에서 제외.
 
 ---
 
@@ -118,7 +124,7 @@ urgent broker review before binding."
 | 형식 | `Flag: ... \| Risk: ...` | 자연어 2-3문장 |
 | 맥락 | 없음 | premium 수치, 삭제된 보장, notes 내용 반영 |
 | 실행 시점 | 배치 처리 중 즉시 | lazy — UI에서 정책 상세 열 때 |
-| UI 표시 | 텍스트만 | ✨ sparkle + 텍스트 |
+| UI 표시 | 텍스트만 | sparkle + 텍스트 |
 | fallback | — | LLM 실패 시 기존 기계적 형식 유지 |
 
 ---
@@ -149,51 +155,8 @@ Broker Tip: "Verify the client has emergency savings above $2,500 before
 | Broker Tip | STRATEGY_TIPS 테이블 (5개) | LLM 생성 맞춤 조언 |
 | 개인화 수준 | 없음 — 같은 전략이면 같은 텍스트 | 높음 — claim, 차량, notes 반영 |
 | 절감 계산 | rule-based (유지) | rule-based (유지) — LLM은 텍스트만 |
-| UI 표시 | 텍스트만 | ✨ sparkle + 텍스트 |
+| UI 표시 | 텍스트만 | sparkle + 텍스트 |
 | fallback | — | 원본 하드코딩 trade_off + STRATEGY_TIPS |
-
----
-
-### 3. Portfolio Risk Aggregator (포트폴리오 분석)
-
-**Before — Rule-based**
-
-```
-Verdict:  "Immediate Attention Required — 2 urgent, client follow-up needed"
-          (urgentCount 기반 4단계 고정 메시지)
-
-Bundle:   "Carrier consolidation opportunity — bundle discount available"
-          (is_bundle / carrier_mismatch 조합 4가지 고정 메시지)
-
-Actions:  "Review 2 urgent policies immediately"
-          "Remove lower policy to reduce premium (AUTO-001, HOME-001)"
-          (FLAG_ACTIONS 매핑 테이블 6개 + risk count 기반)
-```
-
-**After — LLM**
-
-```
-Verdict:  "Portfolio requires attention — 2 policies flagged urgent
-           with significant premium increases and coverage gaps."
-
-Recommendations:
-  • "Consolidate carriers for bundle discount — estimated 5-10% savings"
-  • "Remove duplicate medical coverage across auto/home policies"
-
-Action Items:
-  • HIGH: Review HOME-2024-0926 — urgent premium increase
-  • MEDIUM: Consolidate medical payments across auto/home
-  • LOW: Consider umbrella policy for liability exposure
-```
-
-| 비교 항목 | Before | After |
-|-----------|--------|-------|
-| Verdict | 4단계 고정 메시지 | 맥락 기반 자연어 요약 |
-| Recommendations | bundle 조합 4가지 고정 | 구체적 전략 + 예상 절감액 |
-| Action Items | FLAG_ACTIONS 6개 + count 기반 | HIGH/MEDIUM/LOW 우선순위 + 정책 특정 |
-| 개인화 수준 | 없음 — 같은 조건이면 같은 텍스트 | 높음 — 개별 정책 상황 반영 |
-| UI 표시 | 텍스트만 | 섹션 헤더 ✨ sparkle |
-| fallback | — | 기존 rule-based 메시지 그대로 |
 
 ---
 
@@ -214,5 +177,5 @@ Action Items:
 | LLM 기본값 | **꺼짐** (`RR_LLM_ENABLED=false`) |
 | 실패 전략 | **graceful fallback** — rule-based 유지 |
 | 부분 응답 | **partial match** — 있는 필드만 반영 |
-| UI 구분 | **✨ sparkle** — LLM 생성 콘텐츠 시각적 구분 |
-| 비용 영향 | Review ~800 tokens, Quote ~1,200 tokens, Portfolio ~1,600 tokens |
+| UI 구분 | **sparkle** — LLM 생성 콘텐츠 시각적 구분 |
+| 비용 영향 | Review ~800 tokens, Quote ~1,200 tokens |

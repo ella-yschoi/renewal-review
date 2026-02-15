@@ -1,9 +1,6 @@
-from typing import Any
-
 from fastapi.testclient import TestClient
 
 from app.engine.portfolio_analyzer import analyze_portfolio
-from app.llm.portfolio_advisor import enrich_portfolio
 from app.main import app
 from app.models.diff import DiffResult
 from app.models.policy import (
@@ -232,73 +229,3 @@ def test_missing_policy_error():
     )
     assert response.status_code == 422
     assert "No review found" in response.json()["detail"]
-
-
-# --- LLM enrichment tests ---
-
-
-class _MockLLMClient:
-    def complete(self, prompt: str, trace_name: str) -> dict[str, Any]:
-        return {
-            "verdict": "Portfolio needs review — 2 policies with elevated risk",
-            "recommendations": [
-                "Consolidate carriers for bundle discount",
-                "Review duplicate medical coverage",
-            ],
-            "action_items": [
-                "HIGH: Review urgent policies",
-                "MEDIUM: Address coverage gaps",
-            ],
-        }
-
-
-class _ErrorLLMClient:
-    def complete(self, prompt: str, trace_name: str) -> dict[str, Any]:
-        raise RuntimeError("LLM service unavailable")
-
-
-def _make_summary_and_results():
-    auto = _make_review(
-        "AUTO-001", PolicyType.AUTO, 1200.0, 1100.0, auto_coverages=AutoCoverages()
-    )
-    home = _make_review(
-        "HOME-001", PolicyType.HOME, 2000.0, 1900.0, home_coverages=HomeCoverages()
-    )
-    store = _build_store([auto, home])
-    summary = analyze_portfolio(["AUTO-001", "HOME-001"], store)
-    results = [auto, home]
-    return summary, results
-
-
-def test_enrich_portfolio_success():
-    summary, results = _make_summary_and_results()
-    enriched = enrich_portfolio(_MockLLMClient(), summary, results)
-    assert enriched.llm_verdict == "Portfolio needs review — 2 policies with elevated risk"
-    assert enriched.llm_enriched is True
-
-
-def test_enrich_portfolio_llm_error():
-    summary, results = _make_summary_and_results()
-    enriched = enrich_portfolio(_ErrorLLMClient(), summary, results)
-    assert enriched.llm_verdict == ""
-    assert enriched.llm_enriched is False
-
-
-def test_enrich_portfolio_empty_flags():
-    auto1 = _make_review(
-        "AUTO-001", PolicyType.AUTO, 1100.0, 1100.0, auto_coverages=AutoCoverages()
-    )
-    auto2 = _make_review("AUTO-002", PolicyType.AUTO, 800.0, 800.0, auto_coverages=AutoCoverages())
-    store = _build_store([auto1, auto2])
-    summary = analyze_portfolio(["AUTO-001", "AUTO-002"], store)
-    assert len(summary.cross_policy_flags) == 0
-    enriched = enrich_portfolio(_MockLLMClient(), summary, [auto1, auto2])
-    assert enriched.llm_enriched is True
-    assert enriched.llm_verdict != ""
-
-
-def test_enrich_portfolio_field_counts():
-    summary, results = _make_summary_and_results()
-    enriched = enrich_portfolio(_MockLLMClient(), summary, results)
-    assert len(enriched.llm_recommendations) == 2
-    assert len(enriched.llm_action_items) == 2

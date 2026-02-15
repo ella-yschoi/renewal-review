@@ -7,9 +7,9 @@
 보험 갱신(renewal) 정책을 자동으로 비교·분석하여 위험 수준을 판정하는 파이프라인 기반 대시보드 시각화.
 
 - **Prior vs Renewal 비교**: 기존 정책과 갱신 정책의 모든 필드를 diff하고, 주의가 필요한 변경에 flag를 부여
-- **Rule + LLM 하이브리드**: 규칙 기반 risk 판정 후, 조건 충족 시 LLM이 notes·endorsement·coverage를 심층 분석하여 risk를 상향 조정
+- **Rule + LLM 하이브리드**: 규칙 기반 risk 판정 후, 조건 충족 시 LLM이 notes·endorsement를 심층 분석하여 risk를 상향 조정
 - **대안 견적 생성**: flagged 정책에 대해 보장 조정 전략별 절감 견적(Quote)을 최대 3개 제안
-- **Portfolio Risk Aggregator**: 클라이언트의 복수 정책을 묶어 교차 분석 — 번들 할인, 중복 보장, 노출도 평가 + LLM enrichment
+- **Portfolio Risk Aggregator**: 클라이언트의 복수 정책을 묶어 교차 분석 — 번들 할인, 중복 보장, 노출도 평가 (rule-based)
 
 **대상 사용자**: 보험 언더라이터, 갱신 심사 담당자
 
@@ -64,10 +64,9 @@ app/
 │   ├── __init__.py
 │   ├── analyzer.py       # should_analyze, analyze_pair, generate_summary
 │   ├── client.py         # LLMClient — OpenAI/Anthropic + Langfuse
-│   ├── prompts.py        # 6개 프롬프트 템플릿
+│   ├── prompts.py        # 4개 프롬프트 템플릿
 │   ├── mock.py           # MockLLMClient — 테스트/migration 비교용
-│   ├── quote_advisor.py  # personalize_quotes — Quote LLM 개인화
-│   └── portfolio_advisor.py # enrich_portfolio — Portfolio LLM enrichment
+│   └── quote_advisor.py  # personalize_quotes — Quote LLM 개인화
 │
 ├── models/
 │   ├── __init__.py
@@ -195,16 +194,7 @@ JSON/DB → load_pairs → [RenewalPair]
 |------|------|-----------|
 | `CrossPolicyFlag` | 정책 간 교차 이슈 | flag_type, severity, description, affected_policies |
 | `BundleAnalysis` | 번들 분석 결과 | has_auto, has_home, is_bundle, bundle_discount_eligible, carrier_mismatch, unbundle_risk |
-| `PortfolioSummary` | 포트폴리오 전체 요약 | client_policies, total_premium, total_prior_premium, premium_change_pct, risk_breakdown, bundle_analysis, cross_policy_flags, llm_verdict, llm_recommendations, llm_action_items, llm_enriched |
-
-**LLM Enrichment 필드**:
-
-| 필드 | 타입 | 설명 |
-|------|------|------|
-| `llm_verdict` | `str` (default "") | LLM 생성 executive summary |
-| `llm_recommendations` | `list[str]` (default []) | LLM 생성 번들/전략 추천 |
-| `llm_action_items` | `list[str]` (default []) | LLM 생성 우선순위화된 액션 |
-| `llm_enriched` | `bool` (default False) | UI sparkle 표시용 |
+| `PortfolioSummary` | 포트폴리오 전체 요약 | client_policies, total_premium, total_prior_premium, premium_change_pct, risk_breakdown, bundle_analysis, cross_policy_flags |
 
 ### DB 도메인 (`app/models/db_models.py`)
 
@@ -252,10 +242,9 @@ LLM 분석 결과에 따라 rule_risk보다 높은 level로 상향. 하향은 �
 
 | 조건 | 상향 대상 |
 |------|----------|
-| coverage NOT equivalent (confidence ≥ 0.8) | → `action_required` 이상 |
 | risk_signal 2건 이상 (confidence ≥ 0.7) | → `action_required` 이상 |
 | endorsement restriction (confidence ≥ 0.75) | → `action_required` 이상 |
-| 위 조건 복합 (coverage/restriction + risk_signal ≥ 2) | → `urgent_review` |
+| 위 조건 복합 (restriction + risk_signal ≥ 2) | → `urgent_review` |
 
 ### Flag 트리거 임계값 (`app/engine/rules.py`)
 
@@ -360,7 +349,7 @@ POST /batch/run  →  {"job_id": "abc12345", "status": "running"}
 | 3 | Analytics | `GET /ui/analytics` | 배치 이력 목록 + 트렌드 차트 (risk distribution, 일별 urgent_review_ratio) |
 | 4 | Quote Generator | `GET /ui/quotes` | flagged 정책 목록 표시. "Generate Quotes" 클릭 → `/reviews/{pn}` + `/quotes/generate` 호출하여 대안 견적 모달 표시. 페이지네이션 |
 | 5 | LLM Insights | `GET /ui/insight` | Basic vs LLM 비교 대시보드. element ID: `basic-*`, `llm-*`. 비동기 실행 후 polling으로 결과 표시 |
-| 6 | Portfolio | `GET /ui/portfolio` | 정책 목록 표시, 복수 선택 → Analyze Portfolio 클릭 시 POST /portfolio/analyze 호출. LLM 활성화 시 verdict/recommendations/action items에 sparkle 표시, 비활성화 시 rule-based fallback |
+| 6 | Portfolio | `GET /ui/portfolio` | 정책 목록 표시, 복수 선택 → Analyze Portfolio 클릭 시 POST /portfolio/analyze 호출. Rule-based verdict/recommendations/action items 표시 |
 | 7 | Base Layout | — | 공통 nav, footer |
 
 **네비게이션 순서**: Dashboard → Analytics → LLM Insights → Quote Generator → Portfolio
@@ -375,7 +364,6 @@ POST /batch/run  →  {"job_id": "abc12345", "status": "running"}
 
 1. notes가 변경되었고 renewal에 notes가 존재
 2. endorsement description이 변경됨
-3. Home 정책에서 water_backup 상태가 변경됨
 
 ### 분석 흐름
 
@@ -386,8 +374,7 @@ should_analyze(diff, pair) ──▶ True?
   analyze_pair(client, diff, pair)
        │
        ├── _analyze_notes()          ← RISK_SIGNAL_EXTRACTOR 프롬프트
-       ├── _analyze_endorsement()    ← ENDORSEMENT_COMPARISON 프롬프트
-       └── _analyze_coverage()       ← COVERAGE_SIMILARITY 프롬프트
+       └── _analyze_endorsement()    ← ENDORSEMENT_COMPARISON 프롬프트
        │
   aggregate(policy_number, rule_risk, diff, insights) → ReviewResult
 ```
@@ -411,36 +398,23 @@ Quote의 hardcoded trade_off를 고객 맥락 기반 개인화 텍스트로 대�
 - partial match 지원: 3개 중 2개만 반환되면 나머지는 원본 유지
 - `settings.llm_enabled` 토글 존중 (`app/routes/quotes.py`)
 
-### Portfolio LLM Enrichment (`app/llm/portfolio_advisor.py:enrich_portfolio`)
-
-포트폴리오 분석 결과를 LLM으로 enrichment하여 맥락 기반 개인화 제공.
-단일 LLM 호출로 verdict + recommendations + action_items 모두 생성.
-
-- 입력: PortfolioSummary + list[ReviewResult]
-- `_build_portfolio_context()` — portfolio overview, risk breakdown, bundle analysis, cross-policy flags, individual policies 포함
-- partial match 지원: 반환된 필드만 채우고, 나머지는 빈 상태 유지
-- `settings.llm_enabled` 토글 존중 (`app/routes/portfolio.py`)
-- 실패 시 원본 summary 유지 (llm 필드 빈 상태, llm_enriched=False)
-
 ### Fallback 동작
 
-| 시나리오 | Summary | Quote | Portfolio |
-|----------|---------|-------|-----------|
-| `llm_enabled=false` | 기존 mechanical format | hardcoded trade_off, broker_tip="" | rule-based verdict/recommendations/action items |
-| LLM API 에러 | mechanical summary 유지 | 원본 trade_off 유지, broker_tip="" | rule-based fallback |
-| LLM 부분 응답 | N/A | 매칭된 quote만 개인화, 나머지 원본 | 있는 필드만 사용, 빈 필드는 rule-based fallback |
-| Flag 없는 policy | summary 생성 건너뜀 | quote 자체가 빈 리스트 | LLM 호출 후 결과 반영 |
+| 시나리오 | Summary | Quote |
+|----------|---------|-------|
+| `llm_enabled=false` | 기존 mechanical format | hardcoded trade_off, broker_tip="" |
+| LLM API 에러 | mechanical summary 유지 | 원본 trade_off 유지, broker_tip="" |
+| LLM 부분 응답 | N/A | 매칭된 quote만 개인화, 나머지 원본 |
+| Flag 없는 policy | summary 생성 건너뜀 | quote 자체가 빈 리스트 |
 
-### 6개 프롬프트 (`app/llm/prompts.py`)
+### 4개 프롬프트 (`app/llm/prompts.py`)
 
 | 프롬프트 | 역할 | 입력 | 출력 (JSON) |
 |---------|------|------|------------|
 | `RISK_SIGNAL_EXTRACTOR` | 갱신 notes에서 risk signal 추출 | notes 텍스트 | signals[], confidence, summary |
 | `ENDORSEMENT_COMPARISON` | 특약 설명 변경의 material change 판단 | prior/renewal description | material_change, change_type, confidence, reasoning |
-| `COVERAGE_SIMILARITY` | 두 coverage의 동등성 비교 | prior/renewal coverage 텍스트 | equivalent, confidence, reasoning |
 | `REVIEW_SUMMARY` | 리뷰 결과를 자연어 요약으로 변환 | policy 메타 + flags + changes + insights | summary |
 | `QUOTE_PERSONALIZATION` | Quote trade_off/broker_tip 개인화 | policy context + quotes 배열 | quotes[{quote_id, trade_off, broker_tip}] |
-| `PORTFOLIO_ANALYSIS` | 포트폴리오 종합 분석 | portfolio overview + risk + bundle + flags + policies | verdict, recommendations[], action_items[] |
 
 ### Provider 구성 (`app/llm/client.py`)
 
@@ -477,7 +451,6 @@ Quote의 hardcoded trade_off를 고객 맥락 기반 개인화 텍스트로 대�
 | LLM 분석 에러 | confidence=0.0인 에러 LLMInsight 생성 | `app/llm/analyzer.py:34-40`, `64-68`, `84-88` |
 | LLM summary 실패 | 기존 mechanical summary 유지 | `app/engine/batch.py` |
 | LLM quote 개인화 실패 | 원본 trade_off 유지, broker_tip="" | `app/llm/quote_advisor.py` |
-| LLM portfolio enrichment 실패 | 원본 summary 유지, llm 필드 빈 상태 | `app/llm/portfolio_advisor.py` |
 
 ### Async Job 실패
 
@@ -581,7 +554,7 @@ data/
 
 ### 테스트 현황
 
-11개 파일, 101개 테스트.
+11개 파일, 96개 테스트.
 
 | 파일 | 테스트 수 | 검증 대상 |
 |------|----------|----------|
@@ -591,10 +564,10 @@ data/
 | `tests/test_parser.py` | 8 | snapshot/pair 파싱, vehicle/driver/endorsement, 날짜 정규화, notes |
 | `tests/test_quote_generator.py` | 11 | Auto/Home 전략, 이미 최적화된 케이스, liability 보호, 라우트 통합, LLM 개인화 |
 | `tests/test_batch.py` | 7 | process_pair, assign_risk_level 4단계, process_batch |
-| `tests/test_llm_analyzer.py` | 11 | should_analyze 조건, notes/endorsement/coverage 분석, MockLLM 통합, generate_summary |
+| `tests/test_llm_analyzer.py` | 10 | should_analyze 조건, notes/endorsement 분석, MockLLM 통합, generate_summary |
 | `tests/test_analytics.py` | 6 | compute_trends (empty/single/multiple), 라우트, FIFO 제한 |
 | `tests/test_models.py` | 6 | 모델 구조, DiffFlag 값, risk level 순서 |
-| `tests/test_portfolio.py` | 12 | bundle 분석, 중복 커버리지, unbundle risk, premium concentration, LLM enrichment (success/error/empty flags/field counts) |
+| `tests/test_portfolio.py` | 8 | bundle 분석, 중복 커버리지, unbundle risk, premium concentration |
 | `tests/test_main.py` | 1 | /health 엔드포인트 |
 | `tests/conftest.py` | — | 공통 fixture (auto_pair, home_pair 등) |
 
