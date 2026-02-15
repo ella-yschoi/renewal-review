@@ -5,6 +5,25 @@
 
 ---
 
+## 2026-02-15 03:15 | `experiment/portfolio-aggregator`
+
+### 무엇을 했는가
+전체 템플릿(6개) 대상 브로커 친화적 용어 감사 및 수정. analytics.html의 risk_distribution 키 불일치 수정 (500 에러 해결).
+- analytics.html: `low/medium/high/critical` → `no_action_needed/review_recommended/action_required/urgent_review` (Jinja + JS), 시간 ms → 초, 헤더 용어 정리
+- dashboard.html: "Run Sample" → "Review Sample", "Run Eval" → "Quality Check", "Total Processed" → "Total Reviewed", 시간 ms → 초
+- migration.html: "vs" → "vs.", "LLM" → "AI", "Sample Size" → "Policies Compared", "Delta" → "Comparison", 시간 ms → 초
+- review.html: "Field Changes" → "Policy Changes", "LLM Insights" → "AI Insights"
+
+검증: ruff 0 errors, pytest 89/89 passed.
+
+### 왜 했는가
+데모 대상이 보험 브로커이므로, "Batch Run", "Job ID", "Eval", "LLM", "Delta", "Latency" 같은 개발자 용어가 혼란을 줄 수 있음. analytics.html은 risk_distribution 키가 이전 모델 키(`low/medium/high/critical`)를 참조하여 500 에러 발생.
+
+### 어떻게 했는가
+6개 템플릿을 순회하며 개발자 중심 용어를 식별, 브로커가 이해할 수 있는 단어로 치환. ms 단위 시간 표시를 전부 초 단위로 변환 (Jinja: `/ 1000 + "s"`, JS: `.toFixed(1) + 's'`). analytics.html의 Jinja 변수명과 JS getElementById를 실제 데이터 모델 필드에 맞춰 일괄 수정.
+
+---
+
 ## 2026-02-15 02:30 | `experiment/portfolio-aggregator`
 
 ### 무엇을 했는가
