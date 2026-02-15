@@ -9,7 +9,7 @@
 
 ---
 
-### 2026-02-15 03:45 | `experiment/portfolio-aggregator` | `TBD`
+### 2026-02-15 03:45 | `experiment/portfolio-aggregator` | `1cb5e26`
 
 **improve: unify button layouts and fix portfolio selection reset**
 
@@ -21,7 +21,7 @@ _3 files changed, 26 insertions, 19 deletions_
 
 ---
 
-### 2026-02-15 03:15 | `experiment/portfolio-aggregator` | `TBD`
+### 2026-02-15 03:15 | `experiment/portfolio-aggregator` | `b22a258`
 
 **fix: broker-friendly terminology audit and analytics key mismatch**
 
@@ -33,7 +33,7 @@ _4 files changed, 61 insertions, 61 deletions_
 
 ---
 
-### 2026-02-15 02:30 | `experiment/portfolio-aggregator` | `TBD`
+### 2026-02-15 02:30 | `experiment/portfolio-aggregator` | `1e02a34`
 
 **feat: broker-friendly portfolio modal, nav UX improvements, and bug fixes**
 
@@ -45,7 +45,7 @@ _6 files changed (1 new, 5 modified, 1 deleted)_
 
 ---
 
-### 2026-02-15 00:45 | `experiment/portfolio-aggregator` | `TBD`
+### 2026-02-15 00:45 | `experiment/portfolio-aggregator` | `de21fc1`
 
 **feat: add Portfolio Risk Aggregator — cross-policy analysis via self-correcting loop**
 
@@ -57,7 +57,7 @@ _5 files changed, ~430 insertions_
 
 ---
 
-### 2026-02-14 22:30 | `experiment/portfolio-aggregator` | `TBD`
+### 2026-02-14 22:30 | `experiment/portfolio-aggregator` | `41c0e85`
 
 **chore: set up experiment 4 — portfolio aggregator requirements, prompt, and team guide**
 
