@@ -21,12 +21,6 @@ def aggregate(
 ) -> ReviewResult:
     final_risk = rule_risk
 
-    high_confidence_signals = [
-        i for i in llm_insights if i.confidence >= 0.8 and "NOT equivalent" in i.finding
-    ]
-    if high_confidence_signals:
-        final_risk = _max_risk(final_risk, RiskLevel.ACTION_REQUIRED)
-
     risk_signals = [
         i
         for i in llm_insights
@@ -42,7 +36,7 @@ def aggregate(
         final_risk = _max_risk(final_risk, RiskLevel.ACTION_REQUIRED)
 
     # combined strong signals → CRITICAL
-    if (high_confidence_signals or restriction_changes) and len(risk_signals) >= 2:
+    if restriction_changes and len(risk_signals) >= 2:
         final_risk = _max_risk(final_risk, RiskLevel.URGENT_REVIEW)
 
     summary_parts = [f"Risk: {final_risk.value}"]

@@ -51,14 +51,6 @@ def test_analyze_pair_endorsement_desc(auto_pair: RenewalPair):
         assert any(i.analysis_type == "endorsement_comparison" for i in insights)
 
 
-def test_analyze_pair_coverage_drop(home_pair: RenewalPair):
-    client = MockLLMClient()
-    diff = compute_diff(home_pair)
-    diff = flag_diff(diff, home_pair)
-    insights = analyze_pair(client, diff, home_pair)
-    assert any(i.analysis_type == "coverage_similarity" for i in insights)
-
-
 def test_process_pair_with_mock_llm(home_pair: RenewalPair):
     client = MockLLMClient()
     result = process_pair(home_pair, llm_client=client)

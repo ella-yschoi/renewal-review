@@ -121,7 +121,7 @@
     <button class="modal-close" onclick="closeModal()">&times;</button>
     <div class="modal-title" id="modal-title">Portfolio Analysis</div>
     <div class="modal-subtitle" id="modal-subtitle"></div>
-    <div class="modal-spinner" id="modal-loading"><div class="spinner"></div><p style="margin-top:8px;">Analyzing portfolio with AI...</p></div>
+    <div class="modal-spinner" id="modal-loading"><div class="spinner"></div><p style="margin-top:8px;">Analyzing portfolio...</p></div>
     <div id="modal-content" style="display:none;">
       <div id="verdict-banner"></div>
       <div class="stats-grid" id="stats-grid"></div>
@@ -291,12 +291,7 @@ function renderRiskBar(breakdown) {
 function renderBundle(bundle, data) {
   var bundleH2 = document.querySelector('#bundle-card h2');
   var recHtml = '';
-  if (data && data.llm_recommendations && data.llm_recommendations.length > 0) {
-    bundleH2.innerHTML = 'Recommendations <span class="llm-sparkle" title="AI-generated"></span>';
-    data.llm_recommendations.forEach(function(rec) {
-      recHtml += '<div class="bundle-recommendation rec-blue">' + rec + '</div>';
-    });
-  } else if (bundle.is_bundle && !bundle.carrier_mismatch) {
+  if (bundle.is_bundle && !bundle.carrier_mismatch) {
     recHtml = '<div class="bundle-recommendation rec-green">Bundle discount applied — verify discount on renewal</div>';
   } else if (bundle.is_bundle && bundle.carrier_mismatch) {
     recHtml = '<div class="bundle-recommendation rec-yellow">Carrier consolidation opportunity — bundle discount available</div>';
@@ -381,9 +376,7 @@ function renderVerdict(data) {
     cls = 'verdict-green';
   }
 
-  if (data.llm_verdict) {
-    msg = '<span class="llm-sparkle" title="AI-generated"></span> ' + data.llm_verdict;
-  } else if (urgentCount > 0 || hasCriticalFlags) {
+  if (urgentCount > 0 || hasCriticalFlags) {
     msg = 'Immediate Attention Required — ' + urgentCount + ' urgent, client follow-up needed';
   } else if (actionCount > 0 || changePct >= 10) {
     msg = 'Action Needed — ' + actionCount + ' policies require action';
@@ -400,21 +393,6 @@ function renderVerdict(data) {
 
 function renderActionItems(data) {
   var card = document.getElementById('action-items-card');
-
-  if (data.llm_action_items && data.llm_action_items.length > 0) {
-    card.style.display = '';
-    card.querySelector('h2').innerHTML = 'Action Items <span class="llm-sparkle" title="AI-generated"></span>';
-    var html = '<ol class="action-items-list">';
-    data.llm_action_items.forEach(function(item) {
-      var pri = 'info';
-      if (item.indexOf('HIGH:') === 0) pri = 'critical';
-      else if (item.indexOf('MEDIUM:') === 0) pri = 'warning';
-      html += '<li class="priority-' + pri + '">' + item + '</li>';
-    });
-    html += '</ol>';
-    document.getElementById('action-items-list').innerHTML = html;
-    return;
-  }
 
   var items = [];
   var rb = data.risk_breakdown;

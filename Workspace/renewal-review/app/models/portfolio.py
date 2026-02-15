@@ -25,7 +25,3 @@ class PortfolioSummary(BaseModel):
     risk_breakdown: dict[str, int]
     bundle_analysis: BundleAnalysis
     cross_policy_flags: list[CrossPolicyFlag]
-    llm_verdict: str = ""
-    llm_recommendations: list[str] = []
-    llm_action_items: list[str] = []
-    llm_enriched: bool = False
