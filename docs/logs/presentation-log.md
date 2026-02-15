@@ -9,6 +9,18 @@
 
 ---
 
+### 2026-02-15 01:32 | `experiment/portfolio-aggregator` | uncommitted
+
+**feat: Langfuse LLM provider benchmark — OpenAI vs Anthropic (v1 + v2)**
+
+_5 files changed (2 new scripts, 1 experiment doc, 1 prompt update, 1 .env symlink)_
+
+> **Context**: 프로젝트에서 LLM provider를 선정해야 하는데, "어떤 모델이 좋은지"를 감이 아닌 데이터로 판단하고 싶었다. Langfuse Datasets + Experiments SDK를 활용해 같은 테스트 데이터를 gpt-4o-mini, claude-sonnet, claude-haiku 세 모델에 동일하게 돌리고, 정확도(key_match), 속도(latency), 토큰 효율성을 자동 스코어링하는 파이프라인을 구축했다. 3개 보험 분석 작업(리스크 시그널 추출, 보증 조항 비교, 보장 동등성 판단) x 5개 테스트 케이스 x 3개 모델 = 총 45회 호출. v1 실험 후 프롬프트를 개선(signal 그룹핑 규칙, 빈 입력 처리, JSON 순수성)하여 v2까지 실행.
+> **Result**: (1) Sonnet이 정확도 1위(0.97)지만 Haiku가 90% 수준(0.93)을 1/10 가격 + 동일 속도로 달성 — 가성비 최적은 Haiku. (2) 프롬프트 v2에서 예상치 못한 발견: signal 그룹핑 규칙을 추가했더니 Sonnet 0.90→0.80, Haiku 0.80→0.70으로 하락. 모델이 규칙을 잘 따랐지만 expected_output이 새 규칙을 반영하지 않아서 "정답지가 틀린" 상황이 발생. (3) gpt-4o-mini는 명시적 규칙("빈 입력 = 삭제")에 가장 잘 반응(0.70→0.80), Anthropic 모델은 암묵적 추론으로 이미 처리하고 있었음.
+> **Insight**: LLM 평가에서 가장 어려운 건 프롬프트 엔지니어링이 아니라 "정답을 정의하는 것"이다 — 프롬프트를 개선했더니 점수가 떨어졌고, 원인은 모델이 아니라 정답지에 있었다.
+
+---
+
 ### 2026-02-15 03:45 | `experiment/portfolio-aggregator` | `1cb5e26`
 
 **improve: unify button layouts and fix portfolio selection reset**
