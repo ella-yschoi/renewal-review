@@ -1,7 +1,7 @@
 from app.engine.batch import process_pair
 from app.engine.differ import compute_diff
 from app.engine.rules import flag_diff
-from app.llm.analyzer import analyze_pair, should_analyze
+from app.llm.analyzer import analyze_pair, generate_summary, should_analyze
 from app.llm.mock import MockLLMClient
 from app.models.policy import RenewalPair
 
@@ -70,3 +70,39 @@ def test_process_pair_with_mock_llm(home_pair: RenewalPair):
 def test_process_pair_without_llm_no_insights(home_pair: RenewalPair):
     result = process_pair(home_pair, llm_client=None)
     assert len(result.llm_insights) == 0
+
+
+def test_generate_summary_with_mock(home_pair: RenewalPair):
+    client = MockLLMClient()
+    result = process_pair(home_pair, llm_client=None)
+    result.pair = home_pair
+    summary = generate_summary(client, result)
+    assert summary is not None
+    assert len(summary) > 0
+    assert any("review_summary" in call[1] for call in client.calls)
+
+
+def test_generate_summary_llm_error(home_pair: RenewalPair):
+    class ErrorClient:
+        def complete(self, prompt: str, trace_name: str) -> dict:
+            return {"error": "API unavailable"}
+
+    result = process_pair(home_pair, llm_client=None)
+    result.pair = home_pair
+    summary = generate_summary(ErrorClient(), result)
+    assert summary is None
+
+
+def test_generate_summary_no_pair(home_pair: RenewalPair):
+    result = process_pair(home_pair, llm_client=None)
+    result.pair = None
+    client = MockLLMClient()
+    summary = generate_summary(client, result)
+    assert summary is None
+
+
+def test_process_pair_with_llm_generates_natural_summary(home_pair: RenewalPair):
+    client = MockLLMClient()
+    result = process_pair(home_pair, llm_client=client)
+    assert "Risk:" not in result.summary
+    assert "Flags:" not in result.summary

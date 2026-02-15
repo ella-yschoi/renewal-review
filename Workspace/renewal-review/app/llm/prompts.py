@@ -49,8 +49,46 @@ Respond with ONLY valid JSON:
   "summary": "One-sentence summary of overall risk assessment"
 }}"""
 
+REVIEW_SUMMARY = (
+    "You are an insurance renewal analyst writing a brief summary for a broker.\n"
+    "\n"
+    "Policy: {policy_number} ({policy_type})\n"
+    "Premium: ${prior_premium} → ${renewal_premium} ({premium_change})\n"
+    "Risk Level: {risk_level} | Flags: {flags}\n"
+    "\n"
+    "Key changes:\n"
+    "{key_changes}\n"
+    "\n"
+    "{llm_insights_section}\n"
+    "\n"
+    "Write a 2-3 sentence natural language summary highlighting the most important\n"
+    "findings for a broker reviewing this renewal. Focus on actionable information.\n"
+    "\n"
+    "Respond with ONLY valid JSON:\n"
+    '{{"summary": "Your 2-3 sentence summary here"}}'
+)
+
+QUOTE_PERSONALIZATION = (
+    "You are an insurance advisor personalizing quote recommendations for a broker.\n"
+    "\n"
+    "Policy context:\n"
+    "{policy_context}\n"
+    "\n"
+    "Quotes to personalize:\n"
+    "{quotes_json}\n"
+    "\n"
+    "For each quote, rewrite the trade_off to be specific to this client's situation,\n"
+    "and add a broker_tip with actionable advice based on the policy context.\n"
+    "Keep each under 2 sentences.\n"
+    "\n"
+    "Respond with ONLY valid JSON:\n"
+    '{{"quotes": [{{"quote_id": "Q1", "trade_off": "...", "broker_tip": "..."}}]}}'
+)
+
 PROMPT_MAP = {
     "coverage_similarity": COVERAGE_SIMILARITY,
     "endorsement_comparison": ENDORSEMENT_COMPARISON,
     "risk_signal_extractor": RISK_SIGNAL_EXTRACTOR,
+    "review_summary": REVIEW_SUMMARY,
+    "quote_personalization": QUOTE_PERSONALIZATION,
 }

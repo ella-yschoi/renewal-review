@@ -222,3 +222,58 @@ def test_quote_route_home():
     assert resp.status_code == 200
     data = resp.json()
     assert isinstance(data, list)
+
+
+# --- Quote Personalization Tests ---
+
+
+def test_personalize_quotes_with_mock():
+    from app.llm.mock import MockLLMClient
+    from app.llm.quote_advisor import personalize_quotes
+
+    pair = _make_home_pair()
+    diff = _diff_with_flags(pair)
+    quotes = generate_quotes(pair, diff)
+    assert len(quotes) > 0
+
+    client_mock = MockLLMClient()
+    personalized = personalize_quotes(client_mock, quotes, pair)
+    matched = [q for q in personalized if q.broker_tip]
+    assert len(matched) > 0
+    assert any("quote_personalization" in call[1] for call in client_mock.calls)
+
+
+def test_personalize_quotes_llm_error():
+    from app.llm.quote_advisor import personalize_quotes
+
+    class ErrorClient:
+        def complete(self, prompt: str, trace_name: str) -> dict:
+            return {"error": "API unavailable"}
+
+    pair = _make_auto_pair()
+    diff = _diff_with_flags(pair)
+    quotes = generate_quotes(pair, diff)
+    original_tradeoffs = [q.trade_off for q in quotes]
+
+    result = personalize_quotes(ErrorClient(), quotes, pair)
+    assert [q.trade_off for q in result] == original_tradeoffs
+    assert all(q.broker_tip == "" for q in result)
+
+
+def test_personalize_quotes_empty_list():
+    from app.llm.mock import MockLLMClient
+    from app.llm.quote_advisor import personalize_quotes
+
+    pair = _make_auto_pair()
+    client_mock = MockLLMClient()
+    result = personalize_quotes(client_mock, [], pair)
+    assert result == []
+    assert len(client_mock.calls) == 0
+
+
+def test_broker_tip_default_empty():
+    pair = _make_auto_pair()
+    diff = _diff_with_flags(pair)
+    quotes = generate_quotes(pair, diff)
+    for q in quotes:
+        assert q.broker_tip == ""

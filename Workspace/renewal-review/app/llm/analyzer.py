@@ -2,11 +2,12 @@ from app.llm.client import LLMClientProtocol
 from app.llm.prompts import (
     COVERAGE_SIMILARITY,
     ENDORSEMENT_COMPARISON,
+    REVIEW_SUMMARY,
     RISK_SIGNAL_EXTRACTOR,
 )
 from app.models.diff import DiffResult
 from app.models.policy import RenewalPair
-from app.models.review import LLMInsight
+from app.models.review import LLMInsight, ReviewResult
 
 
 def should_analyze(diff: DiffResult, pair: RenewalPair) -> bool:
@@ -94,6 +95,55 @@ def _analyze_coverage(client: LLMClientProtocol, prior_cov: str, renewal_cov: st
         confidence=result.get("confidence", 0.5),
         reasoning=result.get("reasoning", ""),
     )
+
+
+def generate_summary(client: LLMClientProtocol, result: ReviewResult) -> str | None:
+    if result.pair is None:
+        return None
+
+    pair = result.pair
+    diff = result.diff
+    prior_premium = pair.prior.premium
+    renewal_premium = pair.renewal.premium
+    if prior_premium > 0:
+        pct = ((renewal_premium - prior_premium) / prior_premium) * 100
+        premium_change = f"{pct:+.1f}%"
+    else:
+        premium_change = "N/A"
+
+    flagged_changes = [c for c in diff.changes if c.flag]
+    other_changes = [c for c in diff.changes if not c.flag]
+    key_changes_list = (flagged_changes + other_changes)[:5]
+    key_changes = "\n".join(
+        f"- {c.field}: {c.prior_value} → {c.renewal_value}"
+        + (f" [{c.flag.value}]" if c.flag else "")
+        for c in key_changes_list
+    )
+
+    llm_insights_section = ""
+    if result.llm_insights:
+        findings = "\n".join(f"- {i.finding}" for i in result.llm_insights)
+        llm_insights_section = f"LLM insights:\n{findings}"
+
+    prompt = REVIEW_SUMMARY.format(
+        policy_number=pair.prior.policy_number,
+        policy_type=pair.prior.policy_type.value,
+        prior_premium=f"{prior_premium:.2f}",
+        renewal_premium=f"{renewal_premium:.2f}",
+        premium_change=premium_change,
+        risk_level=result.risk_level.value,
+        flags=", ".join(f.value for f in diff.flags),
+        key_changes=key_changes or "None",
+        llm_insights_section=llm_insights_section,
+    )
+
+    try:
+        response = client.complete(prompt, trace_name="review_summary")
+        if "error" in response:
+            return None
+        return response.get("summary")
+    except Exception:
+        return None
 
 
 def analyze_pair(

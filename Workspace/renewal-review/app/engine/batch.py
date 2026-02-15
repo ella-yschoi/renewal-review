@@ -5,7 +5,7 @@ from app.aggregator import aggregate
 from app.config import settings
 from app.engine.differ import compute_diff
 from app.engine.rules import flag_diff
-from app.llm.analyzer import analyze_pair, should_analyze
+from app.llm.analyzer import analyze_pair, generate_summary, should_analyze
 from app.llm.client import LLMClient, LLMClientProtocol
 from app.models.diff import DiffFlag
 from app.models.policy import RenewalPair
@@ -35,20 +35,26 @@ def process_pair(pair: RenewalPair, llm_client: LLMClientProtocol | None = None)
         insights = analyze_pair(llm_client, diff, pair)
         result = aggregate(pair.prior.policy_number, rule_risk, diff, insights)
         result.pair = pair
-        return result
+    else:
+        summary_parts = []
+        if diff.flags:
+            summary_parts.append(f"Flags: {', '.join(f.value for f in diff.flags)}")
+        summary_parts.append(f"Risk: {rule_risk.value}")
 
-    summary_parts = []
-    if diff.flags:
-        summary_parts.append(f"Flags: {', '.join(f.value for f in diff.flags)}")
-    summary_parts.append(f"Risk: {rule_risk.value}")
+        result = ReviewResult(
+            policy_number=pair.prior.policy_number,
+            risk_level=rule_risk,
+            diff=diff,
+            summary=" | ".join(summary_parts),
+            pair=pair,
+        )
 
-    return ReviewResult(
-        policy_number=pair.prior.policy_number,
-        risk_level=rule_risk,
-        diff=diff,
-        summary=" | ".join(summary_parts),
-        pair=pair,
-    )
+    if llm_client and diff.flags:
+        llm_summary = generate_summary(llm_client, result)
+        if llm_summary:
+            result.summary = llm_summary
+
+    return result
 
 
 def process_batch(

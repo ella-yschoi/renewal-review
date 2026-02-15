@@ -14,3 +14,4 @@ class QuoteRecommendation(BaseModel):
     estimated_savings_pct: float
     estimated_savings_dollar: float
     trade_off: str
+    broker_tip: str = ""

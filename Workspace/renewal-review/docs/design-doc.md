@@ -67,10 +67,11 @@ app/
 │
 ├── llm/
 │   ├── __init__.py
-│   ├── analyzer.py       # should_analyze 조건 판단, analyze_pair 실행
+│   ├── analyzer.py       # should_analyze, analyze_pair, generate_summary
 │   ├── client.py         # LLMClient — OpenAI/Anthropic + Langfuse
-│   ├── prompts.py        # 3개 프롬프트 템플릿
-│   └── mock.py           # MockLLMClient — 테스트/migration 비교용
+│   ├── prompts.py        # 5개 프롬프트 템플릿
+│   ├── mock.py           # MockLLMClient — 테스트/migration 비교용
+│   └── quote_advisor.py  # personalize_quotes — Quote LLM 개인화
 │
 ├── models/
 │   ├── __init__.py
@@ -113,8 +114,12 @@ JSON/DB → load_pairs → [RenewalPair]
                    analyze_pair      ReviewResult 반환
                          │
                     aggregate ──▶ ReviewResult (risk 상향 가능)
-                                         │
-                              store (dict) ──▶ UI 렌더링
+                         │
+            ┌── flags 있고 LLM client? ──┐
+            │ Yes                        │ No
+     generate_summary()           기존 mechanical summary 유지
+            │
+    store (dict) ──▶ UI 렌더링
 ```
 
 ---
@@ -183,7 +188,7 @@ JSON/DB → load_pairs → [RenewalPair]
 | 모델 | 설명 | 핵심 필드 |
 |------|------|-----------|
 | `CoverageAdjustment` | 개별 조정 항목 | field, original_value, proposed_value, strategy |
-| `QuoteRecommendation` | 대안 견적 1건 | quote_id (Q1~Q3), adjustments, estimated_savings_pct, estimated_savings_dollar, trade_off |
+| `QuoteRecommendation` | 대안 견적 1건 | quote_id (Q1~Q3), adjustments, estimated_savings_pct, estimated_savings_dollar, trade_off, broker_tip |
 
 ### DB 도메인 (`app/models/db_models.py`)
 
@@ -368,13 +373,43 @@ should_analyze(diff, pair) ──▶ True?
   aggregate(policy_number, rule_risk, diff, insights) → ReviewResult
 ```
 
-### 3개 프롬프트 (`app/llm/prompts.py`)
+### Review Summary LLM 전환 (`app/llm/analyzer.py:generate_summary`)
+
+`should_analyze()` 결과와 무관하게, flag가 있는 모든 policy에 대해 LLM summary 생성.
+기존 mechanical format (`"Risk: URGENT_REVIEW | Flags: 3"`)을 2-3문장 자연어 요약으로 대체.
+
+- 입력: ReviewResult (policy 메타, diff, flags, LLM insights)
+- key_changes: flag가 있는 변경을 우선으로 최대 5개 선택
+- 실패 시 기존 mechanical summary 유지 (None 반환)
+
+### Quote 개인화 (`app/llm/quote_advisor.py:personalize_quotes`)
+
+Quote의 hardcoded trade_off를 고객 맥락 기반 개인화 텍스트로 대체하고, broker_tip 추가.
+전략 선택과 savings 계산은 rule-based 유지.
+
+- 단일 LLM 호출로 최대 3개 quote를 일괄 처리
+- `_build_policy_context(pair)` — 비어있지 않은 섹션만 포함
+- partial match 지원: 3개 중 2개만 반환되면 나머지는 원본 유지
+- `settings.llm_enabled` 토글 존중 (`app/routes/quotes.py`)
+
+### Fallback 동작
+
+| 시나리오 | Summary | Quote |
+|----------|---------|-------|
+| `llm_enabled=false` | 기존 mechanical format | hardcoded trade_off, broker_tip="" |
+| LLM API 에러 | mechanical summary 유지 | 원본 trade_off 유지, broker_tip="" |
+| LLM 부분 응답 | N/A | 매칭된 quote만 개인화, 나머지 원본 |
+| Flag 없는 policy | summary 생성 건너뜀 | quote 자체가 빈 리스트 |
+
+### 5개 프롬프트 (`app/llm/prompts.py`)
 
 | 프롬프트 | 역할 | 입력 | 출력 (JSON) |
 |---------|------|------|------------|
 | `RISK_SIGNAL_EXTRACTOR` | 갱신 notes에서 risk signal 추출 | notes 텍스트 | signals[], confidence, summary |
 | `ENDORSEMENT_COMPARISON` | 특약 설명 변경의 material change 판단 | prior/renewal description | material_change, change_type, confidence, reasoning |
 | `COVERAGE_SIMILARITY` | 두 coverage의 동등성 비교 | prior/renewal coverage 텍스트 | equivalent, confidence, reasoning |
+| `REVIEW_SUMMARY` | 리뷰 결과를 자연어 요약으로 변환 | policy 메타 + flags + changes + insights | summary |
+| `QUOTE_PERSONALIZATION` | Quote trade_off/broker_tip 개인화 | policy context + quotes 배열 | quotes[{quote_id, trade_off, broker_tip}] |
 
 ### Provider 구성 (`app/llm/client.py`)
 
@@ -408,6 +443,8 @@ should_analyze(diff, pair) ──▶ True?
 | DB 로드 실패 | JSON 파일로 폴백 | `app/data_loader.py:42-44` |
 | LLM JSON 파싱 실패 | `{"error": ..., "raw_response": ...}` 반환 | `app/llm/client.py:57-58` |
 | LLM 분석 에러 | confidence=0.0인 에러 LLMInsight 생성 | `app/llm/analyzer.py:34-40`, `64-68`, `84-88` |
+| LLM summary 실패 | 기존 mechanical summary 유지 | `app/engine/batch.py` |
+| LLM quote 개인화 실패 | 원본 trade_off 유지, broker_tip="" | `app/llm/quote_advisor.py` |
 
 ### Async Job 실패
 
@@ -511,7 +548,7 @@ data/
 
 ### 테스트 현황
 
-11개 파일, 81개 테스트.
+11개 파일, 89개 테스트.
 
 | 파일 | 테스트 수 | 검증 대상 |
 |------|----------|----------|
@@ -519,9 +556,9 @@ data/
 | `tests/test_differ.py` | 13 | 필드별 diff 계산, 동일 정책 no-change, vehicle/endorsement/coverage 변경 |
 | `tests/test_routes.py` | 9 | health, compare, get_review, batch run/status/summary |
 | `tests/test_parser.py` | 8 | snapshot/pair 파싱, vehicle/driver/endorsement, 날짜 정규화, notes |
-| `tests/test_quote_generator.py` | 7 | Auto/Home 전략, 이미 최적화된 케이스, liability 보호, 라우트 통합 |
+| `tests/test_quote_generator.py` | 11 | Auto/Home 전략, 이미 최적화된 케이스, liability 보호, 라우트 통합, LLM 개인화 |
 | `tests/test_batch.py` | 7 | process_pair, assign_risk_level 4단계, process_batch |
-| `tests/test_llm_analyzer.py` | 7 | should_analyze 조건, notes/endorsement/coverage 분석, MockLLM 통합 |
+| `tests/test_llm_analyzer.py` | 11 | should_analyze 조건, notes/endorsement/coverage 분석, MockLLM 통합, generate_summary |
 | `tests/test_analytics.py` | 6 | compute_trends (empty/single/multiple), 라우트, FIFO 제한 |
 | `tests/test_models.py` | 6 | 모델 구조, DiffFlag 값, risk level 순서 |
 | `tests/test_main.py` | 1 | /health 엔드포인트 |
