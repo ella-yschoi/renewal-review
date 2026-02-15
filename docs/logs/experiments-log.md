@@ -5,6 +5,26 @@
 
 ---
 
+## 2026-02-15 00:45 | `experiment/portfolio-aggregator`
+
+### 무엇을 했는가
+Self-Correcting Loop Run 2 — Portfolio Risk Aggregator 기능 구현. Skill 오케스트레이션(방법 B) 사용. 5개 파일 생성/수정:
+- `app/models/portfolio.py` (27줄): CrossPolicyFlag, BundleAnalysis, PortfolioSummary 모델
+- `app/engine/portfolio_analyzer.py` (182줄): analyze_portfolio + 번들분석 + 중복보장탐지 + 노출계산 + 보험료집중도
+- `app/routes/portfolio.py` (27줄): POST /portfolio/analyze 엔드포인트
+- `app/main.py` (수정): portfolio 라우터 등록
+- `tests/test_portfolio.py` (193줄): 8개 테스트 케이스
+
+검증 결과: ruff 0 errors, pytest 89/89 passed (기존 81 + 신규 8), semgrep 0 findings, TRIANGULAR_PASS.
+
+### 왜 했는가
+실험 3에서 Quote Generator로 검증한 자가 수정 루프 파이프라인의 **재사용성 증명**. 동일 파이프라인(PROMPT → 구현 → 품질 게이트 → 삼각 검증)에 다른 PROMPT를 투입하여, 완전히 다른 도메인(교차 정책 위험 분석)의 기능이 1회 반복 만에 자동 구현됨을 확인.
+
+### 어떻게 했는가
+Skill 오케스트레이션(방법 B) — Claude Code 세션 안에서 `self-correcting-loop` skill을 호출. Phase 1(직접 구현) → Phase 2(ruff/pytest/semgrep 직접 실행) → Phase 3(Task tool로 Agent B/C subagent 병렬 실행) → Phase 4(TRIANGULAR_PASS 확인). ruff line length 이슈는 Phase 2 내부에서 즉시 수정. 삼각 검증에서 advisory 이슈 3건(BI 파싱 edge case, 네이밍 불일치, pair-less 불일치) 발견되었으나 요구사항 위반은 없음.
+
+---
+
 ## 2026-02-14 22:30 | `experiment/portfolio-aggregator`
 
 ### 무엇을 했는가
