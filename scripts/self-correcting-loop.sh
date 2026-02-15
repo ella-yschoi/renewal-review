@@ -2,6 +2,7 @@
 # scripts/self-correcting-loop.sh
 # Ralph-style 자가 수정 루프 + 삼각 검증
 # 사용법: bash scripts/self-correcting-loop.sh [max_iterations]
+#   환경변수: PROMPT_FILE, REQUIREMENTS_FILE (기본값: experiment 3 파일)
 # 실행 위치: renewal-review/ 프로젝트 루트에서 실행
 
 set -euo pipefail
@@ -10,7 +11,8 @@ set -euo pipefail
 unset CLAUDECODE 2>/dev/null || true
 
 MAX_ITERATIONS=${1:-5}
-PROMPT_FILE="docs/experiments/3-PROMPT-quote-generator.md"
+PROMPT_FILE="${PROMPT_FILE:-docs/experiments/3-PROMPT-quote-generator.md}"
+REQUIREMENTS_FILE="${REQUIREMENTS_FILE:-docs/experiments/3-requirements-quote-generator.md}"
 LOG_DIR="docs/logs"
 LOOP_LOG="$LOG_DIR/loop-execution.log"
 FEEDBACK_FILE="/tmp/self-correcting-loop-feedback.txt"
@@ -36,6 +38,7 @@ log() {
 log "=== Self-Correcting Agent Loop ==="
 log "Max iterations: $MAX_ITERATIONS"
 log "Prompt: $PROMPT_FILE"
+log "Requirements: $REQUIREMENTS_FILE"
 log "Started: $(date)"
 log ""
 
@@ -128,7 +131,7 @@ After fixing, verify your changes match the requirements.
   # ============================================
   log "[Phase 3] Triangular verification"
 
-  if bash scripts/triangular-verify.sh >> "$LOOP_LOG" 2>&1; then
+  if REQUIREMENTS_FILE="$REQUIREMENTS_FILE" bash scripts/triangular-verify.sh >> "$LOOP_LOG" 2>&1; then
     log "[Phase 3] PASSED"
   else
     # discrepancy report를 피드백으로 전달

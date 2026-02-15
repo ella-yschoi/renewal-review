@@ -5,6 +5,23 @@
 
 ---
 
+## 2026-02-14 22:30 | `experiment/portfolio-aggregator`
+
+### 무엇을 했는가
+실험 4 (Portfolio Risk Aggregator) 사전 준비. 3개 파일 신규 작성, 2개 스크립트 파라미터화:
+- `docs/experiments/4-requirements-portfolio-aggregator.md`: FR-1~FR-9 (9개 기능 요구사항 + 8개 테스트 케이스)
+- `docs/experiments/4-PROMPT-portfolio-aggregator.md`: 자가 수정 루프용 에이전트 프롬프트
+- `docs/guide-self-correcting-loop.md`: 팀원용 Skill 사용 가이드
+- `scripts/self-correcting-loop.sh`, `scripts/triangular-verify.sh`: 환경변수(`PROMPT_FILE`, `REQUIREMENTS_FILE`)로 경로 주입 가능하도록 수정
+
+### 왜 했는가
+실험 3에서 검증한 자가 수정 루프 파이프라인의 **재사용성 증명**이 실험 4의 핵심 목표. Quote Generator와 완전히 다른 도메인(교차 정책 분석)의 기능을 동일 파이프라인으로 구현하여, PROMPT.md만 바꾸면 어떤 기능이든 자동 구현 가능함을 입증한다. 팀 가이드 작성으로 개인 도구에서 팀 도구로 전환.
+
+### 어떻게 했는가
+스크립트 하드코딩 경로를 `${VAR:-default}` 패턴으로 파라미터화 — 기존 experiment 3 기본값 유지하면서 새 실험 파일을 환경변수로 주입 가능. 팀 가이드는 전제 조건, 파이프라인 구조, 3단계 사용법, 삼각 검증 설명, 트러블슈팅까지 포함.
+
+---
+
 ## 2026-02-14 15:30 | `experiment/self-correcting-loop`
 
 ### 무엇을 했는가
