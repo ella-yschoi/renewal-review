@@ -5,7 +5,7 @@
 
 ---
 
-## 2026-02-14 15:30 | `experiment/self-correcting-loop`
+## 2026-02-14 14:45 | `experiment/self-correcting-loop`
 
 ### 무엇을 했는가
 Self-Correcting Loop Phase 1 — Smart Quote Generator 구현. 5개 파일 생성/수정:
@@ -31,7 +31,7 @@ Self-Correcting Loop Phase 1 — Smart Quote Generator 구현. 5개 파일 생�
 
 ---
 
-## 2026-02-14 14:45 | 실험 3 최종 비교 분석
+## 2026-02-14 14:42 | 실험 3 최종 비교 분석
 
 ### 자동 루프 vs 수동 대조군
 
@@ -111,7 +111,7 @@ Self-Correcting Loop Phase 1 — Smart Quote Generator 구현. 5개 파일 생�
 
 ---
 
-## 2026-02-14 00:47 | `main`
+## 2026-02-14 01:42 | `main`
 
 ### 무엇을 했는가
 
@@ -361,7 +361,7 @@ SubAgent vs Agent Teams 비교 실험의 첫 번째 그룹. 동일 과제를 두
 
 ---
 
-## 2026-02-13 18:30 | `main`
+## 2026-02-13 18:52 | `main`
 
 ### 무엇을 했는가
 
