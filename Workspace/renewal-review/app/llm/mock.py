@@ -75,6 +75,23 @@ class MockLLMClient:
                 ),
             }
 
+        if trace_name == "portfolio_analysis":
+            return {
+                "verdict": (
+                    "Portfolio requires attention — 2 policies flagged urgent "
+                    "with significant premium increases and coverage gaps."
+                ),
+                "recommendations": [
+                    "Consolidate carriers for bundle discount — estimated 5-10% savings",
+                    "Remove duplicate medical coverage across auto/home policies",
+                ],
+                "action_items": [
+                    "HIGH: Review HOME-2024-0926 — urgent premium increase",
+                    "MEDIUM: Consolidate medical payments across auto/home",
+                    "LOW: Consider umbrella policy for liability exposure",
+                ],
+            }
+
         if trace_name == "quote_personalization":
             return {
                 "quotes": [
