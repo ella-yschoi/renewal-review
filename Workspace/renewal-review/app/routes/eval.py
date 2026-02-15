@@ -177,7 +177,7 @@ async def migration_comparison(sample: int = Query(50, ge=1)) -> dict:
                     "new_llm_insights": new_insights,
                     "latency_overhead_ms": round(llm_time - basic_time, 1),
                 },
-                "examples": examples[:10],
+                "examples": examples,
             }
         except Exception as e:
             _migration_jobs[job_id]["status"] = "failed"

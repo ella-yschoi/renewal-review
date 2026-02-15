@@ -63,7 +63,7 @@
   </div>
 
   <div class="card" id="examples-section" style="display:none;">
-    <h2 style="color:#805ad5;">Risk Changed — Individual Cases</h2>
+    <h2 style="color:#805ad5;">Risk Changed — Individual Cases <span style="font-weight:400; font-size:12px; color:#718096;" id="examples-count"></span></h2>
     <p style="font-size:12px; color:#718096; margin-bottom:10px;">Policies where LLM analysis changed the risk assessment vs rule-only</p>
     <table>
       <thead>
@@ -77,6 +77,11 @@
       </thead>
       <tbody id="examples-body"></tbody>
     </table>
+    <div id="examples-pager" style="display:none; justify-content:center; align-items:center; gap:12px; margin-top:16px;">
+      <button class="btn btn-secondary" style="padding:4px 12px; font-size:12px;" id="examples-prev" onclick="examplesPage(-1)">&larr; Prev</button>
+      <span style="font-size:13px; color:#4a5568;" id="examples-page-info"></span>
+      <button class="btn btn-secondary" style="padding:4px 12px; font-size:12px;" id="examples-next" onclick="examplesPage(1)">Next &rarr;</button>
+    </div>
   </div>
 </div>
 {% endblock %}
@@ -106,29 +111,65 @@ function renderResult(d) {
   document.getElementById('delta-insights').textContent = d.delta.new_llm_insights;
   document.getElementById('delta-latency').textContent = (d.delta.latency_overhead_ms / 1000).toFixed(1) + 's';
 
-  const body = document.getElementById('examples-body');
+  allExamples = d.examples || [];
+  exCurrentPage = 1;
+  renderExamplesPage();
+}
+
+var allExamples = [];
+var exCurrentPage = 1;
+var EX_PAGE_SIZE = 20;
+
+function examplesPage(delta) {
+  var totalPages = Math.max(1, Math.ceil(allExamples.length / EX_PAGE_SIZE));
+  exCurrentPage = Math.max(1, Math.min(exCurrentPage + delta, totalPages));
+  renderExamplesPage();
+}
+
+function renderExamplesPage() {
+  var section = document.getElementById('examples-section');
+  var body = document.getElementById('examples-body');
   body.innerHTML = '';
-  if (d.examples && d.examples.length > 0) {
-    document.getElementById('examples-section').style.display = 'block';
-    d.examples.forEach(ex => {
-      const flags = ex.flags.map(f => '<span class="flag-tag">'+f+'</span>').join(' ');
-      let insights = '—';
-      if (ex.llm_insights && ex.llm_insights.length > 0) {
-        insights = ex.llm_insights.map(i =>
-          '<span class="flag-tag" style="background:#e9d8fd;color:#553c9a;">'+i.type+'</span> ' +
-          i.finding + ' <span style="font-size:11px;color:#718096;">('+Math.round(i.confidence*100)+'%)</span>'
-        ).join('<br>');
-      }
-      body.innerHTML += '<tr>' +
-        '<td style="font-weight:500;"><a href="/ui/review/'+ex.policy_number+'" style="color:#3182ce;">'+ex.policy_number+'</a></td>' +
-        '<td><span class="badge badge-'+ex.basic_risk+'">'+ex.basic_risk+'</span></td>' +
-        '<td><span class="badge badge-'+ex.llm_risk+'">'+ex.llm_risk+'</span></td>' +
-        '<td>'+flags+'</td>' +
-        '<td style="font-size:12px;">'+insights+'</td>' +
-        '</tr>';
-    });
+
+  if (allExamples.length === 0) {
+    section.style.display = 'none';
+    return;
+  }
+  section.style.display = 'block';
+
+  var totalPages = Math.max(1, Math.ceil(allExamples.length / EX_PAGE_SIZE));
+  exCurrentPage = Math.min(exCurrentPage, totalPages);
+  var start = (exCurrentPage - 1) * EX_PAGE_SIZE;
+  var page = allExamples.slice(start, start + EX_PAGE_SIZE);
+
+  document.getElementById('examples-count').textContent = allExamples.length + ' total — page ' + exCurrentPage + '/' + totalPages;
+
+  page.forEach(function(ex) {
+    var flags = ex.flags.map(function(f) { return '<span class="flag-tag">'+f+'</span>'; }).join(' ');
+    var insights = '—';
+    if (ex.llm_insights && ex.llm_insights.length > 0) {
+      insights = ex.llm_insights.map(function(i) {
+        return '<span class="flag-tag" style="background:#e9d8fd;color:#553c9a;">'+i.type+'</span> ' +
+          i.finding + ' <span style="font-size:11px;color:#718096;">('+Math.round(i.confidence*100)+'%)</span>';
+      }).join('<br>');
+    }
+    body.innerHTML += '<tr>' +
+      '<td style="font-weight:500;"><a href="/ui/review/'+ex.policy_number+'" style="color:#3182ce;">'+ex.policy_number+'</a></td>' +
+      '<td><span class="badge badge-'+ex.basic_risk+'">'+ex.basic_risk+'</span></td>' +
+      '<td><span class="badge badge-'+ex.llm_risk+'">'+ex.llm_risk+'</span></td>' +
+      '<td>'+flags+'</td>' +
+      '<td style="font-size:12px;">'+insights+'</td>' +
+      '</tr>';
+  });
+
+  var pager = document.getElementById('examples-pager');
+  if (totalPages > 1) {
+    pager.style.display = 'flex';
+    document.getElementById('examples-prev').style.visibility = exCurrentPage > 1 ? 'visible' : 'hidden';
+    document.getElementById('examples-next').style.visibility = exCurrentPage < totalPages ? 'visible' : 'hidden';
+    document.getElementById('examples-page-info').textContent = exCurrentPage + ' / ' + totalPages;
   } else {
-    document.getElementById('examples-section').style.display = 'none';
+    pager.style.display = 'none';
   }
 }
 
