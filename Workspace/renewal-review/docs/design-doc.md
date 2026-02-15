@@ -1,130 +1,542 @@
-# Renewal Review — Design Document
-
-> 요구사항: `docs/requirements.md` 참조
-> 구현 계획: `docs/implementation-plan.md` 참조
-
-_프로젝트 진행 중 작성 예정. 구현이 안정화되면 아래 섹션을 채운다._
+# Renewal Review — System Design Document
 
 ---
 
-## 1. Architecture
+## 1. Overview
 
-Analytics 모듈은 기존 계층 구조를 따라 3개 레이어로 구성:
+보험 갱신(renewal) 정책을 자동으로 비교·분석하여 위험 수준을 판정하는 파이프라인.
 
-- `app/models/analytics.py` — Pydantic 모델 (BatchRunRecord, TrendPoint, AnalyticsSummary)
-- `app/engine/analytics.py` — 비즈니스 로직 (compute_trends)
-- `app/routes/analytics.py` — API 엔드포인트 (/analytics/history, /analytics/trends)
+- **Prior vs Renewal 비교**: 기존 정책과 갱신 정책의 모든 필드를 diff하고, 주의가 필요한 변경에 flag를 부여
+- **Rule + LLM 하이브리드**: 규칙 기반 risk 판정 후, 조건 충족 시 LLM이 notes·endorsement·coverage를 심층 분석하여 risk를 상향 조정
+- **대안 견적 생성**: flagged 정책에 대해 보장 조정 전략별 절감 견적(Quote)을 최대 3개 제안
 
-히스토리 저장소는 `deque(maxlen=100)`으로 FIFO 100건 제한 적용. 배치 실행 후 `app/routes/batch.py`의 `_process()` 내부에서 BatchRunRecord를 생성하여 analytics history store에 추가. 100건 초과 시 가장 오래된 레코드가 자동 제거됨.
+**대상 사용자**: 보험 언더라이터, 갱신 심사 담당자
 
-`app/data_loader.py`는 DB 로드 실패(비동기 컨텍스트 충돌) 시 JSON 파일로 폴백.
+---
 
-Quote Generator 모듈도 동일 패턴:
+## 2. Architecture
 
-- `app/models/quote.py` — Pydantic 모델 (CoverageAdjustment, QuoteRecommendation)
-- `app/engine/quote_generator.py` — 비즈니스 로직 (generate_quotes)
-- `app/routes/quotes.py` — API 엔드포인트 (POST /quotes/generate)
+```
+                          ┌─────────────────────────┐
+                          │        FastAPI App       │
+                          │      (app/main.py)       │
+                          └────────────┬────────────┘
+                                       │
+              ┌────────────────────────┼────────────────────────┐
+              │                        │                        │
+     ┌────────▼────────┐    ┌─────────▼─────────┐   ┌─────────▼─────────┐
+     │   Routes Layer   │    │   Engine Layer     │   │    LLM Sidecar    │
+     │                  │    │                    │   │                   │
+     │ reviews.py       │    │ batch.py           │   │ analyzer.py       │
+     │ batch.py         │───▶│ differ.py          │◀──│ client.py         │
+     │ analytics.py     │    │ rules.py           │   │ prompts.py        │
+     │ quotes.py        │    │ analytics.py       │   │ mock.py           │
+     │ eval.py          │    │ quote_generator.py │   └─────────┬─────────┘
+     │ ui.py            │    │ parser.py          │             │
+     └────────┬─────────┘    └────────────────────┘    OpenAI / Anthropic
+              │                                        + Langfuse tracing
+              │
+     ┌────────▼────────────────────────────────────┐
+     │              Storage Layer                   │
+     │                                              │
+     │  In-memory: dict / deque (default)           │
+     │  Optional: PostgreSQL (asyncpg / psycopg)    │
+     │  JSON file: data/renewals.json (fallback)    │
+     └──────────────────────────────────────────────┘
+```
 
-Portfolio Risk Aggregator 모듈:
+### 모듈 디렉토리
 
-- `app/models/portfolio.py` — Pydantic 모델 (CrossPolicyFlag, BundleAnalysis, PortfolioSummary)
-- `app/engine/portfolio_analyzer.py` — 비즈니스 로직 (analyze_portfolio)
-- `app/routes/portfolio.py` — API 엔드포인트 (POST /portfolio/analyze)
+```
+app/
+├── __init__.py
+├── main.py               # FastAPI 앱 생성, 라우터 등록
+├── config.py             # Settings (env_prefix=RR_)
+├── data_loader.py        # load_pairs — DB 또는 JSON 로드 + 캐시
+├── db.py                 # SQLAlchemy async engine, Base, 세션 팩토리
+├── aggregator.py         # rule_risk + LLM insights → final risk 결정
+│
+├── engine/
+│   ├── __init__.py
+│   ├── parser.py         # raw dict → PolicySnapshot / RenewalPair 변환
+│   ├── differ.py         # Prior ↔ Renewal 필드별 diff 계산
+│   ├── rules.py          # diff flags 부여 + premium/liability/coverage 규칙
+│   ├── batch.py          # process_pair, process_batch, assign_risk_level
+│   ├── analytics.py      # compute_trends — BatchRunRecord → AnalyticsSummary
+│   └── quote_generator.py # 정책 타입별 절감 전략 적용 → QuoteRecommendation
+│
+├── llm/
+│   ├── __init__.py
+│   ├── analyzer.py       # should_analyze 조건 판단, analyze_pair 실행
+│   ├── client.py         # LLMClient — OpenAI/Anthropic + Langfuse
+│   ├── prompts.py        # 3개 프롬프트 템플릿
+│   └── mock.py           # MockLLMClient — 테스트/migration 비교용
+│
+├── models/
+│   ├── __init__.py
+│   ├── policy.py         # PolicySnapshot, RenewalPair, Auto/HomeCoverages 등
+│   ├── diff.py           # DiffFlag(15종), FieldChange, DiffResult
+│   ├── review.py         # RiskLevel, LLMInsight, ReviewResult, BatchSummary
+│   ├── analytics.py      # BatchRunRecord, TrendPoint, AnalyticsSummary
+│   ├── quote.py          # CoverageAdjustment, QuoteRecommendation
+│   └── db_models.py      # SQLAlchemy ORM — RenewalPairRow, BatchResultRow
+│
+├── routes/
+│   ├── __init__.py
+│   ├── reviews.py        # POST /reviews/compare, GET /reviews/{policy_number}
+│   ├── batch.py          # POST /batch/run, GET /batch/status/{job_id}, GET /batch/summary
+│   ├── analytics.py      # GET /analytics/history, GET /analytics/trends
+│   ├── quotes.py         # POST /quotes/generate
+│   ├── eval.py           # POST /eval/run, POST /migration/comparison, GET /migration/status/{job_id}
+│   └── ui.py             # GET /, /ui/review/{pn}, /ui/analytics, /ui/quotes, /ui/migration
+│
+└── templates/
+    ├── base.html         # 공통 레이아웃 (nav, footer)
+    ├── dashboard.html    # 메인 대시보드
+    ├── review.html       # 리뷰 상세
+    ├── analytics.html    # 분석 트렌드
+    ├── quotes.html       # Quote Generator
+    └── migration.html    # Basic vs LLM 비교
+```
 
-## 2. Data Model
+### 데이터 흐름 요약
 
-### BatchRunRecord
-배치 실행 1회의 요약 기록. job_id, risk level별 카운트(total/no_action_needed/review_recommended/action_required/urgent_review), processing_time_ms, created_at.
+```
+JSON/DB → load_pairs → [RenewalPair]
+                           │
+         process_pair ◄────┘
+              │
+    compute_diff ──▶ flag_diff ──▶ assign_risk_level
+                                         │
+                         ┌───── LLM 조건? ─┤
+                         │ Yes             │ No
+                   analyze_pair      ReviewResult 반환
+                         │
+                    aggregate ──▶ ReviewResult (risk 상향 가능)
+                                         │
+                              store (dict) ──▶ UI 렌더링
+```
 
-### TrendPoint
-일별 집계 데이터. date(YYYY-MM-DD), total_runs, avg_processing_time_ms, urgent_review_ratio.
+---
 
-### AnalyticsSummary
-전체 분석 결과. total_runs, total_policies_reviewed, avg_processing_time_ms, risk_distribution(dict), trends(list[TrendPoint]).
+## 3. Data Model
 
-### CoverageAdjustment
-개별 커버리지 조정 항목. field(조정 필드명), original_value, proposed_value, strategy(적용 전략명).
+### Policy 도메인 (`app/models/policy.py`)
 
-### QuoteRecommendation
-대안 견적. quote_id("Q1"~"Q3"), adjustments(list[CoverageAdjustment]), estimated_savings_pct(%), estimated_savings_dollar($), trade_off(트레이드오프 설명).
+| 모델 | 설명 | 핵심 필드 |
+|------|------|-----------|
+| `PolicyType` | StrEnum — `auto`, `home` | — |
+| `PolicySnapshot` | 정책 1건의 스냅샷 | policy_number, policy_type, carrier, effective_date, expiration_date, premium, state, notes, auto_coverages, home_coverages, vehicles, drivers, endorsements |
+| `RenewalPair` | Prior + Renewal 한 쌍 | prior: PolicySnapshot, renewal: PolicySnapshot |
+| `AutoCoverages` | 자동차 보장 항목 | bodily_injury_limit, property_damage_limit, collision_deductible, comprehensive_deductible, uninsured_motorist, medical_payments, rental_reimbursement, roadside_assistance |
+| `HomeCoverages` | 주택 보장 항목 | coverage_a~f, deductible, wind_hail_deductible, water_backup, replacement_cost |
+| `Vehicle` | 차량 정보 | vin, year, make, model, usage |
+| `Driver` | 운전자 정보 | license_number, name, age, violations, sr22 |
+| `Endorsement` | 특약 | code, description, premium |
 
-### CrossPolicyFlag
-교차 정책 이슈. flag_type(이슈 종류), severity("info"/"warning"/"critical"), description(사람이 읽는 설명), affected_policies(관련 policy numbers).
+### Diff 도메인 (`app/models/diff.py`)
 
-### BundleAnalysis
-번들 분석. has_auto, has_home, is_bundle, bundle_discount_eligible(동일 carrier 여부), carrier_mismatch, unbundle_risk("low"/"medium"/"high").
+| 모델 | 설명 | 핵심 필드 |
+|------|------|-----------|
+| `FieldChange` | 단일 필드 변경 | field, prior_value, renewal_value, change_pct, flag |
+| `DiffResult` | 한 정책의 전체 diff | policy_number, changes: list[FieldChange], flags: list[DiffFlag] |
 
-### PortfolioSummary
-포트폴리오 요약. client_policies, total_premium, total_prior_premium, premium_change_pct, risk_breakdown(dict), bundle_analysis(BundleAnalysis), cross_policy_flags(list[CrossPolicyFlag]).
+**DiffFlag 전체 목록 (15개)**:
 
-## 3. Processing Pipeline
+| Flag | 트리거 조건 |
+|------|------------|
+| `premium_increase_high` | 보험료 +10% 이상 |
+| `premium_increase_critical` | 보험료 +20% 이상 |
+| `premium_decrease` | 보험료 감소 |
+| `carrier_change` | 보험사 변경 |
+| `liability_limit_decrease` | liability 한도 감소 |
+| `deductible_increase` | 공제액 증가 |
+| `coverage_dropped` | 보장 항목 축소/제거 |
+| `coverage_added` | 보장 항목 추가 |
+| `vehicle_added` | 차량 추가 |
+| `vehicle_removed` | 차량 제거 |
+| `driver_added` | 운전자 추가 |
+| `driver_removed` | 운전자 제거 |
+| `endorsement_added` | 특약 추가 |
+| `endorsement_removed` | 특약 제거 |
+| `notes_changed` | 비고 변경 |
 
-`compute_trends(records)`: BatchRunRecord 리스트를 받아 AnalyticsSummary를 반환.
-- 빈 리스트 → 제로 기본값
-- risk_distribution: 전체 레코드의 risk level별 합산 (no_action_needed/review_recommended/action_required/urgent_review)
-- trends: created_at 기준 일별 그룹핑 후 TrendPoint 생성
+### Review 도메인 (`app/models/review.py`)
 
-`generate_quotes(pair, diff)`: RenewalPair와 DiffResult를 받아 최대 3개의 QuoteRecommendation 반환.
-- flags가 없으면 빈 리스트 (대안 불필요)
-- Auto/Home 타입별 3가지 전략 독립 적용
-- Auto: raise_deductible(10%), drop_optional(4%), reduce_medical(2.5%)
-- Home: raise_deductible(12.5%), drop_water_backup(3%), reduce_personal_property(4%)
-- 보호 제약: bodily_injury_limit, property_damage_limit, coverage_e_liability, uninsured_motorist, coverage_a_dwelling 절대 변경 불가
-- 이미 최적화된 항목은 건너뛰기 (예: deductible이 이미 높은 경우)
+| 모델 | 설명 | 핵심 필드 |
+|------|------|-----------|
+| `RiskLevel` | StrEnum — 4단계 | no_action_needed, review_recommended, action_required, urgent_review |
+| `LLMInsight` | LLM 분석 1건 | analysis_type, finding, confidence, reasoning |
+| `ReviewResult` | 최종 리뷰 결과 | policy_number, risk_level, diff, llm_insights, summary, pair |
+| `BatchSummary` | 배치 실행 요약 | total, risk level별 카운트, llm_analyzed, processing_time_ms |
 
-`analyze_portfolio(policy_numbers, results_store)`: 정책 번호 리스트와 결과 저장소를 받아 PortfolioSummary 반환.
-- 중복 정책 번호 제거 (dict.fromkeys)
-- 번들 분석: auto + home 모두 존재 시 is_bundle, 동일 carrier면 bundle_discount_eligible
-- unbundle_risk: 번들에서 action_required/urgent_review → high, review_recommended → medium
-- 중복 보장 탐지: auto medical_payments + home coverage_f_medical → duplicate_medical, auto roadside + home endorsement(roadside/towing) → duplicate_roadside
-- 총 노출 계산: home coverage_e_liability + auto bodily_injury_limit(first number × 1000) 합산, >$500K → high_liability_exposure, <$200K → low_liability_exposure
-- 보험료 집중도: 단일 정책 ≥ 70% → premium_concentration, 전체 변동 ≥ 15% → high_portfolio_increase
+### Analytics 도메인 (`app/models/analytics.py`)
 
-## 4. API Surface
+| 모델 | 설명 | 핵심 필드 |
+|------|------|-----------|
+| `BatchRunRecord` | 배치 1회 기록 | job_id, total, risk level별 카운트, processing_time_ms, created_at |
+| `TrendPoint` | 일별 집계 | date, total_runs, avg_processing_time_ms, urgent_review_ratio |
+| `AnalyticsSummary` | 전체 분석 요약 | total_runs, total_policies_reviewed, avg_processing_time_ms, risk_distribution, trends |
 
-| Method | Path | Response Model |
-|--------|------|---------------|
-| GET | /analytics/history | list[BatchRunRecord] |
-| GET | /analytics/trends | AnalyticsSummary |
-| POST | /quotes/generate | list[QuoteRecommendation] |
-| POST | /portfolio/analyze | PortfolioSummary |
+### Quote 도메인 (`app/models/quote.py`)
 
-## 5. UI
+| 모델 | 설명 | 핵심 필드 |
+|------|------|-----------|
+| `CoverageAdjustment` | 개별 조정 항목 | field, original_value, proposed_value, strategy |
+| `QuoteRecommendation` | 대안 견적 1건 | quote_id (Q1~Q3), adjustments, estimated_savings_pct, estimated_savings_dollar, trade_off |
 
-파이프라인 네이밍: V1/V2 → **Basic Analytics** (규칙 기반) / **AI Analytics** (규칙+AI).
+### DB 도메인 (`app/models/db_models.py`)
 
-- `review.html` — 리뷰 상세에서 파이프라인 라벨 표시 (Policy Changes / AI Insights)
-- `quotes.html` — Quote Generator UI. flagged 정책 목록 표시, "Generate Quotes" 클릭 시 JS로 `/reviews/{policy_number}` → `/quotes/generate` 호출하여 대안 견적 표시. 라우트: `GET /ui/quotes`
-- `migration.html` — Basic vs. LLM Analytics 비교 대시보드 (라우트: `GET /ui/insight`). element ID: `basic-*`, `llm-*`. 브로커 친화적 라벨 (Policies Compared, AI Analyzed, Risk reassessments 등). 시간 표시 초 단위.
-- `analytics.html` — Review History + Risk Overview + Daily Summary. risk_distribution 키: `no_action_needed/review_recommended/action_required/urgent_review`. 시간 표시 초 단위.
-- `dashboard.html` — Review Sample/All 버튼, Quality Check, Risk Distribution 바. 시간 표시 초 단위.
-- `portfolio.html` — Portfolio Risk Aggregator UI. 체크박스 테이블로 정책 선택 (최소 2개), "Analyze Portfolio" 클릭 시 JS로 `POST /portfolio/analyze` 호출. 모달 결과 표시 순서: (1) Health Verdict 배너 — risk_breakdown + cross_policy_flags에서 JS로 도출한 한 줄 건강 요약 (red/yellow/blue/green 4단계), (2) stats grid (premium/change/count), (3) risk distribution bar — 라벨에 건수+퍼센트 표시, 바 세그먼트 안에 건수 (폭 ≥15%), (4) bundle analysis — 권고 문장 (번들 할인 확인/캐리어 통합/교차 판매) + unbundle risk 경고 + 기존 check/cross 그리드, (5) cross-policy flags — severity-colored left border cards + FLAG_ACTIONS 맵 기반 액션 라인, (6) Action Items 체크리스트 — 모든 섹션에서 도출된 액션을 priority별 정렬 (critical → warning → info) 번호 리스트. 체크박스 직접 클릭 시 행 하이라이트 동기화. 라우트: `GET /ui/portfolio`
+| 모델 | 테이블명 | 설명 |
+|------|---------|------|
+| `RenewalPairRow` | `renewal_pairs` | 정책 쌍 영구 저장. prior_json, renewal_json으로 원본 보존 |
+| `BatchResultRow` | `batch_results` | 배치 결과. job_id, risk_level, flags_json |
 
-## 6. Error Handling
+---
 
-## 7. Testing Strategy
+## 4. Processing Pipeline
 
-`tests/test_analytics.py` — 6개 테스트:
-- compute_trends: empty(0건), single(1건), multiple(3건+) 케이스
-- 라우트: /analytics/history 빈 응답, /analytics/trends 데이터 응답
-- FIFO: 105건 추가 후 100건 유지 + 가장 오래된 5건 제거 확인
+### 단계별 흐름
 
-`tests/test_quote_generator.py` — 8개 테스트:
-- Auto 전략 3개 모두 적용: 3개 견적 반환, 전략명/절감률 확인
-- Home 전략 3개 모두 적용: 3개 견적 반환
-- 이미 최적화된 Auto: 모든 전략 건너뛰기 → 빈 리스트
-- 보호 제약 검증: 모든 견적에서 liability 필드 불변
-- flags 없는 정책: 빈 리스트
-- 라우트 통합 테스트: POST /quotes/generate (Auto, Home)
+```
+1. Data Loading     load_pairs()           DB 또는 JSON에서 RenewalPair 로드
+       │
+2. Diff             compute_diff(pair)     필드별 변경 감지 → DiffResult
+       │
+3. Flagging         flag_diff(diff, pair)  규칙 기반 flag 부여
+       │
+4. Risk Assignment  assign_risk_level()    flag 조합으로 risk level 결정
+       │
+5. LLM Analysis     should_analyze() →     조건 충족 시 LLM 분석
+   (조건부)          analyze_pair()
+       │
+6. Aggregation      aggregate()            rule_risk + LLM insights → final risk
+```
 
-`tests/test_portfolio.py` — 8개 테스트:
-- auto + home 번들: is_bundle=True, premium 합산 검증
-- auto만: is_bundle=False
-- 중복 medical 탐지: duplicate_medical flag 생성
-- unbundle_risk high: ACTION_REQUIRED 포함 시
-- premium_concentration: 한 정책 70% 이상
-- high_portfolio_increase: 전체 변동 15% 이상
-- 1개 정책 → 422 에러
-- 존재하지 않는 policy → 422 에러
+### Risk Level 결정 조건표 (Rule-Based)
 
-## 8. Tech Stack
+| Risk Level | 조건 | 해당 Flags |
+|-----------|------|-----------|
+| `urgent_review` | URGENT flag 1개 이상 | `premium_increase_critical`, `liability_limit_decrease` |
+| `action_required` | ACTION flag 1개 이상 | `premium_increase_high`, `coverage_dropped` |
+| `review_recommended` | flag 존재하지만 위 해당 없음 | 기타 모든 flag |
+| `no_action_needed` | flag 없음 | — |
+
+> 판정 우선순위: urgent_review > action_required > review_recommended > no_action_needed
+> (`app/engine/batch.py:18-26`)
+
+### LLM Risk Upgrade 조건 (`app/aggregator.py`)
+
+LLM 분석 결과에 따라 rule_risk보다 높은 level로 상향. 하향은 없음.
+
+| 조건 | 상향 대상 |
+|------|----------|
+| coverage NOT equivalent (confidence ≥ 0.8) | → `action_required` 이상 |
+| risk_signal 2건 이상 (confidence ≥ 0.7) | → `action_required` 이상 |
+| endorsement restriction (confidence ≥ 0.75) | → `action_required` 이상 |
+| 위 조건 복합 (coverage/restriction + risk_signal ≥ 2) | → `urgent_review` |
+
+### Flag 트리거 임계값 (`app/engine/rules.py`)
+
+| 규칙 | 임계값 | 결과 Flag |
+|------|--------|----------|
+| 보험료 증가 | ≥ 10% | `premium_increase_high` |
+| 보험료 증가 | ≥ 20% | `premium_increase_critical` |
+| 보험료 감소 | < 0% | `premium_decrease` |
+| Liability 감소 | prior > renewal (합산 비교) | `liability_limit_decrease` |
+| Deductible 증가 | prior < renewal | `deductible_increase` |
+| Coverage 수치 감소 | prior > renewal | `coverage_dropped` |
+| Boolean coverage 제거 | True → False | `coverage_dropped` |
+| Boolean coverage 추가 | False → True | `coverage_added` |
+
+### Quote Generator 전략 (`app/engine/quote_generator.py`)
+
+정책 타입별 최대 3개 전략을 독립 적용하여 대안 견적 생성.
+
+**Auto 전략**:
+
+| 전략 | 절감률 | 조건 (건너뛰기) |
+|------|--------|----------------|
+| `raise_deductible` | 10% | collision_deductible ≥ 1000 AND comprehensive_deductible ≥ 500 |
+| `drop_optional` | 4% | rental_reimbursement=False AND roadside_assistance=False |
+| `reduce_medical` | 2.5% | medical_payments ≤ 2000 |
+
+**Home 전략**:
+
+| 전략 | 절감률 | 조건 (건너뛰기) |
+|------|--------|----------------|
+| `raise_deductible` | 12.5% | deductible ≥ 2500 |
+| `drop_water_backup` | 3% | water_backup=False |
+| `reduce_personal_property` | 4% | coverage_c ≤ dwelling × 0.5 |
+
+**보호 필드** — 어떤 전략에서도 절대 변경 불가:
+
+`bodily_injury_limit`, `property_damage_limit`, `coverage_e_liability`, `uninsured_motorist`, `coverage_a_dwelling`
+
+---
+
+## 5. API Surface
+
+### Core API
+
+| Method | Path | Description | Response | Status Codes |
+|--------|------|-------------|----------|-------------|
+| GET | `/health` | 헬스체크 | `{"status": "ok"}` | 200 |
+| POST | `/reviews/compare` | 단건 정책 비교 | `ReviewResult` | 200, 422 |
+| GET | `/reviews/{policy_number}` | 리뷰 결과 조회 | `ReviewResult` | 200, 404 |
+| POST | `/quotes/generate` | 대안 견적 생성 | `list[QuoteRecommendation]` | 200, 422 |
+
+### Batch / Async
+
+| Method | Path | Description | Response | Status Codes |
+|--------|------|-------------|----------|-------------|
+| POST | `/batch/run` | 배치 실행 (비동기) | `{"job_id", "status", "total"}` | 200, 404 |
+| GET | `/batch/status/{job_id}` | 배치 진행 상태 | job 상세 (status, processed, total) | 200, 404 |
+| GET | `/batch/summary` | 마지막 배치 요약 | `BatchSummary \| null` | 200 |
+| POST | `/eval/run` | Golden eval 실행 | accuracy + 시나리오별 결과 | 200, 404 |
+| POST | `/migration/comparison` | Basic vs LLM 비교 (비동기) | `{"job_id", "status", "total"}` | 200, 404 |
+| GET | `/migration/status/{job_id}` | Migration 진행 상태 | job 상세 | 200, 404 |
+
+### Analytics
+
+| Method | Path | Description | Response | Status Codes |
+|--------|------|-------------|----------|-------------|
+| GET | `/analytics/history` | 배치 실행 이력 (최대 100건) | `list[BatchRunRecord]` | 200 |
+| GET | `/analytics/trends` | 일별 트렌드 + 요약 | `AnalyticsSummary` | 200 |
+
+### Async Job 라이프사이클
+
+```
+POST /batch/run  →  {"job_id": "abc12345", "status": "running"}
+                            │
+         GET /batch/status/abc12345  (polling)
+                            │
+              status: "running"  →  processed / total 갱신
+              status: "completed" →  summary 포함
+              status: "failed"   →  error 메시지 포함
+```
+
+### UI Pages
+
+| Method | Path | Description |
+|--------|------|-------------|
+| GET | `/` | Dashboard |
+| GET | `/ui/review/{policy_number}` | 리뷰 상세 |
+| GET | `/ui/analytics` | Analytics |
+| GET | `/ui/quotes` | Quote Generator |
+| GET | `/ui/migration` | Basic vs LLM 비교 |
+
+---
+
+## 6. UI
+
+| # | 페이지 | Route | 주요 기능 |
+|---|--------|-------|----------|
+| 1 | Dashboard | `GET /` | 전체 리뷰 목록 (severity 내림차순 정렬), 배치 요약 표시, 페이지네이션 (50건/page) |
+| 2 | Review Detail | `GET /ui/review/{pn}` | 단건 리뷰 상세 — diff, flags, risk level, LLM insights. 파이프라인 라벨 표시 (Basic Analytics / LLM Analytics). ref 파라미터로 돌아갈 페이지 결정 |
+| 3 | Analytics | `GET /ui/analytics` | 배치 이력 목록 + 트렌드 차트 (risk distribution, 일별 urgent_review_ratio) |
+| 4 | Quote Generator | `GET /ui/quotes` | flagged 정책 목록 표시. "Generate Quotes" 클릭 → `/reviews/{pn}` + `/quotes/generate` 호출하여 대안 견적 모달 표시. 페이지네이션 |
+| 5 | Migration | `GET /ui/migration` | Basic vs LLM 비교 대시보드. element ID: `basic-*`, `llm-*`. 비동기 실행 후 polling으로 결과 표시 |
+| 6 | Base Layout | — | 공통 nav (Dashboard, Analytics, Quotes, Migration), footer |
+
+**네비게이션 순서**: Dashboard → Analytics → Quotes → Migration
+
+---
+
+## 7. LLM Integration
+
+### 분석 진입 조건 (`app/llm/analyzer.py:should_analyze`)
+
+다음 중 하나라도 해당하면 LLM 분석 실행:
+
+1. notes가 변경되었고 renewal에 notes가 존재
+2. endorsement description이 변경됨
+3. Home 정책에서 water_backup 상태가 변경됨
+
+### 분석 흐름
+
+```
+should_analyze(diff, pair) ──▶ True?
+       │                            │ No → skip
+       │ Yes                        │
+  analyze_pair(client, diff, pair)
+       │
+       ├── _analyze_notes()          ← RISK_SIGNAL_EXTRACTOR 프롬프트
+       ├── _analyze_endorsement()    ← ENDORSEMENT_COMPARISON 프롬프트
+       └── _analyze_coverage()       ← COVERAGE_SIMILARITY 프롬프트
+       │
+  aggregate(policy_number, rule_risk, diff, insights) → ReviewResult
+```
+
+### 3개 프롬프트 (`app/llm/prompts.py`)
+
+| 프롬프트 | 역할 | 입력 | 출력 (JSON) |
+|---------|------|------|------------|
+| `RISK_SIGNAL_EXTRACTOR` | 갱신 notes에서 risk signal 추출 | notes 텍스트 | signals[], confidence, summary |
+| `ENDORSEMENT_COMPARISON` | 특약 설명 변경의 material change 판단 | prior/renewal description | material_change, change_type, confidence, reasoning |
+| `COVERAGE_SIMILARITY` | 두 coverage의 동등성 비교 | prior/renewal coverage 텍스트 | equivalent, confidence, reasoning |
+
+### Provider 구성 (`app/llm/client.py`)
+
+- **OpenAI**: gpt-4o-mini (temperature=0.1, json_object mode)
+- **Anthropic**: claude-sonnet-4-5-20250929 (max_tokens=1024)
+- **MockLLMClient** (`app/llm/mock.py`): 테스트·migration 비교용 하드코딩 응답
+- **Langfuse tracing**: `LANGFUSE_PUBLIC_KEY` 환경변수 존재 시 자동 활성화. 각 LLM 호출을 generation observation으로 기록
+
+---
+
+## 8. Error Handling
+
+### HTTP 에러
+
+| Status | 경로 | 조건 |
+|--------|------|------|
+| 404 | `GET /reviews/{pn}` | 해당 policy_number 리뷰 없음 |
+| 404 | `GET /batch/status/{job_id}` | 해당 job_id 없음 |
+| 404 | `GET /migration/status/{job_id}` | 해당 job_id 없음 |
+| 404 | `GET /ui/review/{pn}` | 해당 policy_number 리뷰 없음 |
+| 404 | `POST /batch/run` | 데이터 없음 (JSON 파일 미생성) |
+| 404 | `POST /eval/run` | Golden eval 파일 없음 |
+| 404 | `POST /migration/comparison` | 데이터 없음 |
+| 422 | `POST /reviews/compare` | 입력 JSON 파싱 실패 (KeyError, ValidationError) |
+| 422 | `POST /quotes/generate` | 입력 JSON 파싱 실패 |
+
+### Fallback 패턴
+
+| 상황 | Fallback | 코드 위치 |
+|------|----------|----------|
+| DB 로드 실패 | JSON 파일로 폴백 | `app/data_loader.py:42-44` |
+| LLM JSON 파싱 실패 | `{"error": ..., "raw_response": ...}` 반환 | `app/llm/client.py:57-58` |
+| LLM 분석 에러 | confidence=0.0인 에러 LLMInsight 생성 | `app/llm/analyzer.py:34-40`, `64-68`, `84-88` |
+
+### Async Job 실패
+
+배치(`/batch/run`)와 migration(`/migration/comparison`) 비동기 작업:
+- `_process()` 내부에서 Exception 발생 시 job status를 `"failed"`로 설정
+- `error` 필드에 에러 메시지 저장
+- 이후 status polling에서 클라이언트가 실패 상태 확인 가능
+
+---
+
+## 9. Non-Functional
+
+### Storage
+
+- **기본**: in-memory — `_results_store: dict[str, ReviewResult]`, `_history: deque[BatchRunRecord]`
+- **Optional**: PostgreSQL — `RR_DB_URL` 환경변수 설정 시 활성화. SQLAlchemy async engine (asyncpg) + sync fallback (psycopg)
+
+### Caching
+
+- `app/data_loader.py`: 모듈 레벨 `_cached_pairs` — 최초 load 후 캐시. `invalidate_cache()`로 초기화 가능
+- 배치 실행 시 results_store를 clear 후 새 결과로 교체
+
+### Concurrency
+
+- `asyncio.create_task()`: 배치, migration 작업을 비동기 태스크로 실행
+- `loop.run_in_executor(None, ...)`: CPU-bound 처리(diff, flag, LLM 호출)를 thread pool에서 실행
+- progress callback으로 실시간 진행률 업데이트
+
+### Limits
+
+| 항목 | 제한 | 코드 위치 |
+|------|------|----------|
+| Analytics history | `deque(maxlen=100)` — FIFO 100건 | `app/routes/analytics.py:10-11` |
+| Quote 최대 개수 | 3개 (`quotes[:3]`) | `app/engine/quote_generator.py:231` |
+| Quote 최소 조건 | flags 존재 시에만 생성 | `app/engine/quote_generator.py:214-215` |
+| UI 페이지네이션 | 50건/page (`PAGE_SIZE = 50`) | `app/routes/ui.py:23` |
+| Migration 비교 샘플 | 기본 50, 최소 1 (`Query(50, ge=1)`) | `app/routes/eval.py:85` |
+
+### Timezone
+
+- `America/Vancouver` — BatchRunRecord.created_at 생성 시 적용 (`app/routes/batch.py:64-76`)
+
+---
+
+## 10. Tech Stack
+
+### Runtime
+
+| 항목 | 버전 / 값 |
+|------|-----------|
+| Python | ≥ 3.13 (`requires-python` in pyproject.toml) |
+| 패키지 매니저 | uv |
+| 웹 프레임워크 | FastAPI ≥ 0.115 |
+| ASGI 서버 | uvicorn ≥ 0.34 |
+| ORM | SQLAlchemy ≥ 2.0 (asyncio) |
+| 검증 | Pydantic ≥ 2.10 |
+| 템플릿 | Jinja2 ≥ 3.1 |
+| LLM | OpenAI ≥ 2.18 (기본), Anthropic ≥ 0.43 (선택) |
+| Observability | Langfuse ≥ 3.14 |
+| DB 드라이버 | asyncpg ≥ 0.30, psycopg ≥ 3.1 |
+
+### Dev Dependencies
+
+| 패키지 | 버전 | 용도 |
+|--------|------|------|
+| pytest | ≥ 8.3 | 테스트 프레임워크 |
+| hypothesis | ≥ 6.120 | Property-based 테스트 |
+| httpx | ≥ 0.28 | TestClient (FastAPI 테스트 의존성) |
+| ruff | ≥ 0.9 | Linter + formatter |
+
+### 환경변수 (`RR_` prefix, `app/config.py`)
+
+| 변수 | 기본값 | 설명 |
+|------|--------|------|
+| `RR_LLM_ENABLED` | `false` | LLM 분석 활성화 |
+| `RR_LLM_PROVIDER` | `"openai"` | LLM provider (`openai` \| `anthropic`) |
+| `RR_DATA_PATH` | `"data/renewals.json"` | 데이터 파일 경로 |
+| `RR_DB_URL` | `""` | PostgreSQL URL (비어있으면 JSON 모드) |
+| `LANGFUSE_PUBLIC_KEY` | — | 설정 시 Langfuse tracing 자동 활성화 |
+
+### Ruff 설정 (`pyproject.toml`)
+
+- target: Python 3.13
+- line-length: 99
+- lint rules: E, F, I, N, UP, B, SIM
+
+### Data 디렉토리
+
+```
+data/
+├── renewals.json             # 전체 정책 데이터 (generate.py로 생성)
+└── samples/
+    ├── auto_pair.json        # Auto 정책 샘플 (테스트/데모)
+    ├── home_pair.json        # Home 정책 샘플
+    └── golden_eval.json      # Golden eval 5개 시나리오
+```
+
+---
+
+## 11. Testing
+
+### 테스트 현황
+
+11개 파일, 81개 테스트.
+
+| 파일 | 테스트 수 | 검증 대상 |
+|------|----------|----------|
+| `tests/test_rules.py` | 15 | premium 임계값, flag 부여 규칙, liability/deductible/coverage/endorsement |
+| `tests/test_differ.py` | 13 | 필드별 diff 계산, 동일 정책 no-change, vehicle/endorsement/coverage 변경 |
+| `tests/test_routes.py` | 9 | health, compare, get_review, batch run/status/summary |
+| `tests/test_parser.py` | 8 | snapshot/pair 파싱, vehicle/driver/endorsement, 날짜 정규화, notes |
+| `tests/test_quote_generator.py` | 7 | Auto/Home 전략, 이미 최적화된 케이스, liability 보호, 라우트 통합 |
+| `tests/test_batch.py` | 7 | process_pair, assign_risk_level 4단계, process_batch |
+| `tests/test_llm_analyzer.py` | 7 | should_analyze 조건, notes/endorsement/coverage 분석, MockLLM 통합 |
+| `tests/test_analytics.py` | 6 | compute_trends (empty/single/multiple), 라우트, FIFO 제한 |
+| `tests/test_models.py` | 6 | 모델 구조, DiffFlag 값, risk level 순서 |
+| `tests/test_main.py` | 1 | /health 엔드포인트 |
+| `tests/conftest.py` | — | 공통 fixture (auto_pair, home_pair 등) |
+
+### Golden Eval (`data/samples/golden_eval.json`)
+
+5개 시나리오:
+
+| # | 설명 |
+|---|------|
+| 1 | 10% premium increase with rate adjustment note |
+| 2 | 25% premium increase, water backup dropped, deductible raised, claim history note |
+| 3 | Carrier switch, liability downgrade, vehicle removed, teen driver added |
+| 4 | Clean renewal with minor premium increase (2.2%) |
+| 5 | Inflation guard with endorsement description update and 10% premium increase |
+
+`POST /eval/run`으로 실행. 각 케이스에 대해 expected_min_risk와 expected_flags를 실제 결과와 대조하여 accuracy 산출.
