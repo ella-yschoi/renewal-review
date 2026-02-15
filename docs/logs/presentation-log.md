@@ -9,6 +9,18 @@
 
 ---
 
+### 2026-02-15 02:30 | `experiment/portfolio-aggregator` | `TBD`
+
+**feat: broker-friendly portfolio modal, nav UX improvements, and bug fixes**
+
+_6 files changed (1 new, 5 modified, 1 deleted)_
+
+> **Context**: 자가 수정 루프가 만든 Portfolio Aggregator 백엔드는 정확하지만, UI가 raw JSON 수준이라 브로커가 "이게 문제인가? 뭘 해야 하나?"를 바로 판단할 수 없었음. AI가 코드를 생성하는 것과 그 결과물이 실제 사용자에게 가치 있는 것 사이의 간극을 메우는 작업.
+> **Result**: 모달이 한눈에 건강 상태(verdict), 권고 사항(bundle/flag 액션), 우선순위별 체크리스트(action items)를 보여줌. 페이지 간 선택 유지, 네비게이션 워크플로우 정렬까지 완료하여 데모 가능 수준 도달.
+> **Insight**: AI가 생성한 코드의 진짜 완성은 "돌아간다"가 아니라 "사용자가 바로 행동할 수 있다" — 백엔드 자동 생성 후에도 UX 레이어는 사람의 판단이 필요하다.
+
+---
+
 ### 2026-02-15 00:45 | `experiment/portfolio-aggregator` | `TBD`
 
 **feat: add Portfolio Risk Aggregator — cross-policy analysis via self-correcting loop**

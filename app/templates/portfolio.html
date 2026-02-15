@@ -1,0 +1,448 @@
+{% extends "base.html" %}
+{% block title %}Portfolio — Renewal Review{% endblock %}
+
+{% block content %}
+<style>
+  .policy-select-row { cursor: pointer; }
+  .policy-select-row.selected { background: #ebf8ff; }
+  .policy-select-row input[type="checkbox"] { cursor: pointer; }
+  .action-bar { display: flex; align-items: center; gap: 12px; margin-bottom: 12px; }
+  .selected-count { font-size: 13px; color: #718096; }
+  .btn:disabled { opacity: 0.4; cursor: not-allowed; }
+  .modal-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 100; }
+  .modal-overlay.open { display: flex; align-items: center; justify-content: center; }
+  .modal { background: #f5f7fa; border-radius: 12px; max-width: 860px; width: 94%; max-height: 88vh; overflow-y: auto; padding: 28px; position: relative; box-shadow: 0 20px 60px rgba(0,0,0,0.3); }
+  .modal-close { position: absolute; top: 12px; right: 16px; background: none; border: none; font-size: 20px; cursor: pointer; color: #718096; padding: 4px 8px; }
+  .modal-close:hover { color: #1a1a2e; }
+  .modal h2 { font-size: 16px; margin-bottom: 12px; color: #2d3748; }
+  .modal-title { font-size: 18px; font-weight: 700; margin-bottom: 4px; padding-right: 32px; }
+  .modal-subtitle { font-size: 13px; color: #718096; margin-bottom: 20px; }
+  .modal-spinner { text-align: center; padding: 32px; color: #718096; }
+  .bundle-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  .bundle-item { display: flex; align-items: center; gap: 8px; font-size: 13px; padding: 8px 12px; background: #fff; border-radius: 6px; }
+  .bundle-item .icon { font-size: 16px; }
+  .bundle-item .icon.check { color: #22543d; }
+  .bundle-item .icon.cross { color: #9b2c2c; }
+  .flag-card { border-left: 4px solid #e2e8f0; padding: 12px 16px; margin-bottom: 10px; background: #fff; border-radius: 0 6px 6px 0; }
+  .flag-card.severity-info { border-left-color: #3182ce; }
+  .flag-card.severity-warning { border-left-color: #d69e2e; }
+  .flag-card.severity-critical { border-left-color: #e53e3e; }
+  .flag-card .flag-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px; }
+  .flag-card .flag-type { font-weight: 600; font-size: 13px; color: #2d3748; }
+  .severity-badge { display: inline-block; padding: 1px 8px; border-radius: 4px; font-size: 11px; font-weight: 600; text-transform: uppercase; }
+  .severity-badge.info { background: #bee3f8; color: #2a4365; }
+  .severity-badge.warning { background: #fefcbf; color: #744210; }
+  .severity-badge.critical { background: #fed7d7; color: #9b2c2c; }
+  .flag-card .flag-desc { font-size: 13px; color: #4a5568; line-height: 1.5; }
+  .flag-card .flag-policies { font-size: 11px; color: #718096; margin-top: 4px; }
+  .risk-bar { height: 24px; display: flex; border-radius: 6px; overflow: hidden; }
+  .risk-bar-labels { display: flex; justify-content: space-between; margin-top: 6px; font-size: 11px; color: #718096; }
+  .change-positive { color: #9b2c2c; }
+  .change-negative { color: #22543d; }
+  .verdict-banner { padding: 12px 16px; border-radius: 8px; font-size: 14px; font-weight: 600; margin-bottom: 16px; }
+  .verdict-banner.verdict-red { background: #fed7d7; color: #9b2c2c; border: 1px solid #feb2b2; }
+  .verdict-banner.verdict-yellow { background: #fefcbf; color: #744210; border: 1px solid #f6e05e; }
+  .verdict-banner.verdict-blue { background: #bee3f8; color: #2a4365; border: 1px solid #90cdf4; }
+  .verdict-banner.verdict-green { background: #c6f6d5; color: #22543d; border: 1px solid #9ae6b4; }
+  .bundle-recommendation { grid-column: 1 / -1; padding: 10px 14px; border-radius: 6px; font-size: 13px; font-weight: 500; }
+  .bundle-recommendation.rec-green { background: #c6f6d5; color: #22543d; }
+  .bundle-recommendation.rec-yellow { background: #fefcbf; color: #744210; }
+  .bundle-recommendation.rec-blue { background: #bee3f8; color: #2a4365; }
+  .unbundle-warning { grid-column: 1 / -1; padding: 10px 14px; border-radius: 6px; font-size: 13px; background: #fed7d7; color: #9b2c2c; font-weight: 500; }
+  .flag-action { font-size: 12px; color: #2a4365; margin-top: 6px; padding: 4px 8px; background: #ebf8ff; border-radius: 4px; }
+  .action-items-list { list-style: none; padding: 0; margin: 0; counter-reset: action-counter; }
+  .action-items-list li { counter-increment: action-counter; padding: 8px 12px; margin-bottom: 6px; border-radius: 6px; font-size: 13px; display: flex; align-items: baseline; gap: 8px; }
+  .action-items-list li::before { content: counter(action-counter); display: inline-flex; align-items: center; justify-content: center; width: 20px; height: 20px; border-radius: 50%; font-size: 11px; font-weight: 700; flex-shrink: 0; }
+  .action-items-list li.priority-critical { background: #fed7d7; border-left: 3px solid #e53e3e; }
+  .action-items-list li.priority-critical::before { background: #e53e3e; color: white; }
+  .action-items-list li.priority-warning { background: #fefcbf; border-left: 3px solid #d69e2e; }
+  .action-items-list li.priority-warning::before { background: #d69e2e; color: white; }
+  .action-items-list li.priority-info { background: #bee3f8; border-left: 3px solid #3182ce; }
+  .action-items-list li.priority-info::before { background: #3182ce; color: white; }
+</style>
+
+<div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px;">
+  <h1 style="font-size:20px;">Portfolio Risk Aggregator</h1>
+</div>
+
+{% if not results %}
+<div class="card">
+  <p style="color:#718096; text-align:center; padding:24px;">No reviewed policies found. Run a batch review from the Dashboard first.</p>
+</div>
+{% else %}
+<div class="card">
+  <h2>Select Policies <span style="font-weight:400; font-size:12px; color:#718096;">{{ total_results }} total — page {{ page }}/{{ total_pages }}</span></h2>
+  <div class="action-bar">
+    <button class="btn btn-primary" id="analyze-btn" disabled onclick="analyzePortfolio()">Analyze Portfolio</button>
+    <span class="selected-count" id="selected-count">0 selected (min 2)</span>
+  </div>
+  <table>
+    <thead>
+      <tr>
+        <th style="width:32px;"><input type="checkbox" id="select-all" onclick="toggleAll(this)"></th>
+        <th>Policy #</th>
+        <th>Type</th>
+        <th>Carrier</th>
+        <th>Premium</th>
+        <th>Risk</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for r in results %}
+      <tr class="policy-select-row" onclick="toggleRow(this, event)">
+        <td><input type="checkbox" class="policy-cb" value="{{ r.policy_number }}" onclick="event.stopPropagation(); this.closest('tr').classList.toggle('selected', this.checked); updateCount()"></td>
+        <td><a href="/ui/review/{{ r.policy_number }}?ref=portfolio" onclick="event.stopPropagation()">{{ r.policy_number }}</a></td>
+        <td>{{ r.pair.prior.policy_type.value if r.pair else "—" }}</td>
+        <td>{{ r.pair.renewal.carrier if r.pair else "—" }}</td>
+        <td>${{ "%.2f"|format(r.pair.renewal.premium) if r.pair else "—" }}</td>
+        <td><span class="badge badge-{{ r.risk_level.value }}">{{ r.risk_level.value }}</span></td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  {% if total_pages > 1 %}
+  <div style="display:flex; justify-content:center; align-items:center; gap:12px; margin-top:16px;">
+    {% if page > 1 %}
+    <a href="/ui/portfolio?page={{ page - 1 }}" class="btn btn-secondary" style="padding:4px 12px; font-size:12px;">&larr; Prev</a>
+    {% endif %}
+    <span style="font-size:13px; color:#4a5568;">{{ page }} / {{ total_pages }}</span>
+    {% if page < total_pages %}
+    <a href="/ui/portfolio?page={{ page + 1 }}" class="btn btn-secondary" style="padding:4px 12px; font-size:12px;">Next &rarr;</a>
+    {% endif %}
+  </div>
+  {% endif %}
+</div>
+{% endif %}
+
+<div class="modal-overlay" id="modal-overlay" onclick="closeModal(event)">
+  <div class="modal" id="modal">
+    <button class="modal-close" onclick="closeModal()">&times;</button>
+    <div class="modal-title" id="modal-title">Portfolio Analysis</div>
+    <div class="modal-subtitle" id="modal-subtitle"></div>
+    <div class="modal-spinner" id="modal-loading"><div class="spinner"></div><p style="margin-top:8px;">Analyzing portfolio...</p></div>
+    <div id="modal-content" style="display:none;">
+      <div id="verdict-banner"></div>
+      <div class="stats-grid" id="stats-grid"></div>
+      <div class="card" id="risk-distribution-card">
+        <h2>Risk Distribution</h2>
+        <div class="risk-bar" id="risk-bar"></div>
+        <div class="risk-bar-labels" id="risk-bar-labels"></div>
+      </div>
+      <div class="card" id="bundle-card">
+        <h2>Bundle Analysis</h2>
+        <div class="bundle-grid" id="bundle-grid"></div>
+      </div>
+      <div class="card" id="flags-card">
+        <h2>Cross-Policy Flags</h2>
+        <div id="flags-list"></div>
+      </div>
+      <div class="card" id="action-items-card" style="display:none;">
+        <h2>Action Items</h2>
+        <div id="action-items-list"></div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+function getStoredSelections() {
+  try { return JSON.parse(sessionStorage.getItem('portfolio-selected') || '[]'); }
+  catch (e) { return []; }
+}
+
+function setStoredSelections(arr) {
+  sessionStorage.setItem('portfolio-selected', JSON.stringify(arr));
+}
+
+function toggleRow(tr, e) {
+  var cb = tr.querySelector('.policy-cb');
+  cb.checked = !cb.checked;
+  tr.classList.toggle('selected', cb.checked);
+  updateCount();
+}
+
+function toggleAll(masterCb) {
+  var cbs = document.querySelectorAll('.policy-cb');
+  cbs.forEach(function(cb) {
+    cb.checked = masterCb.checked;
+    cb.closest('tr').classList.toggle('selected', masterCb.checked);
+  });
+  updateCount();
+}
+
+function updateCount() {
+  var stored = getStoredSelections();
+  var allCbs = document.querySelectorAll('.policy-cb');
+  allCbs.forEach(function(cb) {
+    var idx = stored.indexOf(cb.value);
+    if (cb.checked && idx === -1) stored.push(cb.value);
+    else if (!cb.checked && idx !== -1) stored.splice(idx, 1);
+  });
+  setStoredSelections(stored);
+  var count = stored.length;
+  document.getElementById('selected-count').textContent = count + ' selected' + (count < 2 ? ' (min 2)' : '');
+  document.getElementById('analyze-btn').disabled = count < 2;
+  var checkedOnPage = document.querySelectorAll('.policy-cb:checked').length;
+  var masterCb = document.getElementById('select-all');
+  masterCb.checked = checkedOnPage === allCbs.length && allCbs.length > 0;
+}
+
+function closeModal(e) {
+  if (e && e.target !== document.getElementById('modal-overlay')) return;
+  document.getElementById('modal-overlay').classList.remove('open');
+}
+
+document.addEventListener('keydown', function(e) {
+  if (e.key === 'Escape') closeModal();
+});
+
+async function analyzePortfolio() {
+  var policyNumbers = getStoredSelections();
+
+  var overlay = document.getElementById('modal-overlay');
+  var loading = document.getElementById('modal-loading');
+  var content = document.getElementById('modal-content');
+
+  document.getElementById('modal-title').textContent = 'Portfolio Analysis — ' + policyNumbers.length + ' Policies';
+  document.getElementById('modal-subtitle').textContent = policyNumbers.join(', ');
+  loading.style.display = 'block';
+  content.style.display = 'none';
+  overlay.classList.add('open');
+
+  try {
+    var resp = await fetch('/portfolio/analyze', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({policy_numbers: policyNumbers})
+    });
+
+    loading.style.display = 'none';
+
+    if (!resp.ok) {
+      var err = await resp.json();
+      content.style.display = 'block';
+      content.innerHTML = '<p style="color:#9b2c2c; text-align:center; padding:16px;">Error: ' + (err.detail || 'Analysis failed') + '</p>';
+      return;
+    }
+
+    var data = await resp.json();
+    renderResults(data);
+  } catch (e) {
+    loading.style.display = 'none';
+    content.style.display = 'block';
+    content.innerHTML = '<p style="color:#9b2c2c; text-align:center; padding:16px;">Error: ' + e.message + '</p>';
+  }
+}
+
+function renderResults(data) {
+  document.getElementById('modal-content').style.display = 'block';
+  renderVerdict(data);
+  renderStats(data);
+  renderRiskBar(data.risk_breakdown);
+  renderBundle(data.bundle_analysis);
+  renderFlags(data.cross_policy_flags);
+  renderActionItems(data);
+}
+
+function renderStats(data) {
+  var changePct = data.premium_change_pct;
+  var changeClass = changePct > 0 ? 'change-positive' : 'change-negative';
+  var changeSign = changePct > 0 ? '+' : '';
+
+  document.getElementById('stats-grid').innerHTML =
+    '<div class="stat-card"><div class="value">$' + data.total_premium.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2}) + '</div><div class="label">Total Premium</div></div>' +
+    '<div class="stat-card"><div class="value">$' + data.total_prior_premium.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2}) + '</div><div class="label">Prior Premium</div></div>' +
+    '<div class="stat-card"><div class="value ' + changeClass + '">' + changeSign + changePct.toFixed(2) + '%</div><div class="label">Premium Change</div></div>' +
+    '<div class="stat-card"><div class="value">' + data.client_policies.length + '</div><div class="label">Policies</div></div>';
+}
+
+function renderRiskBar(breakdown) {
+  var levels = [
+    {key: 'no_action_needed', color: '#c6f6d5', label: 'No Action'},
+    {key: 'review_recommended', color: '#fefcbf', label: 'Review'},
+    {key: 'action_required', color: '#fed7d7', label: 'Action'},
+    {key: 'urgent_review', color: '#9b2c2c', label: 'Urgent', textColor: '#fff'}
+  ];
+  var total = 0;
+  levels.forEach(function(l) { total += breakdown[l.key] || 0; });
+  if (total === 0) total = 1;
+
+  var barHtml = '';
+  var labelsHtml = '';
+  levels.forEach(function(l) {
+    var count = breakdown[l.key] || 0;
+    var pct = (count / total * 100);
+    if (count > 0) {
+      var textColor = l.textColor || '#2d3748';
+      var innerText = pct >= 15 ? count : '';
+      barHtml += '<div style="background:' + l.color + '; height:100%; width:' + pct + '%; display:flex; align-items:center; justify-content:center; font-size:11px; font-weight:600; color:' + textColor + ';" title="' + l.label + ': ' + count + ' (' + pct.toFixed(1) + '%)">' + innerText + '</div>';
+    }
+    labelsHtml += '<span>' + l.label + ': ' + count + ' (' + pct.toFixed(1) + '%)</span>';
+  });
+
+  document.getElementById('risk-bar').innerHTML = barHtml;
+  document.getElementById('risk-bar-labels').innerHTML = labelsHtml;
+}
+
+function renderBundle(bundle) {
+  var recHtml = '';
+  if (bundle.is_bundle && !bundle.carrier_mismatch) {
+    recHtml = '<div class="bundle-recommendation rec-green">Bundle discount applied — verify discount on renewal</div>';
+  } else if (bundle.is_bundle && bundle.carrier_mismatch) {
+    recHtml = '<div class="bundle-recommendation rec-yellow">Carrier consolidation opportunity — bundle discount available</div>';
+  } else if (bundle.has_auto && !bundle.has_home) {
+    recHtml = '<div class="bundle-recommendation rec-blue">Cross-sell opportunity — home policy</div>';
+  } else if (bundle.has_home && !bundle.has_auto) {
+    recHtml = '<div class="bundle-recommendation rec-blue">Cross-sell opportunity — auto policy</div>';
+  }
+
+  if (bundle.unbundle_risk === 'medium' || bundle.unbundle_risk === 'high') {
+    recHtml += '<div class="unbundle-warning">Unbundle risk: ' + bundle.unbundle_risk + ' — review before separating policies</div>';
+  }
+
+  var items = [
+    {label: 'Auto Policy', check: bundle.has_auto},
+    {label: 'Home Policy', check: bundle.has_home},
+    {label: 'Bundle Eligible', check: bundle.is_bundle},
+    {label: 'Bundle Discount', check: bundle.bundle_discount_eligible},
+    {label: 'Same Carrier', check: !bundle.carrier_mismatch},
+    {label: 'Unbundle Risk: ' + bundle.unbundle_risk.charAt(0).toUpperCase() + bundle.unbundle_risk.slice(1), check: bundle.unbundle_risk === 'low'}
+  ];
+
+  var html = recHtml;
+  items.forEach(function(item) {
+    var iconClass = item.check ? 'check' : 'cross';
+    var icon = item.check ? '&#10003;' : '&#10007;';
+    html += '<div class="bundle-item"><span class="icon ' + iconClass + '">' + icon + '</span>' + item.label + '</div>';
+  });
+  document.getElementById('bundle-grid').innerHTML = html;
+}
+
+var FLAG_ACTIONS = {
+  duplicate_medical: 'Action: Remove lower policy to reduce premium',
+  duplicate_roadside: 'Action: Consolidate into auto, remove home endorsement',
+  high_liability_exposure: 'Action: Discuss umbrella policy',
+  low_liability_exposure: 'Action: Recommend increasing limits',
+  premium_concentration: 'Action: Diversify carriers or negotiate retention discount',
+  high_portfolio_increase: 'Action: Schedule client meeting + prepare competitive quotes'
+};
+
+function renderFlags(flags) {
+  var container = document.getElementById('flags-list');
+  if (flags.length === 0) {
+    container.innerHTML = '<p style="color:#718096; text-align:center; padding:12px;">No cross-policy issues detected.</p>';
+    return;
+  }
+
+  var html = '';
+  flags.forEach(function(f) {
+    html += '<div class="flag-card severity-' + f.severity + '">';
+    html += '<div class="flag-header">';
+    html += '<span class="flag-type">' + f.flag_type.replace(/_/g, ' ') + '</span>';
+    html += '<span class="severity-badge ' + f.severity + '">' + f.severity + '</span>';
+    html += '</div>';
+    html += '<div class="flag-desc">' + f.description + '</div>';
+    if (FLAG_ACTIONS[f.flag_type]) {
+      html += '<div class="flag-action">' + FLAG_ACTIONS[f.flag_type] + '</div>';
+    }
+    html += '<div class="flag-policies">Affected: ' + f.affected_policies.join(', ') + '</div>';
+    html += '</div>';
+  });
+  container.innerHTML = html;
+}
+
+function renderVerdict(data) {
+  var rb = data.risk_breakdown;
+  var flags = data.cross_policy_flags;
+  var urgentCount = rb.urgent_review || 0;
+  var actionCount = rb.action_required || 0;
+  var reviewCount = rb.review_recommended || 0;
+  var hasCriticalFlags = flags.some(function(f) { return f.severity === 'critical'; });
+  var changePct = Math.abs(data.premium_change_pct);
+
+  var cls, msg;
+  if (urgentCount > 0 || hasCriticalFlags) {
+    cls = 'verdict-red';
+    msg = 'Immediate Attention Required — ' + urgentCount + ' urgent, client follow-up needed';
+  } else if (actionCount > 0 || changePct >= 10) {
+    cls = 'verdict-yellow';
+    msg = 'Action Needed — ' + actionCount + ' policies require action';
+  } else if (reviewCount > 0) {
+    cls = 'verdict-blue';
+    msg = 'Review Recommended — routine follow-up';
+  } else {
+    cls = 'verdict-green';
+    msg = 'Portfolio Healthy — no action required';
+  }
+
+  var banner = document.getElementById('verdict-banner');
+  banner.className = 'verdict-banner ' + cls;
+  banner.textContent = msg;
+}
+
+function renderActionItems(data) {
+  var items = [];
+  var rb = data.risk_breakdown;
+  var flags = data.cross_policy_flags;
+  var bundle = data.bundle_analysis;
+  var changePct = Math.abs(data.premium_change_pct);
+
+  if ((rb.urgent_review || 0) > 0) {
+    items.push({priority: 'critical', text: 'Review ' + rb.urgent_review + ' urgent policies immediately'});
+  }
+  if ((rb.action_required || 0) > 0) {
+    items.push({priority: 'critical', text: 'Address ' + rb.action_required + ' policies requiring action'});
+  }
+
+  flags.forEach(function(f) {
+    if (FLAG_ACTIONS[f.flag_type]) {
+      var pri = f.severity === 'critical' ? 'critical' : f.severity === 'warning' ? 'warning' : 'info';
+      items.push({
+        priority: pri,
+        text: FLAG_ACTIONS[f.flag_type].replace('Action: ', '') + ' (' + f.affected_policies.join(', ') + ')'
+      });
+    }
+  });
+
+  if (bundle.is_bundle && bundle.carrier_mismatch) {
+    items.push({priority: 'warning', text: 'Consolidate carriers for bundle discount'});
+  } else if (!bundle.is_bundle && (bundle.has_auto || bundle.has_home)) {
+    items.push({priority: 'info', text: 'Cross-sell opportunity — ' + (bundle.has_auto ? 'home' : 'auto') + ' policy'});
+  }
+
+  if (changePct >= 10) {
+    items.push({priority: 'warning', text: 'Premium change ' + data.premium_change_pct.toFixed(1) + '% — schedule client meeting + prepare competitive quotes'});
+  }
+
+  var priorityOrder = {critical: 0, warning: 1, info: 2};
+  items.sort(function(a, b) { return (priorityOrder[a.priority] || 2) - (priorityOrder[b.priority] || 2); });
+
+  var card = document.getElementById('action-items-card');
+  if (items.length === 0) {
+    card.style.display = 'none';
+    return;
+  }
+
+  card.style.display = '';
+  var html = '<ol class="action-items-list">';
+  items.forEach(function(item) {
+    html += '<li class="priority-' + item.priority + '">' + item.text + '</li>';
+  });
+  html += '</ol>';
+  document.getElementById('action-items-list').innerHTML = html;
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+  var stored = getStoredSelections();
+  document.querySelectorAll('.policy-cb').forEach(function(cb) {
+    if (stored.indexOf(cb.value) !== -1) {
+      cb.checked = true;
+      cb.closest('tr').classList.add('selected');
+    }
+  });
+  updateCount();
+});
+</script>
+{% endblock %}
