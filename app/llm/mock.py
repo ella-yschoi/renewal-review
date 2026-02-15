@@ -65,4 +65,42 @@ class MockLLMClient:
                 "reasoning": "Coverage removed entirely",
             }
 
+        if trace_name == "review_summary":
+            return {
+                "summary": (
+                    "This renewal shows a 23% premium increase from $2,400 to $2,952 "
+                    "with water backup coverage dropped and deductible unchanged. "
+                    "Prior water damage claim and aging roof noted — recommend "
+                    "urgent broker review before binding."
+                ),
+            }
+
+        if trace_name == "quote_personalization":
+            return {
+                "quotes": [
+                    {
+                        "quote_id": "Q1",
+                        "trade_off": (
+                            "Raising the deductible to $2,500 saves 12.5% but means higher "
+                            "out-of-pocket costs given the prior water damage claim history."
+                        ),
+                        "broker_tip": (
+                            "Verify the client has emergency savings above $2,500 before "
+                            "recommending this option, especially with the aging roof."
+                        ),
+                    },
+                    {
+                        "quote_id": "Q2",
+                        "trade_off": (
+                            "Dropping water backup saves 3% but removes sewer/drain coverage "
+                            "on a property with known prior water damage."
+                        ),
+                        "broker_tip": (
+                            "Given the claim history, discuss plumbing condition with the client "
+                            "before removing this coverage."
+                        ),
+                    },
+                ],
+            }
+
         return {"error": "unknown prompt"}

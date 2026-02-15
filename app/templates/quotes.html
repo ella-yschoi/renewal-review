@@ -249,7 +249,10 @@ async function generateQuotes(policyNumber) {
       });
 
       html += '<div class="quote-tradeoff"><strong>Trade-off</strong>' + q.trade_off + '</div>';
-      html += '<div class="quote-tip"><strong>Broker Tip</strong>' + (STRATEGY_TIPS[strategy] || '') + '</div>';
+      var tip = q.broker_tip || STRATEGY_TIPS[strategy] || '';
+      if (tip) {
+        html += '<div class="quote-tip"><strong>Broker Tip</strong>' + tip + '</div>';
+      }
 
       html += '</div>';
     });
