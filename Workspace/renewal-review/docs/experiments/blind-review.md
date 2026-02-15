@@ -1,425 +1,100 @@
-I've now read every file. Here is my complete analysis:
+# Agent B — Blind Review Analysis (Round 2: Portfolio Aggregator)
+
+> Reviewed files: `app/models/portfolio.py`, `app/engine/portfolio_analyzer.py`, `app/routes/portfolio.py`, `app/main.py`, `tests/test_portfolio.py`
+> Convention reference: `convention.md`, `docs/design-doc.md`
+> Date: 2026-02-14
 
 ---
 
-# Agent B — Blind Review Analysis
+## app/models/portfolio.py (NEW)
 
-## app/\_\_init\_\_.py
-**Behavior:** Empty init file, makes `app/` a package.  
-**Convention violations:** None.  
-**Issues:** None.
+**Behavior:** Defines three Pydantic models for portfolio-level analysis. `CrossPolicyFlag` represents a cross-policy issue detected during analysis (e.g., duplicate coverage, high exposure), with a type identifier, severity level, description, and list of affected policy numbers. `BundleAnalysis` captures whether a client has auto/home bundling, whether carriers match, and the risk level of unbundling. `PortfolioSummary` is the top-level response model aggregating all policies: total/prior premiums, percentage change, risk breakdown by level, bundle analysis, and cross-policy flags.
+
+**Convention violations:** None. No docstrings, uses type hints, file is well under 300 lines (27 lines).
+
+**Issues:**
+1. **`severity` and `unbundle_risk` are untyped strings** (lines 5, 17): `CrossPolicyFlag.severity` accepts any string but the engine only produces `"warning"`, `"info"`, and `"critical"`. `BundleAnalysis.unbundle_risk` only produces `"low"`, `"medium"`, `"high"`. Both should be `Literal` types or `StrEnum` values to enforce valid values at the model level. As-is, a typo like `severity="warn"` would pass validation silently.
+2. **`flag_type` is also an untyped string** (line 4): The engine produces specific values (`"duplicate_medical"`, `"duplicate_roadside"`, `"high_liability_exposure"`, `"low_liability_exposure"`, `"premium_concentration"`, `"high_portfolio_increase"`). An enum would make these discoverable and prevent typos.
+3. **`risk_breakdown` typed as `dict[str, int]`** (line 25): The keys are `RiskLevel` enum values (strings), but this type doesn't constrain to valid risk levels. A consumer could insert arbitrary keys. Minor — this matches the existing pattern in `AnalyticsSummary.risk_distribution`.
 
 ---
 
-## app/aggregator.py
-**Behavior:** Combines rule-based risk assessment with LLM insights. Escalates the risk level based on high-confidence LLM signals: "NOT equivalent" findings → HIGH, ≥2 risk signals → HIGH, restriction changes → HIGH, combined strong signals → CRITICAL. Produces a `ReviewResult` with a summary string.
+## app/engine/portfolio_analyzer.py (NEW)
+
+**Behavior:** Core business logic for cross-policy portfolio analysis. Contains five functions:
+
+- `_build_bundle_analysis`: Determines auto/home bundling status, checks for carrier mismatch across policies, assesses unbundle risk based on the worst risk level among results.
+- `_detect_duplicate_coverage`: Scans for overlapping medical payments (auto medical_payments + home Coverage F) and roadside assistance (auto roadside_assistance + home endorsement containing "roadside" or "towing").
+- `_calculate_exposure_flags`: Sums liability exposure across all policies (home Coverage E + auto bodily injury first number x 1000) and flags if total exceeds $500K (umbrella recommendation) or falls below $200K (underinsurance warning).
+- `_detect_premium_concentration`: Flags any single policy that represents >= 70% of total portfolio premium. Also flags if the overall portfolio premium change exceeds +/-15%.
+- `analyze_portfolio`: Orchestrator. Deduplicates policy numbers, looks up results from the store, calculates premium totals, builds risk breakdown, runs all analyses, and returns `PortfolioSummary`.
+
+**Convention violations:** None. No docstrings, type hints throughout, functions are single-responsibility, file is 232 lines (within 300-line limit).
+
+**Issues:**
+1. **`bodily_injury_limit` parsing assumes format "X/Y"** (line 110): `snap.auto_coverages.bodily_injury_limit.split("/")[0]` will crash with `IndexError` if the value is an empty string, or produce wrong results for non-standard formats. The `AutoCoverages` model defaults to `"100/300"`, but there's no validation at the model level that enforces this format. If external data contains `"100000"` (a raw number) or `""`, the parsing fails.
+2. **`float(bi_str) * 1000` assumes the value is in thousands** (line 111): This is a domain assumption (bodily injury limits are typically expressed as "100/300" meaning $100K/$300K). The assumption is correct for standard insurance data, but there's no inline comment explaining this conversion despite the convention saying to comment non-obvious logic. The `# bodily_injury_limit format: "100/300" -- first number x 1000` comment on line 109 does explain it — so this is adequately documented.
+3. **`total_prior_premium` division-by-zero is handled but produces `0.0`** (lines 202-206): If all prior premiums are zero (new policies), the percentage change is `0.0`. This is mathematically questionable — going from $0 to any amount is an infinite increase, not 0%. However, returning 0.0 is a pragmatic choice that avoids breaking downstream logic. Worth noting that this means `_detect_premium_concentration`'s `abs(premium_change_pct) >= 15.0` check would never fire for new-policy portfolios, even if the total premium is very large.
+4. **`results` list skips entries with `r.pair is None`** in premium calculation (line 200-201): The `if r.pair` guard is correct defensively, but `analyze_portfolio` at line 196 raises `ValueError` if a policy number has no review. The only way `r.pair` could be `None` is if a `ReviewResult` exists in the store without a pair attached. The code handles this inconsistently — it raises on missing reviews but silently skips pair-less reviews. A pair-less review would contribute to `risk_breakdown` (line 211-212) but not to premiums (line 200-201), bundle analysis, or cross-policy flags. This could produce misleading summaries (e.g., a policy counted in risk breakdown but its premium excluded from totals).
+5. **Deduplication via `dict.fromkeys`** (line 189): Correct and idiomatic. Preserves insertion order in Python 3.7+. No issue.
+6. **`_detect_premium_concentration` receives `premium_change_pct` but also receives `total_premium`** (line 146): The function could compute `premium_change_pct` internally if it also received `total_prior_premium`, but the caller pre-computes it. This is fine — avoids recalculation.
+7. **No upper bound on policy count**: `analyze_portfolio` will process any number of policies. For very large portfolios (hundreds of policies), the nested iteration in `_detect_premium_concentration` (iterating all results inside a loop that's already O(n)) is still O(n) per call since the inner loop is just one pass. No performance concern for reasonable portfolio sizes.
+
+---
+
+## app/routes/portfolio.py (NEW)
+
+**Behavior:** Single POST endpoint at `/portfolio/analyze`. Accepts a JSON body with `policy_numbers` (list of strings). Validates that at least 2 policies are provided (422 error otherwise). Looks up the shared results store from `app.routes.reviews.get_results_store()`, calls `analyze_portfolio`, and returns a `PortfolioSummary`. Catches `ValueError` from missing policy lookups and converts to 422 HTTP errors.
+
+**Convention violations:** None. No docstrings, uses type hints, file is 27 lines.
+
+**Issues:**
+1. **`PortfolioRequest` model defined inline** (lines 11-12): This is a route-local request model, not a domain model. Defining it here (rather than in `app/models/portfolio.py`) is a judgment call. The existing `app/routes/quotes.py` does not define inline models — it accepts a raw dict. This is actually better than the quotes route pattern (typed vs untyped input), but it's a different pattern from other routes in the codebase.
+2. **No upper bound on `policy_numbers`** (line 12): A client could submit thousands of policy numbers. While `analyze_portfolio` is O(n), there's no max length validation. For a production API, this could be a denial-of-service vector if the store is large.
+3. **Sync endpoint** (line 16): `def analyze(...)` is synchronous. This matches the existing route patterns (`app/routes/reviews.py`, `app/routes/quotes.py`). For CPU-bound analysis with many policies, this blocks the event loop, but the existing codebase uses sync endpoints for similar workloads, so this is consistent.
+4. **Status code 422 for both validation error and missing policy** (lines 19, 27): Using 422 (Unprocessable Entity) is semantically correct for validation failures. For missing policies, 404 could also be argued, but 422 is reasonable since the request body is the problem. Consistent choice.
+5. **Shared mutable state via `get_results_store()`** (line 23): The portfolio route reads from the same in-memory dict that `app/routes/reviews.py` and `app/routes/batch.py` write to. The batch route clears this store on every run (`store.clear()` in `batch.py` line 56). This means portfolio analysis results depend on timing — if a batch run starts between individual review submissions and the portfolio analyze call, all previously-stored reviews are wiped. This is a pre-existing architectural issue (noted in the previous blind review), but the portfolio feature amplifies its impact since it requires multiple policies to be present simultaneously.
+
+---
+
+## app/main.py (MODIFIED)
+
+**Behavior:** Added `from app.routes.portfolio import router as portfolio_router` and `app.include_router(portfolio_router)`. The portfolio router is registered after the quotes router.
 
 **Convention violations:** None.
 
 **Issues:**
-1. **String matching fragility** (line 21): `"NOT equivalent" in i.finding` — the aggregator is tightly coupled to the exact string produced by `_analyze_coverage` in `analyzer.py`. If the LLM analysis output format changes, this silently stops escalating risk.
-2. **String matching fragility** (line 34): `"restriction" in i.finding.lower()` — same issue, depends on exact text produced by the mock client's `change_type: "restriction"` being embedded in the finding string `"Change type: restriction"`. This coupling is implicit and fragile.
+1. **Router registration order**: The portfolio router is added last (line 23). Router order matters for route matching in FastAPI only when paths could collide. `/portfolio/analyze` does not collide with any existing prefix (`/reviews`, `/batch`, `/eval`, `/analytics`, `/quotes`, `/ui`). No issue.
 
 ---
 
-## app/config.py
-**Behavior:** Loads `.env`, defines `Settings` with env prefix `RR_`. Exposes `settings` singleton.
+## tests/test_portfolio.py (NEW)
 
-**Convention violations:** None.
+**Behavior:** 8 tests covering the portfolio analysis feature:
 
-**Issues:** None.
+- `test_bundle_auto_home`: Auto + Home from same carrier produces `is_bundle=True`, `bundle_discount_eligible=True`, correct premium totals.
+- `test_auto_only_no_bundle`: Two auto policies produce `is_bundle=False`.
+- `test_duplicate_medical_detection`: Auto with medical_payments > 0 + Home with coverage_f_medical > 0 triggers `duplicate_medical` flag.
+- `test_unbundle_risk_high`: Bundle where one policy has `ACTION_REQUIRED` risk produces `unbundle_risk="high"`.
+- `test_premium_concentration`: One policy at 90% of total premium triggers `premium_concentration` flag.
+- `test_high_portfolio_increase`: 33.3% total premium increase triggers `high_portfolio_increase` flag.
+- `test_single_policy_error`: Route rejects single-policy requests with 422.
+- `test_missing_policy_error`: Route returns 422 with "No review found" for nonexistent policies.
 
----
+Uses a `_make_review` helper to construct `ReviewResult` objects with full `RenewalPair` data, and a `_build_store` helper to create the lookup dict.
 
-## app/data\_loader.py
-**Behavior:** Loads `RenewalPair` data from DB (async) or JSON fallback. Caches in a module-level global. Falls back to JSON if `asyncio.run()` raises `RuntimeError` (e.g., already-running event loop).
-
-**Convention violations:** None.
+**Convention violations:** None. File naming follows `test_*.py` convention. Tests cover business logic, not trivial getters.
 
 **Issues:**
-1. **`RuntimeError` catch is overly broad** (line 49): `asyncio.run()` raises `RuntimeError` when called from within an existing async context, but `RuntimeError` can come from other sources. Should catch specifically or log the fallback.
-2. **Global mutable state** (`_cached_pairs`): No thread safety. If two requests call `load_pairs` simultaneously, both could trigger `_load_from_db()` before the cache is set.
-3. **`sample` falsy check** (line 18): `if sample and sample < len(...)` — `sample=0` would be falsy, but the route has `ge=1`, so this is fine in practice.
-
----
-
-## app/db.py
-**Behavior:** SQLAlchemy async engine/session factory with naming conventions. Lazy singleton pattern for engine and session factory. `init_db()` creates all tables.
-
-**Convention violations:** None.
-
-**Issues:** None.
-
----
-
-## app/main.py
-**Behavior:** Creates a FastAPI app, includes all routers, exposes `/health`.
-
-**Convention violations:** None.
-
-**Issues:** None.
-
----
-
-## app/engine/\_\_init\_\_.py
-**Behavior:** Empty init file.  
-**Convention violations:** None.  
-**Issues:** None.
-
----
-
-## app/engine/analytics.py
-**Behavior:** `compute_trends` takes a list of `BatchRunRecord`, computes aggregate stats (total runs, policies, average processing time, risk distribution, daily trends). Groups records by date for trend points.
-
-**Convention violations:** None.
-
-**Issues:** None. Clean, well-structured function.
-
----
-
-## app/engine/batch.py
-**Behavior:** Core processing pipeline. `assign_risk_level` maps diff flags to risk levels. `process_pair` diffs a renewal pair, applies rules, optionally runs LLM analysis. `process_batch` processes all pairs with progress callback, returns results + summary.
-
-**Convention violations:** None.
-
-**Issues:**
-1. **Direct attribute mutation on Pydantic model** (line 37): `result.pair = pair` — this mutates a `ReviewResult` after construction. Works because Pydantic v2 doesn't freeze by default, but it's a pattern smell. Both code paths set `pair`, so it's functional.
-
----
-
-## app/engine/differ.py
-**Behavior:** Computes field-by-field diffs between prior and renewal policy snapshots. Handles universal fields (premium, carrier, notes), auto/home coverages, vehicles, drivers, and endorsements. Returns a `DiffResult` with all `FieldChange` items.
-
-**Convention violations:** None.
-
-**Issues:**
-1. **File is 232 lines** — approaching the 300-line soft limit from convention.md but still within bounds.
-2. **`_pct_change` returns `None` when prior is 0** (line 12): This is correct but means `FieldChange.change_pct` will be `None` for zero-prior values. Downstream consumers should handle this.
-
----
-
-## app/engine/parser.py
-**Behavior:** Parses raw dict data into typed Pydantic models. Normalizes dates (strips whitespace, `/` → `-`), uppercases VINs and license numbers, parses coverages based on policy type.
-
-**Convention violations:** None.
-
-**Issues:**
-1. **Date normalization is naive** (line 16): `_normalize_date` only handles `/` → `-`. Doesn't handle other formats (e.g., `MM-DD-YYYY` vs `YYYY-MM-DD`). The Pydantic `date` field on `PolicySnapshot` will reject invalid formats, so this is somewhat self-protecting.
-
----
-
-## app/engine/quote\_generator.py
-**Behavior:** Generates up to 3 alternative quote recommendations based on renewal pair data and diff flags. Auto strategies: raise deductible (10% savings), drop optional coverages (4%), reduce medical payments (2.5%). Home strategies: raise deductible (12.5%), drop water backup (3%), reduce personal property (4%). Protected fields are never adjusted. Each strategy returns `None` if already optimized, skipping it.
-
-**Convention violations:** None.
-
-**Issues:**
-1. **`PROTECTED_FIELDS` is declared but never actively enforced in the generation logic** (lines 5-11): The constant exists and tests check against it, but the strategies simply never touch those fields by design. The protection is implicit (no strategy function adjusts a protected field) rather than explicit (no guard checks `if field in PROTECTED_FIELDS: skip`). If someone adds a new strategy that touches a protected field, the `PROTECTED_FIELDS` set won't prevent it.
-2. **`quote_id=""` is set at construction then mutated** (lines 41, 75, 100, etc. → line 209): Every `QuoteRecommendation` is created with `quote_id=""`, then reassigned in the loop at line 209. This is functional but could be cleaner — the intermediate empty-string state means the model has an invalid ID between creation and the loop.
-3. **`quotes[:3]` truncation** (line 211): Since both `_AUTO_STRATEGIES` and `_HOME_STRATEGIES` have exactly 3 entries, this truncation is currently a no-op. But if strategies are added later, the IDs assigned in the loop (line 208-209) would cover all quotes, then some would be sliced off, leaving gaps in Q-numbering. Should assign IDs after truncation. Actually, re-reading: the IDs are assigned first on all quotes, then truncated. If there were 4 strategies yielding 4 quotes, IDs would be Q1-Q4, but only Q1-Q3 would be returned. This is a latent bug that doesn't manifest with current strategy counts.
-
----
-
-## app/engine/rules.py
-**Behavior:** Flag engine. Examines premium changes, carrier changes, and field-level changes to assign `DiffFlag` values. Premium thresholds: HIGH at 10%, CRITICAL at 20%. Detects liability limit decreases, deductible increases, coverage drops/adds, vehicle/driver/endorsement changes, notes changes, and boolean coverage changes.
-
-**Convention violations:** None.
-
-**Issues:**
-1. **`flag_diff` mutates the input `DiffResult`** (line 125-145): The function takes `diff` and returns it, but also mutates it in-place (sets `diff.flags` and individual `c.flag`). This is a side-effect pattern. Callers use the return value, so it works, but it's worth noting.
-2. **`diff.flags = list(set(flags))`** (line 144): Converting to set deduplicates, which is good. But if the same field type appears multiple times (e.g., two separate COVERAGE_DROPPED flags from different fields), only one flag instance remains in the set. The `flags` list on individual `FieldChange` objects is still correct, but the top-level `flags` list loses count information. This is intentional (flags as "present/absent" markers), but worth documenting.
-
----
-
-## app/llm/\_\_init\_\_.py
-**Behavior:** Empty init file.  
-**Convention violations:** None.  
-**Issues:** None.
-
----
-
-## app/llm/analyzer.py
-**Behavior:** Determines whether to invoke LLM analysis (`should_analyze`), then runs up to 3 analysis types: risk signal extraction from notes, endorsement comparison, and coverage similarity for boolean drops. Produces `LLMInsight` objects.
-
-**Convention violations:** None.
-
-**Issues:**
-1. **`should_analyze` only checks water\_backup changes** (line 22-26): The condition `pair.prior.home_coverages.water_backup != pair.renewal.home_coverages.water_backup` means LLM analysis is triggered for water\_backup changes but not for `replacement_cost` changes. However, `analyze_pair` at line 114-120 checks both `water_backup` and `replacement_cost` in the coverage\_drops filter. So a `replacement_cost` drop won't trigger LLM analysis through the batch pipeline (since `should_analyze` returns False for it), but if called directly, `analyze_pair` would process it. This is an inconsistency — `replacement_cost` drops are handled in `analyze_pair` but never reached via the normal flow because `should_analyze` doesn't gate on them.
-
----
-
-## app/llm/client.py
-**Behavior:** Real LLM client supporting OpenAI and Anthropic providers, with optional Langfuse tracing. Parses JSON responses, returns error dict on failure.
-
-**Convention violations:** None.
-
-**Issues:**
-1. **Bare exception handling** (line 57): `except (json.JSONDecodeError, Exception) as e:` — `Exception` already includes `json.JSONDecodeError`, so the tuple is redundant. This catches _all_ exceptions, which is intentional (don't crash on LLM failures), but the syntax is misleading.
-2. **`raw` reference before assignment** (line 58): `"raw_response": raw if "raw" in dir() else ""` — uses `dir()` to check if `raw` was assigned. This is a code smell. If `_call_provider` throws before assigning, `raw` won't exist. The `dir()` trick works but is unusual.
-3. **Anthropic call doesn't request JSON format** (lines 69-74): OpenAI uses `response_format={"type": "json_object"}` (line 81) to force JSON output, but the Anthropic call doesn't use structured output or equivalent. The prompts request JSON, but the Anthropic model might return non-JSON, leading to `json.JSONDecodeError`.
-
----
-
-## app/llm/mock.py
-**Behavior:** Deterministic mock LLM client for testing and migration comparisons. Records all calls. Returns canned responses based on `trace_name`. Supports optional Langfuse tracing even in mock mode.
-
-**Convention violations:** None.
-
-**Issues:**
-1. **Langfuse in mock is surprising**: A mock client initializing Langfuse (lines 9-15) is unexpected. This means test runs with `LANGFUSE_PUBLIC_KEY` set will send trace data, which could pollute production observability.
-
----
-
-## app/llm/prompts.py
-**Behavior:** Three prompt templates for LLM analysis: coverage similarity, endorsement comparison, and risk signal extraction. Each requests JSON output with specific schema.
-
-**Convention violations:** None.
-
-**Issues:**
-1. **`PROMPT_MAP` is defined but never used anywhere** (lines 52-56): Dead code.
-
----
-
-## app/models/\_\_init\_\_.py
-**Behavior:** Empty init file.  
-**Convention violations:** None.  
-**Issues:** None.
-
----
-
-## app/models/analytics.py
-**Behavior:** Three Pydantic models for analytics: `BatchRunRecord` (single batch run), `TrendPoint` (daily aggregate), `AnalyticsSummary` (full summary with trends).
-
-**Convention violations:** None.
-
-**Issues:** None.
-
----
-
-## app/models/db\_models.py
-**Behavior:** SQLAlchemy ORM models for `renewal_pairs` and `batch_results` tables. Uses mapped columns with typed annotations.
-
-**Convention violations:** None.
-
-**Issues:**
-1. **`effective_date_prior` / `effective_date_renewal` have no explicit column type** (lines 19-20): `mapped_column()` with no type argument for `date` fields. SQLAlchemy can infer from `Mapped[date]`, but being explicit (like the other columns) would be more consistent.
-
----
-
-## app/models/diff.py
-**Behavior:** Data models for diff results. `DiffFlag` enum has 15 flag types. `FieldChange` holds a single field diff. `DiffResult` holds all changes and flags for a policy.
-
-**Convention violations:** None.
-
-**Issues:** None.
-
----
-
-## app/models/policy.py
-**Behavior:** Core domain models. `PolicyType` (auto/home), `Endorsement`, `Vehicle`, `Driver`, `AutoCoverages`, `HomeCoverages`, `PolicySnapshot`, `RenewalPair`. Uses Pydantic with sensible defaults.
-
-**Convention violations:** None.
-
-**Issues:**
-1. **`effective_date`/`expiration_date` typed as `date`** (lines 63-64) but `_normalize_date` in parser returns a string: Pydantic v2 coerces `str` → `date` automatically if the format is correct, so this works. But the type mismatch between the parser's return type (str) and the model's field type (date) is implicit.
-
----
-
-## app/models/quote.py
-**Behavior:** Two Pydantic models: `CoverageAdjustment` (field, original/proposed values, strategy name) and `QuoteRecommendation` (quote ID, adjustments list, savings percentage/dollar, trade-off description).
-
-**Convention violations:** None.
-
-**Issues:** None.
-
----
-
-## app/models/review.py
-**Behavior:** Review-related models. `RiskLevel` enum (4 levels), `LLMInsight` (analysis type, finding, confidence, reasoning), `ReviewResult` (full review output), `BatchSummary` (batch stats).
-
-**Convention violations:** None.
-
-**Issues:** None.
-
----
-
-## app/routes/\_\_init\_\_.py
-**Behavior:** Empty init file.  
-**Convention violations:** None.  
-**Issues:** None.
-
----
-
-## app/routes/analytics.py
-**Behavior:** Two endpoints: GET `/analytics/history` returns the FIFO history, GET `/analytics/trends` computes and returns analytics summary. Module-level `deque(maxlen=100)` as in-memory store.
-
-**Convention violations:** None.
-
-**Issues:** None.
-
----
-
-## app/routes/batch.py
-**Behavior:** POST `/batch/run` starts an async batch job — loads pairs, processes them in a thread executor, stores results, records analytics history. GET `/batch/status/{job_id}` checks job progress. GET `/batch/summary` returns the last batch summary.
-
-**Convention violations:** None.
-
-**Issues:**
-1. **`asyncio.get_event_loop()` is deprecated** (line 49): Should use `asyncio.get_running_loop()` instead. `get_event_loop()` can create a new loop in some contexts and emits a deprecation warning in Python 3.10+.
-2. **`_jobs` dict grows unboundedly** (line 23): Completed/failed jobs are never cleaned up. Over time this is a memory leak.
-3. **`store.clear()` before adding results** (line 56): This wipes the entire results store on every batch run. Any previously-stored review results from `/reviews/compare` calls are lost. This is a design choice but could surprise users.
-4. **Hardcoded timezone** (line 76): `ZoneInfo("America/Vancouver")` — the timezone is hardcoded rather than configurable. Other parts of the codebase use UTC.
-5. **Race condition in `_process()`**: The lambda `lambda: process_batch(pairs, on_progress=on_progress)` runs in a thread executor while `_jobs[job_id]` is updated from both the executor thread (via `on_progress`) and the async task. Dict access in CPython is thread-safe due to the GIL, but this pattern is brittle.
-
----
-
-## app/routes/eval.py
-**Behavior:** Two features: (1) `/eval/run` — golden evaluation against a test set, checks risk levels and flags. (2) `/migration/comparison` — runs the same data through basic (rule-only) and LLM (mock) pipelines to compare results. Returns risk distribution diff, examples of changed classifications.
-
-**Convention violations:** None.
-
-**Issues:**
-1. **Same `asyncio.get_event_loop()` deprecation** (line 96).
-2. **`_migration_jobs` grows unboundedly** (line 17): Same memory leak pattern as batch.py.
-3. **File is 189 lines** — reasonable size.
-4. **`_risk_dist` has untyped `results` parameter** (line 68): The type hint is `list` without specifying element type. Should be `list[ReviewResult]`.
-
----
-
-## app/routes/quotes.py
-**Behavior:** POST `/quotes/generate` — parses a raw pair, processes it to get diff flags, then generates quote recommendations.
-
-**Convention violations:** None.
-
-**Issues:**
-1. **Double flag check** (lines 21 + `generate_quotes` line 194): The route checks `if not result.diff.flags: return []`, and `generate_quotes` internally also checks `if not diff.flags: return []`. The check in the route is redundant. Not a bug, but unnecessary duplication.
-
----
-
-## app/routes/reviews.py
-**Behavior:** POST `/reviews/compare` — parses and processes a pair, stores the result. GET `/reviews/{policy_number}` — retrieves a stored review.
-
-**Convention violations:** None.
-
-**Issues:** None.
-
----
-
-## app/routes/ui.py
-**Behavior:** Three UI routes: dashboard (paginated results list), review detail page, migration comparison page. Uses Jinja2 templates.
-
-**Convention violations:** None.
-
-**Issues:**
-1. **Direct import of private variable** (line 28): `from app.routes.batch import _last_summary` — accessing a "private" module variable. Should ideally have a getter function like `get_last_summary()` for consistency with `get_results_store()` and `get_history_store()`.
-2. **Sorting by enum string value** (line 19): `key=lambda r: r.risk_level.value` — sorts alphabetically by the string value ("critical", "high", "low", "medium"), not by severity. This means the actual order would be: critical, high, low, medium — with LOW appearing before MEDIUM. This is a **bug**. The intended behavior is likely to sort by risk severity (critical first, then high, medium, low).
-
----
-
-## tests/\_\_init\_\_.py
-**Behavior:** Empty init file.  
-**Convention violations:** None.  
-**Issues:** None.
-
----
-
-## tests/conftest.py
-**Behavior:** Shared test fixtures. Loads auto and home sample pairs from JSON files in `data/samples/`.
-
-**Convention violations:** None.
-
-**Issues:** None.
-
----
-
-## tests/test\_analytics.py
-**Behavior:** 6 tests covering `compute_trends` (empty, single, multiple records), analytics route endpoints, and FIFO deque limit behavior.
-
-**Convention violations:** None.
-
-**Issues:** None. Solid test coverage.
-
----
-
-## tests/test\_batch.py
-**Behavior:** Tests for `assign_risk_level`, `process_pair`, and `process_batch` covering all risk levels and batch processing.
-
-**Convention violations:** None.
-
-**Issues:** None.
-
----
-
-## tests/test\_differ.py
-**Behavior:** Comprehensive diff tests including identical-pair-no-diff, specific field detection, hypothesis property-based tests for premium percentage calculation and vehicle diffs.
-
-**Convention violations:** None.
-
-**Issues:** None. Good use of hypothesis for property-based testing.
-
----
-
-## tests/test\_llm\_analyzer.py
-**Behavior:** Tests `should_analyze` gating logic, LLM analysis for notes/endorsements/coverage drops, integration with mock client.
-
-**Convention violations:** None.
-
-**Issues:** None.
-
----
-
-## tests/test\_main.py
-**Behavior:** Single health check route test.
-
-**Convention violations:** None.
-
-**Issues:**
-1. **Duplicated test**: `test_health()` exists in both `test_main.py` and `test_routes.py`. Minor redundancy.
-
----
-
-## tests/test\_models.py
-**Behavior:** Model structure tests: pair shapes, flag enum count, field change construction, risk level ordering, batch summary defaults.
-
-**Convention violations:** None.
-
-**Issues:** None.
-
----
-
-## tests/test\_parser.py
-**Behavior:** Tests snapshot parsing, vehicle/driver/endorsement parsing, date normalization, notes extraction.
-
-**Convention violations:** None.
-
-**Issues:** None.
-
----
-
-## tests/test\_quote\_generator.py
-**Behavior:** 8 tests: auto all-strategies, home all-strategies, already-optimized auto, protected field check, no-flags-empty, and route integration tests for both auto and home.
-
-**Convention violations:** None.
-
-**Issues:** None. Thorough coverage.
-
----
-
-## tests/test\_routes.py
-**Behavior:** Integration tests for review, batch, and health routes. Tests happy paths, error cases (invalid input, 404), and batch job creation.
-
-**Convention violations:** None.
-
-**Issues:** None.
-
----
-
-## tests/test\_rules.py
-**Behavior:** Tests premium threshold boundaries (below/at high and critical), premium decrease, carrier change, all flag types on real sample data, and flag-change consistency.
-
-**Convention violations:** None.
-
-**Issues:** None.
+1. **No test for carrier mismatch** (missing): `_build_bundle_analysis` has a `carrier_mismatch` code path that sets `bundle_discount_eligible=False` when carriers differ. No test exercises this. This is a significant untested branch.
+2. **No test for duplicate roadside detection** (missing): `_detect_duplicate_coverage` checks for roadside assistance overlap (auto `roadside_assistance=True` + home endorsement with "roadside"/"towing" in description). No test covers this path.
+3. **No test for exposure flags** (missing): `_calculate_exposure_flags` has two branches — high liability (>$500K) and low liability (<$200K). Neither is tested. The bodily injury limit parsing logic (`split("/")[0]`, `float(...) * 1000`) is also untested.
+4. **No test for `unbundle_risk="medium"`** (missing): Only "high" is tested (via `ACTION_REQUIRED`). The "medium" path (via `REVIEW_RECOMMENDED` without `ACTION_REQUIRED`/`URGENT_REVIEW`) is not covered. Note: `test_bundle_auto_home` does use `REVIEW_RECOMMENDED` as the default, but it asserts on `is_bundle` and premiums, not on `unbundle_risk`.
+5. **No test for deduplication** (missing): `analyze_portfolio` deduplicates via `dict.fromkeys`. No test passes duplicate policy numbers to verify the behavior.
+6. **`_make_review` uses same coverages for prior and renewal** (lines 37-38, 48): The helper assigns the same `auto_coverages`/`home_coverages` to both prior and renewal snapshots. This means the `DiffResult` will always have empty changes/flags. This is intentional for portfolio tests (which don't exercise diff logic), but it means the portfolio tests never interact with flagged policies. The `_detect_premium_concentration`'s `abs(premium_change_pct) >= 15.0` path is tested via premium differences, but cross-policy flags that might depend on flag state are not tested.
+7. **`test_missing_policy_error` mutates shared state** (lines 189-190): `store = get_results_store(); store.clear()` clears the global results store. If tests run in parallel or in a specific order, this could cause other tests to fail. In practice, pytest runs tests sequentially by default, and the other tests in this file use local stores (not the global one), so this is safe. But it's a fragile pattern — any future test that populates the global store before this test would be affected.
+8. **No test for `premium_change_pct` rounding** (missing): `analyze_portfolio` rounds to 2 decimal places (`round(premium_change_pct, 2)`). No test verifies this precision. Minor.
+9. **No route integration test for happy path** (missing): `test_single_policy_error` and `test_missing_policy_error` test error cases via the HTTP client. There is no route-level test that populates the global store with reviews and then calls `POST /portfolio/analyze` successfully. All happy-path tests call `analyze_portfolio` directly, bypassing the route layer.
 
 ---
 
@@ -427,13 +102,13 @@ I've now read every file. Here is my complete analysis:
 
 | Severity | File | Issue |
 |----------|------|-------|
-| **BUG** | `app/routes/ui.py:19` | Risk level sorting by string value produces wrong order (critical, high, **low**, **medium** instead of critical, high, medium, low) |
-| **BUG (latent)** | `app/llm/analyzer.py:22-26` | `should_analyze` doesn't trigger for `replacement_cost` drops, but `analyze_pair` handles them — unreachable code path |
-| **BUG (latent)** | `app/engine/quote_generator.py:208-211` | Quote IDs assigned before `[:3]` truncation — would produce ID gaps if strategies > 3 |
-| Fragility | `app/aggregator.py:21,34` | Risk escalation depends on exact substring matches in LLM findings — tightly coupled to output format |
-| Deprecation | `app/routes/batch.py:49`, `eval.py:96` | `asyncio.get_event_loop()` deprecated in Python 3.10+ |
-| Memory leak | `app/routes/batch.py:23`, `eval.py:17` | Job dicts grow unboundedly, never cleaned up |
-| Code smell | `app/llm/client.py:57-58` | Redundant exception tuple; `dir()` trick for checking `raw` variable |
-| Dead code | `app/llm/prompts.py:52-56` | `PROMPT_MAP` defined but never imported or used |
-| Inconsistency | `app/routes/batch.py:76` | Hardcoded `America/Vancouver` timezone vs UTC used elsewhere |
-| Inconsistency | `app/routes/ui.py:28` | Direct import of `_last_summary` private variable |
+| **Missing test** | `tests/test_portfolio.py` | Carrier mismatch branch is untested — `bundle_discount_eligible=False` when carriers differ |
+| **Missing test** | `tests/test_portfolio.py` | Duplicate roadside detection is untested — endorsement text matching logic not exercised |
+| **Missing test** | `tests/test_portfolio.py` | Liability exposure flags (high >$500K, low <$200K) and BI limit parsing completely untested |
+| **Missing test** | `tests/test_portfolio.py` | No happy-path route integration test — only error cases tested via HTTP client |
+| **Edge case** | `app/engine/portfolio_analyzer.py:110` | `bodily_injury_limit.split("/")` assumes "X/Y" format — crashes on empty string or non-standard formats |
+| **Edge case** | `app/engine/portfolio_analyzer.py:200-206` | Pair-less `ReviewResult` contributes to risk breakdown but excluded from premium calculations — inconsistent treatment |
+| **Design** | `app/models/portfolio.py:5,17` | `severity`, `unbundle_risk`, and `flag_type` are untyped strings — should be `Literal` or `StrEnum` for safety |
+| **Design** | `app/routes/portfolio.py:12` | No upper bound on `policy_numbers` list length — potential DoS vector |
+| **Fragility** | `tests/test_portfolio.py:189-190` | `store.clear()` mutates global state — could break tests if execution order changes |
+| **Architectural** | `app/routes/portfolio.py:23` | Depends on shared mutable `_results_store` that is cleared by batch runs — portfolio analysis results are timing-dependent |

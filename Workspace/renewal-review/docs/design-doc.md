@@ -25,6 +25,12 @@ Quote Generator 모듈도 동일 패턴:
 - `app/engine/quote_generator.py` — 비즈니스 로직 (generate_quotes)
 - `app/routes/quotes.py` — API 엔드포인트 (POST /quotes/generate)
 
+Portfolio Risk Aggregator 모듈:
+
+- `app/models/portfolio.py` — Pydantic 모델 (CrossPolicyFlag, BundleAnalysis, PortfolioSummary)
+- `app/engine/portfolio_analyzer.py` — 비즈니스 로직 (analyze_portfolio)
+- `app/routes/portfolio.py` — API 엔드포인트 (POST /portfolio/analyze)
+
 ## 2. Data Model
 
 ### BatchRunRecord
@@ -42,6 +48,15 @@ Quote Generator 모듈도 동일 패턴:
 ### QuoteRecommendation
 대안 견적. quote_id("Q1"~"Q3"), adjustments(list[CoverageAdjustment]), estimated_savings_pct(%), estimated_savings_dollar($), trade_off(트레이드오프 설명).
 
+### CrossPolicyFlag
+교차 정책 이슈. flag_type(이슈 종류), severity("info"/"warning"/"critical"), description(사람이 읽는 설명), affected_policies(관련 policy numbers).
+
+### BundleAnalysis
+번들 분석. has_auto, has_home, is_bundle, bundle_discount_eligible(동일 carrier 여부), carrier_mismatch, unbundle_risk("low"/"medium"/"high").
+
+### PortfolioSummary
+포트폴리오 요약. client_policies, total_premium, total_prior_premium, premium_change_pct, risk_breakdown(dict), bundle_analysis(BundleAnalysis), cross_policy_flags(list[CrossPolicyFlag]).
+
 ## 3. Processing Pipeline
 
 `compute_trends(records)`: BatchRunRecord 리스트를 받아 AnalyticsSummary를 반환.
@@ -57,6 +72,14 @@ Quote Generator 모듈도 동일 패턴:
 - 보호 제약: bodily_injury_limit, property_damage_limit, coverage_e_liability, uninsured_motorist, coverage_a_dwelling 절대 변경 불가
 - 이미 최적화된 항목은 건너뛰기 (예: deductible이 이미 높은 경우)
 
+`analyze_portfolio(policy_numbers, results_store)`: 정책 번호 리스트와 결과 저장소를 받아 PortfolioSummary 반환.
+- 중복 정책 번호 제거 (dict.fromkeys)
+- 번들 분석: auto + home 모두 존재 시 is_bundle, 동일 carrier면 bundle_discount_eligible
+- unbundle_risk: 번들에서 action_required/urgent_review → high, review_recommended → medium
+- 중복 보장 탐지: auto medical_payments + home coverage_f_medical → duplicate_medical, auto roadside + home endorsement(roadside/towing) → duplicate_roadside
+- 총 노출 계산: home coverage_e_liability + auto bodily_injury_limit(first number × 1000) 합산, >$500K → high_liability_exposure, <$200K → low_liability_exposure
+- 보험료 집중도: 단일 정책 ≥ 70% → premium_concentration, 전체 변동 ≥ 15% → high_portfolio_increase
+
 ## 4. API Surface
 
 | Method | Path | Response Model |
@@ -64,6 +87,7 @@ Quote Generator 모듈도 동일 패턴:
 | GET | /analytics/history | list[BatchRunRecord] |
 | GET | /analytics/trends | AnalyticsSummary |
 | POST | /quotes/generate | list[QuoteRecommendation] |
+| POST | /portfolio/analyze | PortfolioSummary |
 
 ## 5. UI
 
@@ -89,5 +113,15 @@ Quote Generator 모듈도 동일 패턴:
 - 보호 제약 검증: 모든 견적에서 liability 필드 불변
 - flags 없는 정책: 빈 리스트
 - 라우트 통합 테스트: POST /quotes/generate (Auto, Home)
+
+`tests/test_portfolio.py` — 8개 테스트:
+- auto + home 번들: is_bundle=True, premium 합산 검증
+- auto만: is_bundle=False
+- 중복 medical 탐지: duplicate_medical flag 생성
+- unbundle_risk high: ACTION_REQUIRED 포함 시
+- premium_concentration: 한 정책 70% 이상
+- high_portfolio_increase: 전체 변동 15% 이상
+- 1개 정책 → 422 에러
+- 존재하지 않는 policy → 422 에러
 
 ## 8. Tech Stack

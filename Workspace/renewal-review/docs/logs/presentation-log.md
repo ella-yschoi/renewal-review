@@ -9,6 +9,18 @@
 
 ---
 
+### 2026-02-15 00:45 | `experiment/portfolio-aggregator` | `TBD`
+
+**feat: add Portfolio Risk Aggregator — cross-policy analysis via self-correcting loop**
+
+_5 files changed, ~430 insertions_
+
+> **Context**: 실험 3에서 검증한 자가 수정 루프를 "한 번 쓰고 버리는 도구"가 아닌 "재사용 가능한 파이프라인"으로 증명하기 위해, 완전히 다른 도메인의 기능(교차 정책 분석)을 동일 파이프라인으로 구현. PROMPT.md와 requirements.md만 교체하고 Skill 오케스트레이션(방법 B)으로 실행.
+> **Result**: 1회 반복, 사람 개입 0회, 89/89 테스트 통과, TRIANGULAR_PASS. 번들 분석, 중복 보장 탐지, 총 노출 계산, 보험료 집중도 위험 — 4가지 교차 분석 기능이 자동 구현됨.
+> **Insight**: 파이프라인의 진짜 가치는 두 번째 실행에서 나온다 — "이 파이프라인을 만들었습니다"가 아니라 "이 파이프라인에 기능을 넣으면 나옵니다"가 설득력.
+
+---
+
 ### 2026-02-14 22:30 | `experiment/portfolio-aggregator` | `TBD`
 
 **chore: set up experiment 4 — portfolio aggregator requirements, prompt, and team guide**
