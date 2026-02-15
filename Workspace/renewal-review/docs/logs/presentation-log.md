@@ -9,7 +9,7 @@
 
 ---
 
-### 2026-02-14 14:45 | 실험 3 최종 비교 — 자동 루프 vs 수동 대조군
+### 2026-02-14 14:42 | 실험 3 최종 비교 — 자동 루프 vs 수동 대조군
 
 **Self-Correcting Loop: 641초 자동 vs 549초 수동, 사람 개입 0 vs 1**
 
@@ -19,7 +19,7 @@
 
 ---
 
-### 2026-02-14 15:30 | `experiment/self-correcting-loop` | `pending`
+### 2026-02-14 14:45 | `experiment/self-correcting-loop` | `pending`
 
 **feat: implement Smart Quote Generator — auto/home alternative quotes**
 
@@ -43,7 +43,7 @@ _5 files added: 3 experiment docs + 2 shell scripts_
 
 ---
 
-### 2026-02-14 00:47 | `main` | 삼각 검증 실험
+### 2026-02-14 01:42 | `main` | 삼각 검증 실험
 
 **실험 C: 삼각 검증(Triangular Verification)으로 코드 품질 검증**
 
