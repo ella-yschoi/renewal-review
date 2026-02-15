@@ -9,6 +9,18 @@
 
 ---
 
+### 2026-02-14 22:30 | `experiment/portfolio-aggregator` | `TBD`
+
+**chore: set up experiment 4 — portfolio aggregator requirements, prompt, and team guide**
+
+_5 files changed (3 new, 2 modified)_
+
+> **Context**: 실험 3에서 만든 자가 수정 루프가 "한 번 쓰고 버리는 도구"가 아니라 "팀이 반복 사용하는 파이프라인"임을 증명하기 위해, 완전히 다른 도메인(교차 정책 위험 분석)의 기능을 준비. 스크립트를 파라미터화하고 팀 가이드를 작성하여 개인 실험에서 팀 도구로 전환.
+> **Result**: PROMPT.md + requirements.md 두 파일만 작성하면 누구나 자가 수정 루프를 돌릴 수 있는 환경 완성. 스크립트는 환경변수로 경로를 주입받아 실험 번호에 독립적.
+> **Insight**: 파이프라인의 가치는 첫 번째 실행이 아니라 두 번째 실행에서 증명된다 — 설정 변경 없이 새 기능을 투입할 수 있으면 그것이 진짜 자동화.
+
+---
+
 ### 2026-02-14 14:45 | 실험 3 최종 비교 — 자동 루프 vs 수동 대조군
 
 **Self-Correcting Loop: 641초 자동 vs 549초 수동, 사람 개입 0 vs 1**

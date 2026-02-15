@@ -2,6 +2,7 @@
 # scripts/triangular-verify.sh
 # 삼각 검증 자동화 — Agent B (blind review) + Agent C (discrepancy report)
 # 사용법: bash scripts/triangular-verify.sh
+#   환경변수: REQUIREMENTS_FILE (기본값: experiment 3 파일)
 # 실행 위치: renewal-review/ 프로젝트 루트에서 실행
 
 set -euo pipefail
@@ -11,7 +12,7 @@ unset CLAUDECODE 2>/dev/null || true
 
 REVIEW_DIR="docs/experiments"
 LOG_DIR="docs/logs"
-REQUIREMENTS_FILE="$REVIEW_DIR/3-requirements-quote-generator.md"
+REQUIREMENTS_FILE="${REQUIREMENTS_FILE:-$REVIEW_DIR/3-requirements-quote-generator.md}"
 BLIND_REVIEW_FILE="$REVIEW_DIR/blind-review.md"
 DISCREPANCY_FILE="$REVIEW_DIR/discrepancy-report.md"
 
