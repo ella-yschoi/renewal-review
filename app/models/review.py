@@ -26,6 +26,7 @@ class ReviewResult(BaseModel):
     diff: DiffResult
     llm_insights: list[LLMInsight] = []
     summary: str = ""
+    llm_summary_generated: bool = False
     pair: RenewalPair | None = None
 
 

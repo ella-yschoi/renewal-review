@@ -248,10 +248,12 @@ async function generateQuotes(policyNumber) {
         html += '</div>';
       });
 
-      html += '<div class="quote-tradeoff"><strong>Trade-off</strong>' + q.trade_off + '</div>';
+      var llmBadge = q.broker_tip ? ' <span class="llm-sparkle" title="LLM personalized"></span>' : '';
+      html += '<div class="quote-tradeoff"><strong>Trade-off' + llmBadge + '</strong>' + q.trade_off + '</div>';
       var tip = q.broker_tip || STRATEGY_TIPS[strategy] || '';
       if (tip) {
-        html += '<div class="quote-tip"><strong>Broker Tip</strong>' + tip + '</div>';
+        var tipBadge = q.broker_tip ? ' <span class="llm-sparkle" title="LLM personalized"></span>' : '';
+        html += '<div class="quote-tip"><strong>Broker Tip' + tipBadge + '</strong>' + tip + '</div>';
       }
 
       html += '</div>';
