@@ -2,11 +2,10 @@ import time
 from collections.abc import Callable
 
 from app.aggregator import aggregate
-from app.config import settings
 from app.engine.differ import compute_diff
 from app.engine.rules import flag_diff
 from app.llm.analyzer import analyze_pair, generate_summary, should_analyze
-from app.llm.client import LLMClient, LLMClientProtocol
+from app.llm.client import LLMClientProtocol
 from app.models.diff import DiffFlag
 from app.models.policy import RenewalPair
 from app.models.review import BatchSummary, ReviewResult, RiskLevel
@@ -53,8 +52,26 @@ def process_pair(pair: RenewalPair, llm_client: LLMClientProtocol | None = None)
         llm_summary = generate_summary(llm_client, result)
         if llm_summary:
             result.summary = llm_summary
+            result.llm_summary_generated = True
 
     return result
+
+
+def enrich_with_llm(result: ReviewResult, client: LLMClientProtocol) -> None:
+    if not result.pair or not result.diff.flags:
+        return
+
+    if not result.llm_insights and should_analyze(result.diff, result.pair):
+        insights = analyze_pair(client, result.diff, result.pair)
+        result.llm_insights = insights
+        aggregated = aggregate(result.policy_number, result.risk_level, result.diff, insights)
+        result.risk_level = aggregated.risk_level
+
+    if not result.llm_summary_generated:
+        llm_summary = generate_summary(client, result)
+        if llm_summary:
+            result.summary = llm_summary
+            result.llm_summary_generated = True
 
 
 def process_batch(
@@ -64,14 +81,10 @@ def process_batch(
 ) -> tuple[list[ReviewResult], BatchSummary]:
     start = time.perf_counter()
 
-    if settings.llm_enabled and llm_client is None:
-        llm_client = LLMClient()
-
-    client = llm_client if settings.llm_enabled else None
     total = len(pairs)
     results = []
     for i, p in enumerate(pairs):
-        results.append(process_pair(p, client))
+        results.append(process_pair(p, llm_client))
         if on_progress:
             on_progress(i + 1, total)
     elapsed_ms = (time.perf_counter() - start) * 1000

@@ -74,7 +74,7 @@
   <h2>Reviews <span style="font-weight:400; font-size:12px; color:#718096;">{{ total_results }} total — page {{ page }}/{{ total_pages }}</span></h2>
   <table>
     <thead>
-      <tr><th>Policy #</th><th>Risk</th><th>Flags</th><th>Changes</th><th></th></tr>
+      <tr><th>Policy #</th><th>Risk</th><th>Flags</th><th>Changes</th><th>LLM Analytics</th><th></th></tr>
     </thead>
     <tbody id="results-body">
       {% for r in results %}
@@ -83,6 +83,7 @@
         <td><span class="badge badge-{{ r.risk_level.value }}">{{ r.risk_level.value }}</span></td>
         <td>{{ r.diff.flags|length }}</td>
         <td>{{ r.diff.changes|length }}</td>
+        <td>{% if r.llm_insights %}<span class="llm-sparkle" title="LLM analyzed"></span>{% endif %}</td>
         <td><a href="/ui/review/{{ r.policy_number }}" class="btn btn-secondary" style="padding:2px 8px; font-size:11px;">View</a></td>
       </tr>
       {% endfor %}

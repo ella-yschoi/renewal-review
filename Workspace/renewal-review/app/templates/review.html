@@ -14,8 +14,16 @@
 </div>
 
 <div class="card">
-  <h2>Summary</h2>
-  <p style="font-size:13px; color:#4a5568;">{{ result.summary }}</p>
+  <h2>Summary <span id="summary-sparkle" style="display:{% if result.llm_summary_generated %}inline-block{% else %}none{% endif %};" class="llm-sparkle" title="LLM-generated summary"></span></h2>
+  <div id="summary-content">
+    <p style="font-size:13px; color:#4a5568;" id="summary-text">{{ result.summary }}</p>
+  </div>
+  {% if not result.llm_summary_generated and result.diff.flags %}
+  <div id="summary-loading" style="display:flex; align-items:center; gap:8px; margin-top:8px;">
+    <div class="spinner" style="width:16px; height:16px; border-width:2px;"></div>
+    <span style="font-size:12px; color:#805ad5;">Generating AI summary...</span>
+  </div>
+  {% endif %}
 </div>
 
 {% if result.pair %}
@@ -172,9 +180,10 @@
   </table>
 </div>
 
+<div id="llm-insights-section">
 {% if result.llm_insights %}
 <div class="card" style="border-left:4px solid #805ad5;">
-  <h2 style="color:#805ad5;">LLM Insights ({{ result.llm_insights|length }})</h2>
+  <h2 style="color:#805ad5;"><span class="llm-sparkle"></span> LLM Insights ({{ result.llm_insights|length }})</h2>
   <p style="font-size:11px; color:#805ad5; margin-bottom:10px;">LLM Analytics — analyzed by LLM for unstructured text signals</p>
   <table>
     <thead>
@@ -197,5 +206,48 @@
   <h2 style="color:#718096;">LLM Insights</h2>
   <p style="font-size:12px; color:#a0aec0;">Basic Analytics (rule-based only) — no unstructured text requiring LLM analysis</p>
 </div>
+{% endif %}
+</div>
+{% endblock %}
+
+{% block scripts %}
+{% if not result.llm_summary_generated and result.diff.flags %}
+<script>
+(async function() {
+  try {
+    var resp = await fetch('/reviews/{{ result.policy_number }}');
+    if (!resp.ok) return;
+    var data = await resp.json();
+
+    var loadingEl = document.getElementById('summary-loading');
+    if (loadingEl) loadingEl.style.display = 'none';
+
+    if (data.llm_summary_generated) {
+      document.getElementById('summary-text').textContent = data.summary;
+      document.getElementById('summary-sparkle').style.display = 'inline-block';
+    }
+
+    if (data.llm_insights && data.llm_insights.length > 0) {
+      var html = '<div class="card" style="border-left:4px solid #805ad5;">';
+      html += '<h2 style="color:#805ad5;"><span class="llm-sparkle"></span> LLM Insights (' + data.llm_insights.length + ')</h2>';
+      html += '<p style="font-size:11px; color:#805ad5; margin-bottom:10px;">LLM Analytics — analyzed by LLM for unstructured text signals</p>';
+      html += '<table><thead><tr><th>Type</th><th>Finding</th><th>Confidence</th><th>Reasoning</th></tr></thead><tbody>';
+      data.llm_insights.forEach(function(i) {
+        html += '<tr>';
+        html += '<td><span class="flag-tag" style="background:#e9d8fd; color:#553c9a;">' + i.analysis_type + '</span></td>';
+        html += '<td>' + i.finding + '</td>';
+        html += '<td>' + Math.round(i.confidence * 100) + '%</td>';
+        html += '<td style="font-size:12px; color:#718096;">' + (i.reasoning || '') + '</td>';
+        html += '</tr>';
+      });
+      html += '</tbody></table></div>';
+      document.getElementById('llm-insights-section').innerHTML = html;
+    }
+  } catch (e) {
+    var loadingEl = document.getElementById('summary-loading');
+    if (loadingEl) loadingEl.style.display = 'none';
+  }
+})();
+</script>
 {% endif %}
 {% endblock %}
