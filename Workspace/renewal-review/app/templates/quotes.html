@@ -48,12 +48,12 @@
   <h2>Flagged Policies <span style="font-weight:400; font-size:12px; color:#718096;">{{ total_flagged }} total — page {{ page }}/{{ total_pages }}</span></h2>
   <table>
     <thead>
-      <tr><th>Policy #</th><th>Type</th><th>Premium</th><th>Risk</th><th>Flags</th><th></th></tr>
+      <tr><th style="white-space:nowrap;">Policy #</th><th>Type</th><th>Premium</th><th>Risk</th><th style="max-width:220px;">Flags</th><th></th></tr>
     </thead>
     <tbody>
       {% for r in flagged_results %}
       <tr>
-        <td><a href="/ui/review/{{ r.policy_number }}?ref=quotes">{{ r.policy_number }}</a></td>
+        <td style="white-space:nowrap;"><a href="/ui/review/{{ r.policy_number }}?ref=quotes">{{ r.policy_number }}</a></td>
         <td>{{ r.pair.prior.policy_type.value if r.pair else "—" }}</td>
         <td>${{ "%.2f"|format(r.pair.renewal.premium) if r.pair else "—" }}</td>
         <td><span class="badge badge-{{ r.risk_level.value }}">{{ r.risk_level.value }}</span></td>
