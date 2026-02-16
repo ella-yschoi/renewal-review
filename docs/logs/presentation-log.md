@@ -9,6 +9,18 @@
 
 ---
 
+### 2026-02-15 17:03 | `main` | uncommitted
+
+**feat: add regulatory signal (SR-22) to risk_signal_extractor mock**
+
+_1 file changed_
+
+> **Context**: 프롬프트에 `regulatory`가 signal type으로 정의되어 있지만 mock에서 테스트되지 않는 갭이 있었다. `adaptor/llm/` 파일 수정이므로 CLAUDE.md의 트리거 조건에 따라 `/insurance-domain` 스킬을 참조하여, ACORD 표준 기반의 도메인 지식으로 signal 내용을 작성.
+> **Result**: SR-22 filing(주 정부 요구 고위험 증명서) signal 추가. 스킬의 Core Terminology와 prompts.py의 regulatory 정의를 교차 참조하여, generic하지 않은 도메인 특화 내용으로 작성됨. 100/100 테스트 유지.
+> **Insight**: Custom Skill이 "문서에만 있는 지식"이 아니라 "코드 변경 시 자동으로 참조되는 지식"으로 작동하려면, CLAUDE.md의 트리거 조건(L1)과 스킬 내용(L2)이 파이프라인으로 연결되어야 한다 — 이번 작업에서 그 L1→L2 흐름이 설계 의도대로 작동함을 확인.
+
+---
+
 ### 2026-02-15 14:51 | `main` | uncommitted
 
 **refactor: align LLM prompts, mock responses, and sample data with ACORD standards**
