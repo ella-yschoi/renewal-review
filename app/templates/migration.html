@@ -28,7 +28,7 @@
   </p>
 </div>
 
-<div id="loading" style="display:none; max-width:480px;">
+<div id="loading" style="display:none; max-width:480px; margin:0 auto; text-align:center;">
   <p style="margin-bottom:8px; font-size:13px; color:#553c9a; font-weight:500;" id="loading-msg">Comparing policies with AI...</p>
   <div class="progress-container">
     <div class="progress-bar" id="progress-bar" style="width:0%;"></div>
@@ -113,8 +113,6 @@
           <th>Rule Risk</th>
           <th>LLM Risk</th>
           <th>Flags</th>
-          <th>LLM Insights</th>
-          <th>Summary</th>
         </tr>
       </thead>
       <tbody id="all-results-body"></tbody>
@@ -207,15 +205,6 @@ function renderAllResultsPage() {
     var rowClass = r.risk_changed ? ' class="risk-changed-row"' : '';
     var flags = (r.flags || []).map(function(f) { return '<span class="flag-tag">'+getLabel(f)+'</span>'; }).join(' ');
 
-    var insights = '—';
-    if (r.llm_insights && r.llm_insights.length > 0) {
-      insights = r.llm_insights.map(function(i) {
-        return '<span class="flag-tag" style="background:#e9d8fd;color:#553c9a;">'+getLabel(i.type)+'</span> ' +
-          i.finding + ' <span style="font-size:11px;color:#718096;">('+Math.round(i.confidence*100)+'%)</span>';
-      }).join('<br>');
-    }
-
-    var summary = r.summary ? '<span style="font-size:11px; line-height:1.4; display:block; max-width:250px;">' + r.summary + '</span>' : '—';
     var riskArrow = r.risk_changed ? ' &rarr; ' : ' = ';
 
     body.innerHTML += '<tr' + rowClass + '>' +
@@ -224,8 +213,6 @@ function renderAllResultsPage() {
       '<td><span class="badge badge-'+r.llm_risk+'">'+getLabel(r.llm_risk)+'</span>' +
       (r.risk_changed ? ' <span style="font-size:10px; color:#805ad5; font-weight:600;">CHANGED</span>' : '') + '</td>' +
       '<td>'+flags+'</td>' +
-      '<td style="font-size:12px;">'+insights+'</td>' +
-      '<td>'+summary+'</td>' +
       '</tr>';
   });
 
