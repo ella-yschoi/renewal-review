@@ -33,16 +33,22 @@ class PortfolioThresholds(BaseModel):
 
 class LLMConfig(BaseModel):
     openai_model: str = "gpt-4o-mini"
-    anthropic_model: str = "claude-sonnet-4-5-20250929"
+    sonnet_model: str = "claude-sonnet-4-5-20250929"
+    haiku_model: str = "claude-haiku-4-5-20251001"
     max_tokens: int = 1024
     temperature: float = 0.1
+    task_models: dict[str, str] = {
+        "risk_signal_extractor": "sonnet",
+        "endorsement_comparison": "haiku",
+        "review_summary": "haiku",
+        "quote_personalization": "haiku",
+    }
 
 
 class Settings(BaseSettings):
     model_config = {"env_prefix": "RR_"}
 
     llm_enabled: bool = False
-    llm_provider: str = "openai"
     data_path: str = "data/renewals.json"
     db_url: str = ""
 

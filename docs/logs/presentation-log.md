@@ -9,6 +9,18 @@
 
 ---
 
+### 2026-02-15 18:06 | `main` | uncommitted
+
+**feat: implement per-task LLM model routing based on Langfuse benchmark**
+
+_5 files changed (config, openai client, anthropic client, routing client, design-doc)_
+
+> **Context**: 실험 5에서 3개 모델을 정량 비교했지만, 프로덕션 코드는 여전히 단일 모델만 사용 중이었다. 벤치마크 결과("작업 복잡도에 따라 모델 격차가 달라진다")를 코드에 반영하여 task별 최적 모델을 자동 선택하도록 구현.
+> **Result**: `risk_signal_extractor` → Sonnet (복합 추론, 정확도 0.90), 나머지 3개 → Haiku (동급 정확도, 2배 빠르고 10배 저렴). `LLMClient`가 `trace_name`으로 라우팅. `LLMPort` 인터페이스 변경 없음 (adaptor에서 흡수). `RR_LLM_PROVIDER` 환경변수 제거.
+> **Insight**: 벤치마크의 가치는 숫자 자체가 아니라 "숫자를 코드에 반영하는 것"이다. 실험 → 결론 → 구현까지 이어져야 데이터 기반 의사결정이 완성된다.
+
+---
+
 ### 2026-02-15 17:03 | `main` | uncommitted
 
 **feat: add regulatory signal (SR-22) to risk_signal_extractor mock**

@@ -6,7 +6,8 @@ from app.config import settings
 
 
 class AnthropicClient:
-    def __init__(self):
+    def __init__(self, model: str | None = None):
+        self._model = model or settings.llm.sonnet_model
         self._client = None
         self._langfuse = None
         self._init_langfuse()
@@ -35,14 +36,14 @@ class AnthropicClient:
                 as_type="generation",
                 name=trace_name,
                 input=prompt,
-                model=cfg.anthropic_model,
+                model=self._model,
                 metadata={"provider": "anthropic"},
             )
 
         try:
             client = self._get_client()
             resp = client.messages.create(
-                model=cfg.anthropic_model,
+                model=self._model,
                 max_tokens=cfg.max_tokens,
                 messages=[{"role": "user", "content": prompt}],
             )

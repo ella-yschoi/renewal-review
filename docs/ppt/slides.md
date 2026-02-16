@@ -695,14 +695,20 @@ PROMPT.md만 바꾸면 어떤 기능이든 자동 구현됩니다.
 3. **Haiku = 90% of Sonnet at 1/10 price** — best cost-performance ratio
 4. **Prompt v2 pitfall**: fixing one model broke another. Prompt changes need regression testing across all target models
 
-### Recommendation
+### Applied: Per-Task Model Routing
 
-| Scenario | Model |
-|----------|-------|
-| Cost-sensitive | gpt-4o-mini |
-| Accuracy-first | Sonnet |
-| **Best value (recommended)** | **Haiku** |
-| Production hybrid | Haiku + Sonnet for risk-signal |
+| Task | Model | Why |
+|------|-------|-----|
+| **risk_signal_extractor** | **Sonnet** | Complex reasoning, 0.90 accuracy. Under-detection is dangerous |
+| endorsement_comparison | Haiku | Same 1.00 accuracy as Sonnet, 2x faster, 10x cheaper |
+| review_summary | Haiku | Text summarization, no complex reasoning needed |
+| quote_personalization | Haiku | Context-aware generation, Haiku sufficient |
+
+<div class="pt-2 text-sm text-green-400">
+
+**Implemented** — `LLMClient` routes per `trace_name` via `config.task_models`
+
+</div>
 
 </div>
 </div>
@@ -712,9 +718,10 @@ PROMPT.md만 바꾸면 어떤 기능이든 자동 구현됩니다.
 결론: Haiku가 Sonnet의 90% 정확도를 1/10 가격에 제공합니다.
 중요한 발견은 gpt-4o-mini가 리스크 시그널을 적게 찾는 경향이 있다는 것.
 보험에서는 under-detection이 over-detection보다 위험합니다.
+이 벤치마크 결과를 반영해서 task별 모델 라우팅을 실제로 구현했습니다.
+risk_signal만 Sonnet, 나머지 3개는 Haiku — LLMClient가 trace_name으로 자동 라우팅합니다.
 프롬프트 v2도 시도했는데, 한 모델을 고치면 다른 모델이 깨지는 현상을 확인.
-프롬프트 변경은 반드시 모든 대상 모델에서 회귀 테스트를 거쳐야 합니다.
-현재 5개 테스트 케이스는 방향성 확인용이고, 프로덕션 결정 전 최소 20개 이상 필요합니다."
+프롬프트 변경은 반드시 모든 대상 모델에서 회귀 테스트를 거쳐야 합니다."
 -->
 
 ---
