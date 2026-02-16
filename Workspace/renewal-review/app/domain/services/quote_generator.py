@@ -1,4 +1,4 @@
-from app.config import settings
+from app.config import QuoteConfig
 from app.domain.models.diff import DiffResult
 from app.domain.models.enums import QuoteStrategy
 from app.domain.models.policy import PolicyType, RenewalPair
@@ -13,8 +13,24 @@ PROTECTED_FIELDS = {
 }
 
 
-def _auto_raise_deductible(pair: RenewalPair) -> QuoteRecommendation | None:
-    cfg = settings.quotes
+def _build_recommendation(
+    pair: RenewalPair,
+    adjustments: list[CoverageAdjustment],
+    savings_pct: float,
+    trade_off: str,
+) -> QuoteRecommendation | None:
+    if not adjustments:
+        return None
+    return QuoteRecommendation(
+        quote_id="",
+        adjustments=adjustments,
+        estimated_savings_pct=savings_pct,
+        estimated_savings_dollar=round(pair.renewal.premium * savings_pct / 100, 2),
+        trade_off=trade_off,
+    )
+
+
+def _auto_raise_deductible(pair: RenewalPair, cfg: QuoteConfig) -> QuoteRecommendation | None:
     cov = pair.renewal.auto_coverages
     if cov is None:
         return None
@@ -39,21 +55,15 @@ def _auto_raise_deductible(pair: RenewalPair) -> QuoteRecommendation | None:
             )
         )
 
-    if not adjustments:
-        return None
-
-    savings_pct = cfg.savings_raise_deductible_auto
-    savings_dollar = round(pair.renewal.premium * savings_pct / 100, 2)
-    return QuoteRecommendation(
-        quote_id="",
-        adjustments=adjustments,
-        estimated_savings_pct=savings_pct,
-        estimated_savings_dollar=savings_dollar,
-        trade_off="Higher deductibles mean more out-of-pocket cost per claim",
+    return _build_recommendation(
+        pair,
+        adjustments,
+        cfg.savings_raise_deductible_auto,
+        "Higher deductibles mean more out-of-pocket cost per claim",
     )
 
 
-def _auto_drop_optional(pair: RenewalPair) -> QuoteRecommendation | None:
+def _auto_drop_optional(pair: RenewalPair, cfg: QuoteConfig) -> QuoteRecommendation | None:
     cov = pair.renewal.auto_coverages
     if cov is None:
         return None
@@ -78,26 +88,19 @@ def _auto_drop_optional(pair: RenewalPair) -> QuoteRecommendation | None:
             )
         )
 
-    if not adjustments:
-        return None
-
-    savings_pct = settings.quotes.savings_drop_optional
-    savings_dollar = round(pair.renewal.premium * savings_pct / 100, 2)
-    return QuoteRecommendation(
-        quote_id="",
-        adjustments=adjustments,
-        estimated_savings_pct=savings_pct,
-        estimated_savings_dollar=savings_dollar,
-        trade_off="No rental car or roadside help if needed after an incident",
+    return _build_recommendation(
+        pair,
+        adjustments,
+        cfg.savings_drop_optional,
+        "No rental car or roadside help if needed after an incident",
     )
 
 
-def _auto_reduce_medical(pair: RenewalPair) -> QuoteRecommendation | None:
+def _auto_reduce_medical(pair: RenewalPair, cfg: QuoteConfig) -> QuoteRecommendation | None:
     cov = pair.renewal.auto_coverages
     if cov is None:
         return None
 
-    cfg = settings.quotes
     if cov.medical_payments <= cfg.auto_medical_min:
         return None
 
@@ -109,23 +112,19 @@ def _auto_reduce_medical(pair: RenewalPair) -> QuoteRecommendation | None:
             strategy=QuoteStrategy.REDUCE_MEDICAL,
         )
     ]
-    savings_pct = cfg.savings_reduce_medical
-    savings_dollar = round(pair.renewal.premium * savings_pct / 100, 2)
-    return QuoteRecommendation(
-        quote_id="",
-        adjustments=adjustments,
-        estimated_savings_pct=savings_pct,
-        estimated_savings_dollar=savings_dollar,
-        trade_off="Lower medical payment limit may not cover all injury costs",
+    return _build_recommendation(
+        pair,
+        adjustments,
+        cfg.savings_reduce_medical,
+        "Lower medical payment limit may not cover all injury costs",
     )
 
 
-def _home_raise_deductible(pair: RenewalPair) -> QuoteRecommendation | None:
+def _home_raise_deductible(pair: RenewalPair, cfg: QuoteConfig) -> QuoteRecommendation | None:
     cov = pair.renewal.home_coverages
     if cov is None:
         return None
 
-    cfg = settings.quotes
     if cov.deductible >= cfg.home_deductible:
         return None
 
@@ -137,18 +136,15 @@ def _home_raise_deductible(pair: RenewalPair) -> QuoteRecommendation | None:
             strategy=QuoteStrategy.RAISE_DEDUCTIBLE,
         )
     ]
-    savings_pct = cfg.savings_raise_deductible_home
-    savings_dollar = round(pair.renewal.premium * savings_pct / 100, 2)
-    return QuoteRecommendation(
-        quote_id="",
-        adjustments=adjustments,
-        estimated_savings_pct=savings_pct,
-        estimated_savings_dollar=savings_dollar,
-        trade_off="Higher deductible means more out-of-pocket cost per claim",
+    return _build_recommendation(
+        pair,
+        adjustments,
+        cfg.savings_raise_deductible_home,
+        "Higher deductible means more out-of-pocket cost per claim",
     )
 
 
-def _home_drop_water_backup(pair: RenewalPair) -> QuoteRecommendation | None:
+def _home_drop_water_backup(pair: RenewalPair, cfg: QuoteConfig) -> QuoteRecommendation | None:
     cov = pair.renewal.home_coverages
     if cov is None:
         return None
@@ -164,23 +160,21 @@ def _home_drop_water_backup(pair: RenewalPair) -> QuoteRecommendation | None:
             strategy=QuoteStrategy.DROP_WATER_BACKUP,
         )
     ]
-    savings_pct = settings.quotes.savings_drop_water_backup
-    savings_dollar = round(pair.renewal.premium * savings_pct / 100, 2)
-    return QuoteRecommendation(
-        quote_id="",
-        adjustments=adjustments,
-        estimated_savings_pct=savings_pct,
-        estimated_savings_dollar=savings_dollar,
-        trade_off="No coverage for water backup or sump overflow damage",
+    return _build_recommendation(
+        pair,
+        adjustments,
+        cfg.savings_drop_water_backup,
+        "No coverage for water backup or sump overflow damage",
     )
 
 
-def _home_reduce_personal_property(pair: RenewalPair) -> QuoteRecommendation | None:
+def _home_reduce_personal_property(
+    pair: RenewalPair, cfg: QuoteConfig
+) -> QuoteRecommendation | None:
     cov = pair.renewal.home_coverages
     if cov is None:
         return None
 
-    cfg = settings.quotes
     target = cov.coverage_a_dwelling * cfg.home_personal_property_ratio
     if cov.coverage_c_personal_property <= target:
         return None
@@ -193,14 +187,11 @@ def _home_reduce_personal_property(pair: RenewalPair) -> QuoteRecommendation | N
             strategy=QuoteStrategy.REDUCE_PERSONAL_PROPERTY,
         )
     ]
-    savings_pct = cfg.savings_reduce_personal_property
-    savings_dollar = round(pair.renewal.premium * savings_pct / 100, 2)
-    return QuoteRecommendation(
-        quote_id="",
-        adjustments=adjustments,
-        estimated_savings_pct=savings_pct,
-        estimated_savings_dollar=savings_dollar,
-        trade_off="Less coverage for personal belongings in case of loss",
+    return _build_recommendation(
+        pair,
+        adjustments,
+        cfg.savings_reduce_personal_property,
+        "Less coverage for personal belongings in case of loss",
     )
 
 
@@ -216,9 +207,16 @@ _HOME_STRATEGIES = [
 ]
 
 
-def generate_quotes(pair: RenewalPair, diff: DiffResult) -> list[QuoteRecommendation]:
+def generate_quotes(
+    pair: RenewalPair, diff: DiffResult, cfg: QuoteConfig | None = None
+) -> list[QuoteRecommendation]:
     if not diff.flags:
         return []
+
+    if cfg is None:
+        from app.config import settings
+
+        cfg = settings.quotes
 
     strategies = (
         _AUTO_STRATEGIES if pair.prior.policy_type == PolicyType.AUTO else _HOME_STRATEGIES
@@ -226,7 +224,7 @@ def generate_quotes(pair: RenewalPair, diff: DiffResult) -> list[QuoteRecommenda
 
     quotes: list[QuoteRecommendation] = []
     for strategy_fn in strategies:
-        quote = strategy_fn(pair)
+        quote = strategy_fn(pair, cfg)
         if quote is not None:
             quotes.append(quote)
 

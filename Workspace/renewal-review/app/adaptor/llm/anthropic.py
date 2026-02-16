@@ -1,8 +1,16 @@
 import json
 import os
+import re
 from typing import Any
 
 from app.config import settings
+
+_CODE_BLOCK_RE = re.compile(r"```(?:json)?\s*\n?(.*?)\n?\s*```", re.DOTALL)
+
+
+def _strip_code_block(text: str) -> str:
+    m = _CODE_BLOCK_RE.search(text)
+    return m.group(1).strip() if m else text.strip()
 
 
 class AnthropicClient:
@@ -48,7 +56,7 @@ class AnthropicClient:
                 messages=[{"role": "user", "content": prompt}],
             )
             raw = resp.content[0].text
-            result = json.loads(raw)
+            result = json.loads(_strip_code_block(raw))
         except (json.JSONDecodeError, Exception) as e:
             result = {"error": str(e), "raw_response": raw if "raw" in dir() else ""}
 

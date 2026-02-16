@@ -1,17 +1,17 @@
 from pydantic import ValidationError
 
-from app.adaptor.llm.prompts import (
+from app.application.prompts import (
     ENDORSEMENT_COMPARISON,
     REVIEW_SUMMARY,
     RISK_SIGNAL_EXTRACTOR,
 )
-from app.adaptor.llm.schemas import (
+from app.domain.models.diff import DiffResult
+from app.domain.models.enums import AnalysisType
+from app.domain.models.llm_schemas import (
     EndorsementComparisonResponse,
     ReviewSummaryResponse,
     RiskSignalExtractorResponse,
 )
-from app.domain.models.diff import DiffResult
-from app.domain.models.enums import AnalysisType
 from app.domain.models.policy import RenewalPair
 from app.domain.models.review import LLMInsight, ReviewResult
 from app.domain.ports.llm import LLMPort
@@ -134,13 +134,14 @@ def generate_summary(client: LLMPort, result: ReviewResult) -> str | None:
         llm_insights_section=llm_insights_section,
     )
 
+    response = client.complete(prompt, trace_name="review_summary")
+    if "error" in response:
+        return None
+
     try:
-        response = client.complete(prompt, trace_name="review_summary")
-        if "error" in response:
-            return None
         parsed = ReviewSummaryResponse.model_validate(response)
         return parsed.summary
-    except (ValidationError, Exception):
+    except ValidationError:
         return None
 
 
