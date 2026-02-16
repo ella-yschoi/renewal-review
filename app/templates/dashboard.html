@@ -17,7 +17,7 @@
   <div style="display:grid; grid-template-columns:repeat(5, 1fr); gap:12px;">
     <div style="text-align:center;">
       <div style="font-size:24px; font-weight:700; color:#a0aec0;" id="broker-pending">{{ broker.pending }}</div>
-      <div style="font-size:11px; color:#718096; margin-top:2px;">Pending Review</div>
+      <div style="font-size:11px; color:#718096; margin-top:2px;">Not Reviewed</div>
       {% set pending_pct = (broker.pending / broker.total * 100) if broker.total else 0 %}
       <div class="progress-bar" style="margin-top:6px;"><div class="progress-fill" id="broker-bar-pending" style="width:{{ pending_pct }}%; background:#a0aec0;"></div></div>
     </div>
@@ -55,7 +55,7 @@
   </div>
   <div class="stat-card">
     <div class="value" style="color:#a0aec0">{{ risk_dist.pending }}</div>
-    <div class="label">Pending</div>
+    <div class="label">Not Reviewed</div>
   </div>
   <div class="stat-card">
     <div class="value" style="color:#22543d">{{ risk_dist.no_action_needed }}</div>
@@ -79,14 +79,14 @@
   <h2>Risk Distribution</h2>
   {% set t = risk_dist.total or 1 %}
   <div class="progress-bar" style="height:24px; display:flex; border-radius:6px; overflow:hidden;">
-    <div style="background:#e2e8f0; height:100%; width:{{ (risk_dist.pending / t * 100) }}%;" title="Pending"></div>
+    <div style="background:#e2e8f0; height:100%; width:{{ (risk_dist.pending / t * 100) }}%;" title="Not Reviewed"></div>
     <div style="background:#c6f6d5; height:100%; width:{{ (risk_dist.no_action_needed / t * 100) }}%;" title="No Action Needed"></div>
     <div style="background:#fefcbf; height:100%; width:{{ (risk_dist.review_recommended / t * 100) }}%;" title="Review Recommended"></div>
     <div style="background:#fed7d7; height:100%; width:{{ (risk_dist.action_required / t * 100) }}%;" title="Action Required"></div>
     <div style="background:#9b2c2c; height:100%; width:{{ (risk_dist.urgent_review / t * 100) }}%;" title="Urgent Review"></div>
   </div>
   <div style="display:flex; justify-content:space-between; margin-top:6px; font-size:11px; color:#718096;">
-    <span>Pending {{ "%.1f"|format(risk_dist.pending / t * 100) }}%</span>
+    <span>Not Reviewed {{ "%.1f"|format(risk_dist.pending / t * 100) }}%</span>
     <span>No Action {{ "%.1f"|format(risk_dist.no_action_needed / t * 100) }}%</span>
     <span>Review {{ "%.1f"|format(risk_dist.review_recommended / t * 100) }}%</span>
     <span>Action {{ "%.1f"|format(risk_dist.action_required / t * 100) }}%</span>
@@ -100,7 +100,7 @@
     <select id="filter-reviewed" onchange="applyFilters()" style="font-size:12px; padding:6px 12px; border:1px solid #cbd5e0; border-radius:6px; background:#fff; color:#2d3748; cursor:pointer; min-width:130px;">
       <option value="">All Status</option>
       <option value="yes" {% if filter_reviewed == 'yes' %}selected{% endif %}>Reviewed</option>
-      <option value="no" {% if filter_reviewed == 'no' %}selected{% endif %}>Pending</option>
+      <option value="no" {% if filter_reviewed == 'no' %}selected{% endif %}>Not Reviewed</option>
     </select>
     <select id="filter-risk" onchange="applyFilters()" style="font-size:12px; padding:6px 12px; border:1px solid #cbd5e0; border-radius:6px; background:#fff; color:#2d3748; cursor:pointer; min-width:140px;">
       <option value="">All Risk Levels</option>
@@ -160,7 +160,7 @@
         <td>{% if r.llm_insights %}<span class="llm-sparkle" title="LLM analyzed"></span>{% endif %}</td>
         <td><a href="/ui/review/{{ r.policy_number }}" class="btn btn-secondary" style="padding:2px 8px; font-size:11px;">View</a></td>
         {% else %}
-        <td><span style="color:#a0aec0; font-size:11px;">Pending</span></td>
+        <td><span style="color:#a0aec0; font-size:11px;">Not Reviewed</span></td>
         <td style="color:#a0aec0;">—</td>
         <td style="color:#a0aec0;">—</td>
         <td style="color:#a0aec0;">—</td>

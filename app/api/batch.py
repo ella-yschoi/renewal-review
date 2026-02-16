@@ -10,7 +10,6 @@ from fastapi import APIRouter, Body, Depends, HTTPException, Query
 from app.adaptor.storage.memory import InMemoryHistoryStore, InMemoryJobStore, InMemoryReviewStore
 from app.application.batch import process_batch
 from app.data_loader import load_pairs, total_count
-from app.domain.models.review import BatchSummary
 from app.domain.ports.result_writer import ResultWriter
 from app.infra.deps import get_history_store, get_job_store, get_result_writer, get_review_store
 
@@ -164,10 +163,3 @@ def get_job_status(
     if job is None:
         raise HTTPException(status_code=404, detail=f"Job {job_id} not found")
     return {"job_id": job_id, **job}
-
-
-@router.get("/summary", response_model=BatchSummary | None)
-def get_summary(
-    jobs: InMemoryJobStore = Depends(get_job_store),
-) -> BatchSummary | None:
-    return jobs.last_summary
