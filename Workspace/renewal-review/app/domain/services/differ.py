@@ -1,3 +1,6 @@
+from collections.abc import Callable, Sequence
+from typing import TypeVar
+
 from app.domain.models.diff import DiffResult, FieldChange
 from app.domain.models.policy import (
     AutoCoverages,
@@ -5,6 +8,8 @@ from app.domain.models.policy import (
     PolicySnapshot,
     RenewalPair,
 )
+
+T = TypeVar("T")
 
 
 def _pct_change(prior: float, renewal: float) -> float | None:
@@ -28,6 +33,34 @@ def _num_change(field: str, prior: float, renewal: float) -> FieldChange | None:
         renewal_value=str(renewal),
         change_pct=_pct_change(prior, renewal),
     )
+
+
+def _bool_change(field: str, prior: bool, renewal: bool) -> FieldChange | None:
+    if prior == renewal:
+        return None
+    return FieldChange(field=field, prior_value=str(prior), renewal_value=str(renewal))
+
+
+def _diff_entities(
+    prior_items: Sequence[T],
+    renewal_items: Sequence[T],
+    key_fn: Callable[[T], str],
+    label_fn: Callable[[T], str],
+    added_field: str,
+    removed_field: str,
+) -> list[FieldChange]:
+    prior_keys = {key_fn(x) for x in prior_items}
+    renewal_keys = {key_fn(x) for x in renewal_items}
+    changes: list[FieldChange] = []
+    for k in renewal_keys - prior_keys:
+        item = next(x for x in renewal_items if key_fn(x) == k)
+        label = label_fn(item)
+        changes.append(FieldChange(field=added_field, prior_value="", renewal_value=label))
+    for k in prior_keys - renewal_keys:
+        item = next(x for x in prior_items if key_fn(x) == k)
+        label = label_fn(item)
+        changes.append(FieldChange(field=removed_field, prior_value=label, renewal_value=""))
+    return changes
 
 
 def diff_universal_fields(prior: PolicySnapshot, renewal: PolicySnapshot) -> list[FieldChange]:
@@ -72,13 +105,12 @@ def diff_auto_coverages(
         if c := _num_change(field, p, r):
             changes.append(c)
 
-    bool_pairs = [
+    for field, p, r in [
         ("rental_reimbursement", prior.rental_reimbursement, renewal.rental_reimbursement),
         ("roadside_assistance", prior.roadside_assistance, renewal.roadside_assistance),
-    ]
-    for field, p, r in bool_pairs:
-        if p != r:
-            changes.append(FieldChange(field=field, prior_value=str(p), renewal_value=str(r)))
+    ]:
+        if c := _bool_change(field, p, r):
+            changes.append(c)
 
     return changes
 
@@ -116,59 +148,36 @@ def diff_home_coverages(
     if c := _num_change("wind_hail_deductible", p_whd, r_whd):
         changes.append(c)
 
-    bool_fields = [
+    for field, p, r in [
         ("water_backup", prior.water_backup, renewal.water_backup),
         ("replacement_cost", prior.replacement_cost, renewal.replacement_cost),
-    ]
-    for field, p, r in bool_fields:
-        if p != r:
-            changes.append(FieldChange(field=field, prior_value=str(p), renewal_value=str(r)))
+    ]:
+        if c := _bool_change(field, p, r):
+            changes.append(c)
 
     return changes
 
 
 def diff_vehicles(prior: PolicySnapshot, renewal: PolicySnapshot) -> list[FieldChange]:
-    prior_vins = {v.vin for v in prior.vehicles}
-    renewal_vins = {v.vin for v in renewal.vehicles}
-
-    changes: list[FieldChange] = []
-    for vin in renewal_vins - prior_vins:
-        v = next(x for x in renewal.vehicles if x.vin == vin)
-        changes.append(
-            FieldChange(
-                field="vehicle_added",
-                prior_value="",
-                renewal_value=f"{v.year} {v.make} {v.model} ({vin})",
-            )
-        )
-    for vin in prior_vins - renewal_vins:
-        v = next(x for x in prior.vehicles if x.vin == vin)
-        changes.append(
-            FieldChange(
-                field="vehicle_removed",
-                prior_value=f"{v.year} {v.make} {v.model} ({vin})",
-                renewal_value="",
-            )
-        )
-    return changes
+    return _diff_entities(
+        prior.vehicles,
+        renewal.vehicles,
+        key_fn=lambda v: v.vin,
+        label_fn=lambda v: f"{v.year} {v.make} {v.model} ({v.vin})",
+        added_field="vehicle_added",
+        removed_field="vehicle_removed",
+    )
 
 
 def diff_drivers(prior: PolicySnapshot, renewal: PolicySnapshot) -> list[FieldChange]:
-    prior_ids = {d.license_number for d in prior.drivers}
-    renewal_ids = {d.license_number for d in renewal.drivers}
-
-    changes: list[FieldChange] = []
-    for lid in renewal_ids - prior_ids:
-        d = next(x for x in renewal.drivers if x.license_number == lid)
-        changes.append(
-            FieldChange(field="driver_added", prior_value="", renewal_value=f"{d.name} ({lid})")
-        )
-    for lid in prior_ids - renewal_ids:
-        d = next(x for x in prior.drivers if x.license_number == lid)
-        changes.append(
-            FieldChange(field="driver_removed", prior_value=f"{d.name} ({lid})", renewal_value="")
-        )
-    return changes
+    return _diff_entities(
+        prior.drivers,
+        renewal.drivers,
+        key_fn=lambda d: d.license_number,
+        label_fn=lambda d: f"{d.name} ({d.license_number})",
+        added_field="driver_added",
+        removed_field="driver_removed",
+    )
 
 
 def diff_endorsements(prior: PolicySnapshot, renewal: PolicySnapshot) -> list[FieldChange]:

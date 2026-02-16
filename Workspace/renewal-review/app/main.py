@@ -1,3 +1,4 @@
+import logging
 from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
@@ -11,10 +12,71 @@ from app.api.reviews import router as reviews_router
 from app.api.ui import router as ui_router
 from app.infra.db import init_db
 
+logger = logging.getLogger(__name__)
+
+
+def _restore_cache_from_db() -> None:
+    from app.data_loader import load_pairs
+    from app.domain.models.diff import DiffFlag, DiffResult, FieldChange
+    from app.domain.models.review import LLMInsight, ReviewResult, RiskLevel
+    from app.infra.deps import get_result_writer, get_review_store
+
+    writer = get_result_writer()
+    rows = writer.load_latest_results()
+    if not rows:
+        return
+
+    pairs_by_pn = {p.prior.policy_number: p for p in load_pairs()}
+
+    llm_by_pn: dict[str, dict] = {}
+    for lr in writer.load_latest_llm_results():
+        llm_by_pn[lr["policy_number"]] = lr
+
+    store = get_review_store()
+    for row in rows:
+        pn = row["policy_number"]
+        changes = [FieldChange(**c) for c in (row["changes_json"] or [])]
+        flags = [DiffFlag(f) for f in (row["flags_json"] or [])]
+        diff = DiffResult(policy_number=pn, changes=changes, flags=flags)
+
+        llm_row = llm_by_pn.get(pn)
+        llm_insights = []
+        llm_summary_generated = False
+        risk_level = row["risk_level"]
+        summary = row.get("summary_text", "")
+
+        if llm_row:
+            llm_insights = [LLMInsight(**i) for i in (llm_row["insights_json"] or [])]
+            llm_summary_generated = bool(llm_insights or llm_row.get("summary_text"))
+            if llm_row.get("summary_text"):
+                summary = llm_row["summary_text"]
+            if llm_row.get("risk_level"):
+                risk_level = llm_row["risk_level"]
+
+        result = ReviewResult(
+            policy_number=pn,
+            risk_level=RiskLevel(risk_level),
+            diff=diff,
+            summary=summary,
+            llm_insights=llm_insights,
+            llm_summary_generated=llm_summary_generated,
+            pair=pairs_by_pn.get(pn),
+            broker_contacted=row.get("broker_contacted", False),
+            quote_generated=row.get("quote_generated", False),
+            reviewed_at=row.get("reviewed_at"),
+        )
+        store[result.policy_number] = result
+
+    logger.info("Restored %d results from DB cache", len(rows))
+
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     await init_db()
+    try:
+        _restore_cache_from_db()
+    except Exception:
+        logger.warning("Could not restore cache from DB, starting fresh")
     yield
 
 

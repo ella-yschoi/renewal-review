@@ -50,17 +50,27 @@ def _build_policy_context(pair: RenewalPair) -> str:
 
 
 def _build_quotes_json(quotes: list[QuoteRecommendation]) -> str:
-    return json.dumps(
-        [
+    items = []
+    for q in quotes:
+        adjustments = [
+            {
+                "field": a.field,
+                "from": a.original_value,
+                "to": a.proposed_value,
+                "strategy": a.strategy,
+            }
+            for a in q.adjustments
+        ]
+        items.append(
             {
                 "quote_id": q.quote_id,
-                "strategy": q.adjustments[0].strategy if q.adjustments else "",
+                "adjustments": adjustments,
+                "estimated_savings_pct": q.estimated_savings_pct,
+                "estimated_savings_dollar": q.estimated_savings_dollar,
                 "trade_off": q.trade_off,
             }
-            for q in quotes
-        ],
-        indent=2,
-    )
+        )
+    return json.dumps(items, indent=2)
 
 
 def personalize_quotes(

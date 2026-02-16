@@ -37,5 +37,10 @@ class DbDataSource:
         engine.dispose()
         return [parse_pair({"prior": row.prior_json, "renewal": row.renewal_json}) for row in rows]
 
+    def total_count(self) -> int:
+        if self._cached_pairs is None:
+            self._cached_pairs = self._load()
+        return len(self._cached_pairs)
+
     def invalidate_cache(self) -> None:
         self._cached_pairs = None

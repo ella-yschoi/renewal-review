@@ -59,7 +59,12 @@ def _auto_raise_deductible(pair: RenewalPair, cfg: QuoteConfig) -> QuoteRecommen
         pair,
         adjustments,
         cfg.savings_raise_deductible_auto,
-        "Higher deductibles mean more out-of-pocket cost per claim",
+        (
+            f"Raising deductibles increases out-of-pocket costs per claim. "
+            f"For example, a collision with ${cfg.auto_collision_deductible:,.0f} deductible "
+            f"means paying that amount before insurance covers the rest. "
+            f"Best for drivers with clean records and emergency savings."
+        ),
     )
 
 
@@ -92,7 +97,12 @@ def _auto_drop_optional(pair: RenewalPair, cfg: QuoteConfig) -> QuoteRecommendat
         pair,
         adjustments,
         cfg.savings_drop_optional,
-        "No rental car or roadside help if needed after an incident",
+        (
+            "Removing rental reimbursement means no covered rental car while your vehicle "
+            "is being repaired (typical rental cost: $30–50/day). Removing roadside assistance "
+            "means no covered towing, jump-starts, or lockout service. "
+            "Consider whether the client has AAA or another roadside plan as an alternative."
+        ),
     )
 
 
@@ -116,7 +126,13 @@ def _auto_reduce_medical(pair: RenewalPair, cfg: QuoteConfig) -> QuoteRecommenda
         pair,
         adjustments,
         cfg.savings_reduce_medical,
-        "Lower medical payment limit may not cover all injury costs",
+        (
+            f"Reducing medical payments from ${cov.medical_payments:,.0f} to "
+            f"${cfg.auto_medical_min:,.0f} lowers the per-person injury coverage. "
+            f"If a passenger is injured, the policy pays up to ${cfg.auto_medical_min:,.0f} "
+            f"regardless of fault. Average ER visit costs $2,000–$3,000. "
+            f"This option works if drivers/passengers have good personal health insurance."
+        ),
     )
 
 
@@ -140,7 +156,13 @@ def _home_raise_deductible(pair: RenewalPair, cfg: QuoteConfig) -> QuoteRecommen
         pair,
         adjustments,
         cfg.savings_raise_deductible_home,
-        "Higher deductible means more out-of-pocket cost per claim",
+        (
+            f"Raising the home deductible from ${cov.deductible:,.0f} to "
+            f"${cfg.home_deductible:,.0f} saves on premium but increases out-of-pocket "
+            f"cost per claim. For example, if a tree falls on the roof, the client pays "
+            f"the first ${cfg.home_deductible:,.0f} before coverage kicks in. "
+            f"Best for homeowners with emergency funds who file claims infrequently."
+        ),
     )
 
 
@@ -164,7 +186,13 @@ def _home_drop_water_backup(pair: RenewalPair, cfg: QuoteConfig) -> QuoteRecomme
         pair,
         adjustments,
         cfg.savings_drop_water_backup,
-        "No coverage for water backup or sump overflow damage",
+        (
+            "Removing water backup coverage (HO 04 95) eliminates protection for sewer "
+            "backup, sump pump failure, and foundation seepage. Average water backup claims "
+            "cost $7,000–$10,000 in cleanup and restoration. This is one of the most common "
+            "homeowner claims. Not recommended for properties with older plumbing, basements, "
+            "or prior water-related claims."
+        ),
     )
 
 
@@ -175,15 +203,15 @@ def _home_reduce_personal_property(
     if cov is None:
         return None
 
-    target = cov.coverage_a_dwelling * cfg.home_personal_property_ratio
-    if cov.coverage_c_personal_property <= target:
+    target = round(cov.coverage_a_dwelling * cfg.home_personal_property_ratio)
+    if cov.coverage_c_personal_property <= target + 100:
         return None
 
     adjustments = [
         CoverageAdjustment(
             field="coverage_c_personal_property",
-            original_value=str(cov.coverage_c_personal_property),
-            proposed_value=str(target),
+            original_value=str(int(cov.coverage_c_personal_property)),
+            proposed_value=str(int(target)),
             strategy=QuoteStrategy.REDUCE_PERSONAL_PROPERTY,
         )
     ]
@@ -191,7 +219,14 @@ def _home_reduce_personal_property(
         pair,
         adjustments,
         cfg.savings_reduce_personal_property,
-        "Less coverage for personal belongings in case of loss",
+        (
+            f"Reducing personal property coverage (Coverage C) from "
+            f"${cov.coverage_c_personal_property:,.0f} to ${int(target):,} means lower "
+            f"reimbursement if belongings are damaged, destroyed, or stolen. "
+            f"To check if this is appropriate, the client should do a home inventory — "
+            f"total value of furniture, electronics, clothing, and valuables. If it exceeds "
+            f"${int(target):,}, this reduction could leave a gap."
+        ),
     )
 
 
@@ -229,7 +264,55 @@ def generate_quotes(
             quotes.append(quote)
 
     # assign sequential IDs
-    for i, q in enumerate(quotes):
-        q.quote_id = f"Q{i + 1}"
+    quotes = [q.model_copy(update={"quote_id": f"Quote {i + 1}"}) for i, q in enumerate(quotes)]
 
     return quotes[:3]
+
+
+def explain_no_quotes(pair: RenewalPair, cfg: QuoteConfig | None = None) -> list[str]:
+    if cfg is None:
+        from app.config import settings
+
+        cfg = settings.quotes
+
+    reasons: list[str] = []
+    if pair.prior.policy_type == PolicyType.AUTO:
+        cov = pair.renewal.auto_coverages
+        if cov:
+            if cov.collision_deductible >= cfg.auto_collision_deductible:
+                reasons.append(
+                    f"Collision deductible already "
+                    f"${cov.collision_deductible:,.0f} "
+                    f"(threshold: ${cfg.auto_collision_deductible:,.0f})"
+                )
+            if cov.comprehensive_deductible >= cfg.auto_comprehensive_deductible:
+                reasons.append(
+                    f"Comprehensive deductible already "
+                    f"${cov.comprehensive_deductible:,.0f} "
+                    f"(threshold: ${cfg.auto_comprehensive_deductible:,.0f})"
+                )
+            if not cov.rental_reimbursement:
+                reasons.append("Rental reimbursement already removed")
+            if not cov.roadside_assistance:
+                reasons.append("Roadside assistance already removed")
+            if cov.medical_payments <= cfg.auto_medical_min:
+                reasons.append(f"Medical payments already at minimum ${cov.medical_payments:,.0f}")
+    else:
+        cov = pair.renewal.home_coverages
+        if cov:
+            if cov.deductible >= cfg.home_deductible:
+                reasons.append(
+                    f"Home deductible already ${cov.deductible:,.0f} "
+                    f"(threshold: ${cfg.home_deductible:,.0f})"
+                )
+            if not cov.water_backup:
+                reasons.append("Water backup coverage already removed")
+            target = round(cov.coverage_a_dwelling * cfg.home_personal_property_ratio)
+            if cov.coverage_c_personal_property <= target + 100:
+                reasons.append(
+                    f"Personal property (Coverage C) already at "
+                    f"${cov.coverage_c_personal_property:,.0f} "
+                    f"— near or below recommended ${target:,}"
+                )
+
+    return reasons

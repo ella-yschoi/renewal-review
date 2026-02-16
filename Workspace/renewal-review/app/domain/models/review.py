@@ -1,3 +1,4 @@
+from datetime import datetime
 from enum import StrEnum
 
 from pydantic import BaseModel
@@ -29,6 +30,9 @@ class ReviewResult(BaseModel):
     summary: str = ""
     llm_summary_generated: bool = False
     pair: RenewalPair | None = None
+    broker_contacted: bool = False
+    quote_generated: bool = False
+    reviewed_at: datetime | None = None
 
 
 class BatchSummary(BaseModel):

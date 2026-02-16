@@ -208,9 +208,10 @@ def test_quote_route_auto():
     resp = client.post("/quotes/generate", json=raw)
     assert resp.status_code == 200
     data = resp.json()
-    assert isinstance(data, list)
-    assert len(data) > 0
-    for q in data:
+    assert "quotes" in data
+    assert "reasons" in data
+    assert len(data["quotes"]) > 0
+    for q in data["quotes"]:
         assert "quote_id" in q
         assert "adjustments" in q
         assert "estimated_savings_pct" in q
@@ -221,7 +222,7 @@ def test_quote_route_home():
     resp = client.post("/quotes/generate", json=raw)
     assert resp.status_code == 200
     data = resp.json()
-    assert isinstance(data, list)
+    assert "quotes" in data
 
 
 # --- Quote Personalization Tests ---

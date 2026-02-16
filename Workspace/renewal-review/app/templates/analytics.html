@@ -23,12 +23,44 @@
       <div class="label">Policies Reviewed</div>
     </div>
     <div class="stat-card">
-      <div class="value" id="stat-avg-time">{{ "%.1f"|format(summary.avg_processing_time_ms / 1000) }}s</div>
-      <div class="label">Avg Review Time</div>
-    </div>
-    <div class="stat-card">
       <div class="value" style="color:#9b2c2c" id="stat-urgent">{{ summary.risk_distribution.urgent_review }}</div>
       <div class="label">Urgent Total</div>
+    </div>
+  </div>
+
+  <!-- Broker Metrics -->
+  <div class="card">
+    <h2>Broker Workflow</h2>
+    {% set bt = broker.total if broker.total else 1 %}
+    <div style="display:grid; grid-template-columns:repeat(4, 1fr); gap:16px; margin-top:12px;">
+      <div>
+        <div style="font-size:24px; font-weight:700; color:#c05621;" id="broker-contact-needed">{{ broker.contact_needed }}</div>
+        <div style="font-size:12px; color:#718096;">Contact Needed</div>
+        <div class="progress-bar" style="margin-top:6px;">
+          <div class="progress-fill" id="broker-bar-contact" style="width:{{ (broker.contact_needed / bt * 100) }}%; background:#ed8936;"></div>
+        </div>
+      </div>
+      <div>
+        <div style="font-size:24px; font-weight:700; color:#2b6cb0;" id="broker-contacted">{{ broker.contacted }}</div>
+        <div style="font-size:12px; color:#718096;">Contacted</div>
+        <div class="progress-bar" style="margin-top:6px;">
+          <div class="progress-fill" id="broker-bar-contacted" style="width:{{ (broker.contacted / bt * 100) }}%; background:#3182ce;"></div>
+        </div>
+      </div>
+      <div>
+        <div style="font-size:24px; font-weight:700; color:#2f855a;" id="broker-quotes">{{ broker.quotes_generated }}</div>
+        <div style="font-size:12px; color:#718096;">Quotes Generated</div>
+        <div class="progress-bar" style="margin-top:6px;">
+          <div class="progress-fill" id="broker-bar-quotes" style="width:{{ (broker.quotes_generated / bt * 100) }}%; background:#48bb78;"></div>
+        </div>
+      </div>
+      <div>
+        <div style="font-size:24px; font-weight:700; color:#553c9a;" id="broker-reviewed">{{ broker.reviewed }}</div>
+        <div style="font-size:12px; color:#718096;">Reviewed</div>
+        <div class="progress-bar" style="margin-top:6px;">
+          <div class="progress-fill" id="broker-bar-reviewed" style="width:{{ (broker.reviewed / bt * 100) }}%; background:#805ad5;"></div>
+        </div>
+      </div>
     </div>
   </div>
 
@@ -36,7 +68,7 @@
   <div class="card">
     <h2>Risk Overview</h2>
     <div style="display:flex; gap:16px; margin-top:12px;">
-      {% for level, label, color in [("no_action_needed", "No Action", "#c6f6d5"), ("review_recommended", "Review", "#fefcbf"), ("action_required", "Action", "#fed7d7"), ("urgent_review", "Urgent", "#9b2c2c")] %}
+      {% for level, color in [("no_action_needed", "#c6f6d5"), ("review_recommended", "#fefcbf"), ("action_required", "#fed7d7"), ("urgent_review", "#9b2c2c")] %}
       <div style="flex:1; text-align:center;">
         <div style="background:#e2e8f0; border-radius:6px; height:120px; position:relative; overflow:hidden;">
           {% set total = summary.risk_distribution.no_action_needed + summary.risk_distribution.review_recommended + summary.risk_distribution.action_required + summary.risk_distribution.urgent_review %}
@@ -49,7 +81,7 @@
           "></div>
         </div>
         <div style="margin-top:8px;">
-          <span class="badge badge-{{ level }}">{{ label }}</span>
+          <span class="badge badge-{{ level }}">{{ level|label }}</span>
           <div style="font-size:18px; font-weight:700; margin-top:4px;" id="risk-count-{{ level }}">{{ count }}</div>
         </div>
       </div>
@@ -63,14 +95,13 @@
     <h2>Daily Summary</h2>
     <table>
       <thead>
-        <tr><th>Date</th><th>Reviews</th><th>Avg Time</th><th>Urgent Rate</th></tr>
+        <tr><th>Date</th><th>Reviews</th><th>Urgent Rate</th></tr>
       </thead>
       <tbody id="trends-body">
         {% for t in summary.trends %}
         <tr>
           <td>{{ t.date }}</td>
           <td>{{ t.total_runs }}</td>
-          <td>{{ "%.1f"|format(t.avg_processing_time_ms / 1000) }}s</td>
           <td>
             <div style="display:flex; align-items:center; gap:8px;">
               <div class="progress-bar" style="flex:1; height:8px;">
@@ -91,7 +122,7 @@
     <h2>Review History</h2>
     <table>
       <thead>
-        <tr><th>Review #</th><th>Total</th><th>No Action</th><th>Review</th><th>Action</th><th>Urgent</th><th>Time</th><th>Date</th></tr>
+        <tr><th>Review #</th><th>Total</th><th>No Action</th><th>Review</th><th>Action</th><th>Urgent</th><th>Date</th></tr>
       </thead>
       <tbody id="history-body">
         {% for r in history|reverse %}
@@ -102,7 +133,6 @@
           <td><span class="badge badge-review_recommended">{{ r.review_recommended }}</span></td>
           <td><span class="badge badge-action_required">{{ r.action_required }}</span></td>
           <td><span class="badge badge-urgent_review">{{ r.urgent_review }}</span></td>
-          <td>{{ "%.1f"|format(r.processing_time_ms / 1000) }}s</td>
           <td style="font-size:12px; color:#718096;">{{ r.created_at.strftime("%Y-%m-%d %H:%M") }}</td>
         </tr>
         {% endfor %}
@@ -115,12 +145,14 @@
 {% block scripts %}
 <script>
 async function loadAnalytics() {
-  const [historyResp, trendsResp] = await Promise.all([
+  const [historyResp, trendsResp, brokerResp] = await Promise.all([
     fetch('/analytics/history'),
-    fetch('/analytics/trends')
+    fetch('/analytics/trends'),
+    fetch('/analytics/broker')
   ]);
   const history = await historyResp.json();
   const trends = await trendsResp.json();
+  const broker = await brokerResp.json();
 
   if (history.length === 0) {
     document.getElementById('empty-state').style.display = 'block';
@@ -133,8 +165,17 @@ async function loadAnalytics() {
 
   document.getElementById('stat-runs').textContent = trends.total_runs;
   document.getElementById('stat-policies').textContent = trends.total_policies_reviewed;
-  document.getElementById('stat-avg-time').textContent = (trends.avg_processing_time_ms / 1000).toFixed(1) + 's';
   document.getElementById('stat-urgent').textContent = trends.risk_distribution.urgent_review;
+
+  var bt = broker.total || 1;
+  document.getElementById('broker-contact-needed').textContent = broker.contact_needed;
+  document.getElementById('broker-contacted').textContent = broker.contacted;
+  document.getElementById('broker-quotes').textContent = broker.quotes_generated;
+  document.getElementById('broker-reviewed').textContent = broker.reviewed;
+  document.getElementById('broker-bar-contact').style.width = (broker.contact_needed/bt*100)+'%';
+  document.getElementById('broker-bar-contacted').style.width = (broker.contacted/bt*100)+'%';
+  document.getElementById('broker-bar-quotes').style.width = (broker.quotes_generated/bt*100)+'%';
+  document.getElementById('broker-bar-reviewed').style.width = (broker.reviewed/bt*100)+'%';
 
   const rd = trends.risk_distribution;
   const total = rd.no_action_needed + rd.review_recommended + rd.action_required + rd.urgent_review || 1;
@@ -156,7 +197,6 @@ async function loadAnalytics() {
       '<td><span class="badge badge-review_recommended">'+r.review_recommended+'</span></td>'+
       '<td><span class="badge badge-action_required">'+r.action_required+'</span></td>'+
       '<td><span class="badge badge-urgent_review">'+r.urgent_review+'</span></td>'+
-      '<td>'+(r.processing_time_ms / 1000).toFixed(1)+'s</td>'+
       '<td style="font-size:12px;color:#718096;">'+dateStr+'</td>'+
       '</tr>';
   });

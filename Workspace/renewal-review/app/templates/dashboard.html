@@ -4,90 +4,171 @@
 {% block content %}
 <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px;">
   <h1 style="font-size:20px;">Dashboard</h1>
-  <div style="display:flex; gap:8px;">
-    <button class="btn btn-primary" onclick="runBatch(100)">Review Sample (100)</button>
-    <button class="btn btn-secondary" onclick="runBatch()">Review All (8,000)</button>
-    <button class="btn btn-secondary" onclick="runEval()">Quality Check</button>
+  <div style="display:flex; gap:8px; align-items:center;">
+    <button class="btn btn-primary" id="btn-review-selected" onclick="reviewSelected()" disabled style="opacity:0.5;">Review (<span id="selected-count">0</span>)</button>
+    <button class="btn btn-secondary" onclick="runBatch()">Review All ({{ data_total | default(0) }})</button>
   </div>
 </div>
 
 <div id="loading"><div class="spinner"></div><p style="margin-top:8px;" id="loading-text">Processing...</p></div>
 
-<div id="summary-section" style="{% if not summary %}display:none{% endif %}">
-  <div class="stats-grid">
-    <div class="stat-card">
-      <div class="value" id="stat-total">{{ summary.total if summary else 0 }}</div>
-      <div class="label">Total Reviewed</div>
+<div class="card" style="margin-bottom:16px;">
+  <h2 style="margin-bottom:12px;">Broker Workflow</h2>
+  <div style="display:grid; grid-template-columns:repeat(5, 1fr); gap:12px;">
+    <div style="text-align:center;">
+      <div style="font-size:24px; font-weight:700; color:#a0aec0;" id="broker-pending">{{ broker.pending }}</div>
+      <div style="font-size:11px; color:#718096; margin-top:2px;">Pending Review</div>
+      {% set pending_pct = (broker.pending / broker.total * 100) if broker.total else 0 %}
+      <div class="progress-bar" style="margin-top:6px;"><div class="progress-fill" id="broker-bar-pending" style="width:{{ pending_pct }}%; background:#a0aec0;"></div></div>
     </div>
-    <div class="stat-card">
-      <div class="value" style="color:#22543d" id="stat-no-action-needed">{{ summary.no_action_needed if summary else 0 }}</div>
-      <div class="label">No Action Needed</div>
+    <div style="text-align:center;">
+      <div style="font-size:24px; font-weight:700; color:#dd6b20;" id="broker-contact-needed">{{ broker.contact_needed }}</div>
+      <div style="font-size:11px; color:#718096; margin-top:2px;">Contact Needed</div>
+      {% set contact_pct = (broker.contact_needed / broker.total * 100) if broker.total else 0 %}
+      <div class="progress-bar" style="margin-top:6px;"><div class="progress-fill" id="broker-bar-contact" style="width:{{ contact_pct }}%; background:#dd6b20;"></div></div>
     </div>
-    <div class="stat-card">
-      <div class="value" style="color:#744210" id="stat-review-recommended">{{ summary.review_recommended if summary else 0 }}</div>
-      <div class="label">Review Recommended</div>
+    <div style="text-align:center;">
+      <div style="font-size:24px; font-weight:700; color:#3182ce;" id="broker-contacted">{{ broker.contacted }}</div>
+      <div style="font-size:11px; color:#718096; margin-top:2px;">Contacted</div>
+      {% set contacted_pct = (broker.contacted / broker.total * 100) if broker.total else 0 %}
+      <div class="progress-bar" style="margin-top:6px;"><div class="progress-fill" id="broker-bar-contacted" style="width:{{ contacted_pct }}%; background:#3182ce;"></div></div>
     </div>
-    <div class="stat-card">
-      <div class="value" style="color:#9b2c2c" id="stat-action-required">{{ summary.action_required if summary else 0 }}</div>
-      <div class="label">Action Required</div>
+    <div style="text-align:center;">
+      <div style="font-size:24px; font-weight:700; color:#805ad5;" id="broker-quotes">{{ broker.quotes_generated }}</div>
+      <div style="font-size:11px; color:#718096; margin-top:2px;">Quotes Generated</div>
+      {% set quotes_pct = (broker.quotes_generated / broker.total * 100) if broker.total else 0 %}
+      <div class="progress-bar" style="margin-top:6px;"><div class="progress-fill" id="broker-bar-quotes" style="width:{{ quotes_pct }}%; background:#805ad5;"></div></div>
     </div>
-    <div class="stat-card">
-      <div class="value" style="color:#fff; background:#9b2c2c; border-radius:6px; padding:2px 8px;" id="stat-urgent-review">{{ summary.urgent_review if summary else 0 }}</div>
-      <div class="label">Urgent Review</div>
-    </div>
-    <div class="stat-card">
-      <div class="value" id="stat-time">{{ "%.1f"|format(summary.processing_time_ms / 1000) if summary else "—" }}s</div>
-      <div class="label">Review Time</div>
-    </div>
-  </div>
-
-  <div class="card" id="distribution-bar">
-    <h2>Risk Distribution</h2>
-    {% set t = summary.total if summary and summary.total else 1 %}
-    <div class="progress-bar" style="height:24px; display:flex; border-radius:6px; overflow:hidden;">
-      <div id="bar-no-action-needed" style="background:#c6f6d5; height:100%; width:{{ (summary.no_action_needed / t * 100) if summary else 0 }}%;" title="No Action Needed"></div>
-      <div id="bar-review-recommended" style="background:#fefcbf; height:100%; width:{{ (summary.review_recommended / t * 100) if summary else 0 }}%;" title="Review Recommended"></div>
-      <div id="bar-action-required" style="background:#fed7d7; height:100%; width:{{ (summary.action_required / t * 100) if summary else 0 }}%;" title="Action Required"></div>
-      <div id="bar-urgent-review" style="background:#9b2c2c; height:100%; width:{{ (summary.urgent_review / t * 100) if summary else 0 }}%;" title="Urgent Review"></div>
-    </div>
-    <div style="display:flex; justify-content:space-between; margin-top:6px; font-size:11px; color:#718096;">
-      <span id="pct-no-action-needed">{% if summary %}No Action {{ "%.1f"|format(summary.no_action_needed / t * 100) }}%{% endif %}</span>
-      <span id="pct-review-recommended">{% if summary %}Review {{ "%.1f"|format(summary.review_recommended / t * 100) }}%{% endif %}</span>
-      <span id="pct-action-required">{% if summary %}Action {{ "%.1f"|format(summary.action_required / t * 100) }}%{% endif %}</span>
-      <span id="pct-urgent-review">{% if summary %}Urgent {{ "%.1f"|format(summary.urgent_review / t * 100) }}%{% endif %}</span>
+    <div style="text-align:center;">
+      <div style="font-size:24px; font-weight:700; color:#38a169;" id="broker-reviewed">{{ broker.reviewed }}</div>
+      <div style="font-size:11px; color:#718096; margin-top:2px;">Reviewed</div>
+      {% set reviewed_pct = (broker.reviewed / broker.total * 100) if broker.total else 0 %}
+      <div class="progress-bar" style="margin-top:6px;"><div class="progress-fill" id="broker-bar-reviewed" style="width:{{ reviewed_pct }}%; background:#38a169;"></div></div>
     </div>
   </div>
 </div>
 
-<div id="eval-section" style="display:none;">
-  <div class="card">
-    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:4px;">
-      <h2 style="margin:0;">Quality Check</h2>
-      <span style="font-size:14px; font-weight:600;" id="eval-accuracy"></span>
-    </div>
-    <p style="font-size:12px; color:#a0aec0; margin-bottom:8px;">Verifies review engine accuracy against known test scenarios</p>
-    <table>
-      <thead><tr><th>Policy</th><th>Description</th><th>Expected</th><th>Actual</th><th>Status</th></tr></thead>
-      <tbody id="eval-body"></tbody>
-    </table>
+<div class="stats-grid" style="grid-template-columns:repeat(6, 1fr); margin-bottom:16px;">
+  <div class="stat-card">
+    <div class="value">{{ risk_dist.total }}</div>
+    <div class="label">Total</div>
+  </div>
+  <div class="stat-card">
+    <div class="value" style="color:#a0aec0">{{ risk_dist.pending }}</div>
+    <div class="label">Pending</div>
+  </div>
+  <div class="stat-card">
+    <div class="value" style="color:#22543d">{{ risk_dist.no_action_needed }}</div>
+    <div class="label">No Action Needed</div>
+  </div>
+  <div class="stat-card">
+    <div class="value" style="color:#744210">{{ risk_dist.review_recommended }}</div>
+    <div class="label">Review Recommended</div>
+  </div>
+  <div class="stat-card">
+    <div class="value" style="color:#9b2c2c">{{ risk_dist.action_required }}</div>
+    <div class="label">Action Required</div>
+  </div>
+  <div class="stat-card">
+    <div class="value" style="color:#fff; background:#9b2c2c; border-radius:6px; padding:2px 8px;">{{ risk_dist.urgent_review }}</div>
+    <div class="label">Urgent Review</div>
   </div>
 </div>
 
-<div class="card" id="results-section" style="{% if not results %}display:none{% endif %}">
+<div class="card" style="margin-bottom:16px;">
+  <h2>Risk Distribution</h2>
+  {% set t = risk_dist.total or 1 %}
+  <div class="progress-bar" style="height:24px; display:flex; border-radius:6px; overflow:hidden;">
+    <div style="background:#e2e8f0; height:100%; width:{{ (risk_dist.pending / t * 100) }}%;" title="Pending"></div>
+    <div style="background:#c6f6d5; height:100%; width:{{ (risk_dist.no_action_needed / t * 100) }}%;" title="No Action Needed"></div>
+    <div style="background:#fefcbf; height:100%; width:{{ (risk_dist.review_recommended / t * 100) }}%;" title="Review Recommended"></div>
+    <div style="background:#fed7d7; height:100%; width:{{ (risk_dist.action_required / t * 100) }}%;" title="Action Required"></div>
+    <div style="background:#9b2c2c; height:100%; width:{{ (risk_dist.urgent_review / t * 100) }}%;" title="Urgent Review"></div>
+  </div>
+  <div style="display:flex; justify-content:space-between; margin-top:6px; font-size:11px; color:#718096;">
+    <span>Pending {{ "%.1f"|format(risk_dist.pending / t * 100) }}%</span>
+    <span>No Action {{ "%.1f"|format(risk_dist.no_action_needed / t * 100) }}%</span>
+    <span>Review {{ "%.1f"|format(risk_dist.review_recommended / t * 100) }}%</span>
+    <span>Action {{ "%.1f"|format(risk_dist.action_required / t * 100) }}%</span>
+    <span>Urgent {{ "%.1f"|format(risk_dist.urgent_review / t * 100) }}%</span>
+  </div>
+</div>
+
+<div class="card" style="margin-bottom:16px; padding:12px 20px;">
+  <div style="display:flex; gap:12px; align-items:center; flex-wrap:wrap;">
+    <span style="font-size:12px; font-weight:600; color:#4a5568;">Filters</span>
+    <select id="filter-reviewed" onchange="applyFilters()" style="font-size:12px; padding:6px 12px; border:1px solid #cbd5e0; border-radius:6px; background:#fff; color:#2d3748; cursor:pointer; min-width:130px;">
+      <option value="">All Status</option>
+      <option value="yes" {% if filter_reviewed == 'yes' %}selected{% endif %}>Reviewed</option>
+      <option value="no" {% if filter_reviewed == 'no' %}selected{% endif %}>Pending</option>
+    </select>
+    <select id="filter-risk" onchange="applyFilters()" style="font-size:12px; padding:6px 12px; border:1px solid #cbd5e0; border-radius:6px; background:#fff; color:#2d3748; cursor:pointer; min-width:140px;">
+      <option value="">All Risk Levels</option>
+      <option value="urgent_review" {% if filter_risk == 'urgent_review' %}selected{% endif %}>Urgent Review</option>
+      <option value="action_required" {% if filter_risk == 'action_required' %}selected{% endif %}>Action Required</option>
+      <option value="review_recommended" {% if filter_risk == 'review_recommended' %}selected{% endif %}>Review Recommended</option>
+      <option value="no_action_needed" {% if filter_risk == 'no_action_needed' %}selected{% endif %}>No Action Needed</option>
+    </select>
+    <select id="filter-contacted" onchange="applyFilters()" style="font-size:12px; padding:6px 12px; border:1px solid #cbd5e0; border-radius:6px; background:#fff; color:#2d3748; cursor:pointer; min-width:130px;">
+      <option value="">All Contacted</option>
+      <option value="yes" {% if filter_contacted == 'yes' %}selected{% endif %}>Contacted</option>
+      <option value="no" {% if filter_contacted == 'no' %}selected{% endif %}>Not Contacted</option>
+    </select>
+    <select id="filter-quoted" onchange="applyFilters()" style="font-size:12px; padding:6px 12px; border:1px solid #cbd5e0; border-radius:6px; background:#fff; color:#2d3748; cursor:pointer; min-width:130px;">
+      <option value="">All Quotes</option>
+      <option value="yes" {% if filter_quoted == 'yes' %}selected{% endif %}>Quote Generated</option>
+      <option value="no" {% if filter_quoted == 'no' %}selected{% endif %}>No Quote</option>
+    </select>
+    <select id="filter-llm" onchange="applyFilters()" style="font-size:12px; padding:6px 12px; border:1px solid #cbd5e0; border-radius:6px; background:#fff; color:#2d3748; cursor:pointer; min-width:130px;">
+      <option value="">All LLM</option>
+      <option value="yes" {% if filter_llm == 'yes' %}selected{% endif %}>LLM Analyzed</option>
+      <option value="no" {% if filter_llm == 'no' %}selected{% endif %}>No LLM</option>
+    </select>
+  </div>
+</div>
+
+<div class="card" id="results-section">
   <h2>Reviews <span style="font-weight:400; font-size:12px; color:#718096;">{{ total_results }} total — page {{ page }}/{{ total_pages }}</span></h2>
   <table>
     <thead>
-      <tr><th>Policy #</th><th>Risk</th><th>Flags</th><th>Changes</th><th>LLM Analytics</th><th></th></tr>
+      <tr>
+        <th style="width:32px;"><input type="checkbox" id="select-all" onchange="toggleSelectAll(this)" style="cursor:pointer; width:15px; height:15px; accent-color:#3182ce;"></th>
+        <th>Policy #</th><th>Risk</th><th>Flags</th><th>Changes</th><th>Contacted</th><th>Quote</th><th>Reviewed</th><th>LLM</th><th></th>
+      </tr>
     </thead>
     <tbody id="results-body">
       {% for r in results %}
       <tr>
-        <td><a href="/ui/review/{{ r.policy_number }}">{{ r.policy_number }}</a></td>
-        <td><span class="badge badge-{{ r.risk_level.value }}">{{ r.risk_level.value }}</span></td>
+        <td><input type="checkbox" class="row-select" value="{{ r.policy_number }}" onchange="onRowCheckChange(this)" style="cursor:pointer; width:15px; height:15px; accent-color:#3182ce;"></td>
+        <td>{% if r.reviewed_at %}<a href="/ui/review/{{ r.policy_number }}">{{ r.policy_number }}</a>{% else %}{{ r.policy_number }}{% endif %}</td>
+        {% if r.reviewed_at %}
+        <td><span class="badge badge-{{ r.risk_level.value }}">{{ r.risk_level.value|label }}</span></td>
         <td>{{ r.diff.flags|length }}</td>
         <td>{{ r.diff.changes|length }}</td>
+        <td>
+          <input type="checkbox" {% if r.broker_contacted %}checked{% endif %}
+            onchange="toggleContacted('{{ r.policy_number }}', this)"
+            style="cursor:pointer; width:15px; height:15px; accent-color:#3182ce;">
+        </td>
+        <td>
+          <input type="checkbox" {% if r.quote_generated %}checked{% endif %}
+            disabled style="cursor:default; width:15px; height:15px; accent-color:#805ad5;">
+        </td>
+        <td style="font-size:11px; color:#718096;">
+          {{ r.reviewed_at.strftime("%m/%d %H:%M") }}
+        </td>
         <td>{% if r.llm_insights %}<span class="llm-sparkle" title="LLM analyzed"></span>{% endif %}</td>
         <td><a href="/ui/review/{{ r.policy_number }}" class="btn btn-secondary" style="padding:2px 8px; font-size:11px;">View</a></td>
+        {% else %}
+        <td><span style="color:#a0aec0; font-size:11px;">Pending</span></td>
+        <td style="color:#a0aec0;">—</td>
+        <td style="color:#a0aec0;">—</td>
+        <td style="color:#a0aec0;">—</td>
+        <td style="color:#a0aec0;">—</td>
+        <td style="color:#a0aec0;">—</td>
+        <td></td>
+        <td></td>
+        {% endif %}
       </tr>
       {% endfor %}
     </tbody>
@@ -95,11 +176,11 @@
   {% if total_pages > 1 %}
   <div style="display:flex; justify-content:center; align-items:center; gap:12px; margin-top:16px;">
     {% if page > 1 %}
-    <a href="/?page={{ page - 1 }}" class="btn btn-secondary" style="padding:4px 12px; font-size:12px;">&larr; Prev</a>
+    <a href="/?page={{ page - 1 }}&risk={{ filter_risk }}&contacted={{ filter_contacted }}&quoted={{ filter_quoted }}&reviewed={{ filter_reviewed }}&llm={{ filter_llm }}" class="btn btn-secondary" style="padding:4px 12px; font-size:12px;">&larr; Prev</a>
     {% endif %}
     <span style="font-size:13px; color:#4a5568;">{{ page }} / {{ total_pages }}</span>
     {% if page < total_pages %}
-    <a href="/?page={{ page + 1 }}" class="btn btn-secondary" style="padding:4px 12px; font-size:12px;">Next &rarr;</a>
+    <a href="/?page={{ page + 1 }}&risk={{ filter_risk }}&contacted={{ filter_contacted }}&quoted={{ filter_quoted }}&reviewed={{ filter_reviewed }}&llm={{ filter_llm }}" class="btn btn-secondary" style="padding:4px 12px; font-size:12px;">Next &rarr;</a>
     {% endif %}
   </div>
   {% endif %}
@@ -108,40 +189,137 @@
 
 {% block scripts %}
 <script>
-function updateStats(s) {
-  document.getElementById('stat-total').textContent = s.total;
-  document.getElementById('stat-no-action-needed').textContent = s.no_action_needed;
-  document.getElementById('stat-review-recommended').textContent = s.review_recommended;
-  document.getElementById('stat-action-required').textContent = s.action_required;
-  document.getElementById('stat-urgent-review').textContent = s.urgent_review;
-  document.getElementById('stat-time').textContent = (s.processing_time_ms / 1000).toFixed(1) + 's';
-  const t = s.total || 1;
-  document.getElementById('bar-no-action-needed').style.width = (s.no_action_needed/t*100)+'%';
-  document.getElementById('bar-review-recommended').style.width = (s.review_recommended/t*100)+'%';
-  document.getElementById('bar-action-required').style.width = (s.action_required/t*100)+'%';
-  document.getElementById('bar-urgent-review').style.width = (s.urgent_review/t*100)+'%';
-  document.getElementById('pct-no-action-needed').textContent = 'No Action '+(s.no_action_needed/t*100).toFixed(1)+'%';
-  document.getElementById('pct-review-recommended').textContent = 'Review '+(s.review_recommended/t*100).toFixed(1)+'%';
-  document.getElementById('pct-action-required').textContent = 'Action '+(s.action_required/t*100).toFixed(1)+'%';
-  document.getElementById('pct-urgent-review').textContent = 'Urgent '+(s.urgent_review/t*100).toFixed(1)+'%';
-  document.getElementById('summary-section').style.display = 'block';
+var SELECTED_KEY = 'rr_selected_policies';
+
+function getSelectedSet() {
+  try {
+    var stored = sessionStorage.getItem(SELECTED_KEY);
+    return stored ? new Set(JSON.parse(stored)) : new Set();
+  } catch(e) { return new Set(); }
 }
 
-async function runBatch(sample) {
+function saveSelectedSet(s) {
+  sessionStorage.setItem(SELECTED_KEY, JSON.stringify([...s]));
+}
+
+function syncCheckboxesFromStorage() {
+  var selected = getSelectedSet();
+  var boxes = document.querySelectorAll('.row-select');
+  var allChecked = boxes.length > 0;
+  boxes.forEach(function(cb) {
+    cb.checked = selected.has(cb.value);
+    if (!cb.checked) allChecked = false;
+  });
+  document.getElementById('select-all').checked = allChecked;
+  updateSelectedCountDisplay();
+}
+
+function updateSelectedCountDisplay() {
+  var selected = getSelectedSet();
+  var count = selected.size;
+  document.getElementById('selected-count').textContent = count;
+  var btn = document.getElementById('btn-review-selected');
+  btn.disabled = count === 0;
+  btn.style.opacity = count === 0 ? '0.5' : '1';
+}
+
+function onRowCheckChange(cb) {
+  var selected = getSelectedSet();
+  if (cb.checked) { selected.add(cb.value); }
+  else { selected.delete(cb.value); }
+  saveSelectedSet(selected);
+  updateSelectedCountDisplay();
+  var boxes = document.querySelectorAll('.row-select');
+  var allChecked = boxes.length > 0;
+  boxes.forEach(function(b) { if (!b.checked) allChecked = false; });
+  document.getElementById('select-all').checked = allChecked;
+}
+
+function toggleSelectAll(master) {
+  var selected = getSelectedSet();
+  var boxes = document.querySelectorAll('.row-select');
+  boxes.forEach(function(cb) {
+    cb.checked = master.checked;
+    if (master.checked) { selected.add(cb.value); }
+    else { selected.delete(cb.value); }
+  });
+  saveSelectedSet(selected);
+  updateSelectedCountDisplay();
+}
+
+async function toggleContacted(policyNumber, checkbox) {
+  var resp = await fetch('/reviews/' + policyNumber + '/broker-contacted', {method: 'PATCH'});
+  if (!resp.ok) {
+    checkbox.checked = !checkbox.checked;
+    return;
+  }
+  refreshBrokerMetrics();
+}
+
+async function refreshBrokerMetrics() {
+  var resp = await fetch('/analytics/broker');
+  if (!resp.ok) return;
+  var d = await resp.json();
+  var total = d.total || 1;
+  var el;
+  el = document.getElementById('broker-pending');
+  if (el) el.textContent = d.pending;
+  el = document.getElementById('broker-contact-needed');
+  if (el) el.textContent = d.contact_needed;
+  el = document.getElementById('broker-contacted');
+  if (el) el.textContent = d.contacted;
+  el = document.getElementById('broker-quotes');
+  if (el) el.textContent = d.quotes_generated;
+  el = document.getElementById('broker-reviewed');
+  if (el) el.textContent = d.reviewed;
+  el = document.getElementById('broker-bar-pending');
+  if (el) el.style.width = (d.pending/total*100) + '%';
+  el = document.getElementById('broker-bar-contact');
+  if (el) el.style.width = (d.contact_needed/total*100) + '%';
+  el = document.getElementById('broker-bar-contacted');
+  if (el) el.style.width = (d.contacted/total*100) + '%';
+  el = document.getElementById('broker-bar-quotes');
+  if (el) el.style.width = (d.quotes_generated/total*100) + '%';
+  el = document.getElementById('broker-bar-reviewed');
+  if (el) el.style.width = (d.reviewed/total*100) + '%';
+}
+
+function applyFilters() {
+  var risk = document.getElementById('filter-risk').value;
+  var contacted = document.getElementById('filter-contacted').value;
+  var quoted = document.getElementById('filter-quoted').value;
+  var reviewed = document.getElementById('filter-reviewed').value;
+  var llm = document.getElementById('filter-llm').value;
+  var params = new URLSearchParams();
+  params.set('page', '1');
+  if (risk) params.set('risk', risk);
+  if (contacted) params.set('contacted', contacted);
+  if (quoted) params.set('quoted', quoted);
+  if (reviewed) params.set('reviewed', reviewed);
+  if (llm) params.set('llm', llm);
+  window.location.href = '/?' + params.toString();
+}
+
+async function reviewSelected() {
+  var selected = getSelectedSet();
+  var policyNumbers = [...selected];
+  if (policyNumbers.length === 0) return;
+
   document.getElementById('loading').style.display = 'block';
-  document.getElementById('loading-text').textContent = 'Processing...';
-  const url = sample ? '/batch/run?sample='+sample : '/batch/run';
-  const resp = await fetch(url, {method:'POST'});
-  const data = await resp.json();
+  document.getElementById('loading-text').textContent = 'Reviewing ' + policyNumbers.length + ' policies...';
+
+  var resp = await fetch('/batch/review-selected', {
+    method: 'POST',
+    headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify({policy_numbers: policyNumbers})
+  });
+  var data = await resp.json();
 
   if (data.job_id) {
     while (true) {
-      await new Promise(r => setTimeout(r, 300));
-      const status = await fetch('/batch/status/' + data.job_id).then(r => r.json());
-      if (status.status === 'completed') {
-        if (status.summary) updateStats(status.summary);
-        break;
-      }
+      await new Promise(function(r) { setTimeout(r, 300); });
+      var status = await fetch('/batch/status/' + data.job_id).then(function(r) { return r.json(); });
+      if (status.status === 'completed') { break; }
       if (status.status === 'failed') {
         document.getElementById('loading-text').textContent = 'Failed: ' + (status.error || 'unknown');
         return;
@@ -149,31 +327,49 @@ async function runBatch(sample) {
     }
   }
 
+  sessionStorage.removeItem(SELECTED_KEY);
   document.getElementById('loading').style.display = 'none';
   window.location.href = '/?page=1';
 }
 
-async function runEval() {
+async function runBatch(sample) {
   document.getElementById('loading').style.display = 'block';
-  document.getElementById('loading-text').textContent = 'Running quality check...';
-  const resp = await fetch('/eval/run', {method:'POST'});
-  const data = await resp.json();
+  document.getElementById('loading-text').textContent = 'Processing...';
+  var url = sample ? '/batch/run?sample='+sample : '/batch/run';
+  var resp = await fetch(url, {method:'POST'});
+  var data = await resp.json();
+
+  if (data.job_id) {
+    while (true) {
+      await new Promise(function(r) { setTimeout(r, 300); });
+      var status = await fetch('/batch/status/' + data.job_id).then(function(r) { return r.json(); });
+      if (status.status === 'completed') { break; }
+      if (status.status === 'failed') {
+        document.getElementById('loading-text').textContent = 'Failed: ' + (status.error || 'unknown');
+        return;
+      }
+    }
+  }
+
+  sessionStorage.removeItem(SELECTED_KEY);
   document.getElementById('loading').style.display = 'none';
-  document.getElementById('eval-section').style.display = 'block';
-  document.getElementById('eval-accuracy').textContent =
-    'Accuracy: ' + data.accuracy + '% (' + data.passed + '/' + data.total + ')';
-  const body = document.getElementById('eval-body');
-  body.innerHTML = '';
-  data.details.forEach(d => {
-    const pass = d.risk_pass && d.flags_pass;
-    body.innerHTML += '<tr>' +
-      '<td>'+d.policy_number+'</td>' +
-      '<td>'+d.description+'</td>' +
-      '<td><span class="badge badge-'+d.expected_risk+'">'+d.expected_risk+'</span></td>' +
-      '<td><span class="badge badge-'+d.actual_risk+'">'+d.actual_risk+'</span></td>' +
-      '<td>'+(pass ? '✓' : '✗ '+d.missing_flags.join(', '))+'</td>' +
-      '</tr>';
-  });
+  window.location.href = '/?page=1';
 }
+
+function saveFilterState() {
+  var params = new URLSearchParams(window.location.search);
+  params.delete('page');
+  var filterStr = params.toString();
+  if (filterStr) {
+    sessionStorage.setItem('rr_dashboard_filters', filterStr);
+  } else {
+    sessionStorage.removeItem('rr_dashboard_filters');
+  }
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+  syncCheckboxesFromStorage();
+  saveFilterState();
+});
 </script>
 {% endblock %}

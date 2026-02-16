@@ -17,13 +17,20 @@ class BatchRunRecord(BaseModel):
 class TrendPoint(BaseModel):
     date: str
     total_runs: int
-    avg_processing_time_ms: float
     urgent_review_ratio: float
 
 
 class AnalyticsSummary(BaseModel):
     total_runs: int
     total_policies_reviewed: int
-    avg_processing_time_ms: float
     risk_distribution: dict[str, int]
     trends: list[TrendPoint]
+
+
+class BrokerMetrics(BaseModel):
+    total: int
+    pending: int
+    contact_needed: int
+    contacted: int
+    quotes_generated: int
+    reviewed: int

@@ -1,6 +1,12 @@
-from collections import defaultdict
+from __future__ import annotations
 
-from app.domain.models.analytics import AnalyticsSummary, BatchRunRecord, TrendPoint
+from collections import defaultdict
+from typing import TYPE_CHECKING
+
+from app.domain.models.analytics import AnalyticsSummary, BatchRunRecord, BrokerMetrics, TrendPoint
+
+if TYPE_CHECKING:
+    from app.domain.models.review import ReviewResult
 
 
 def compute_trends(records: list[BatchRunRecord]) -> AnalyticsSummary:
@@ -8,7 +14,6 @@ def compute_trends(records: list[BatchRunRecord]) -> AnalyticsSummary:
         return AnalyticsSummary(
             total_runs=0,
             total_policies_reviewed=0,
-            avg_processing_time_ms=0.0,
             risk_distribution={
                 "no_action_needed": 0,
                 "review_recommended": 0,
@@ -19,7 +24,6 @@ def compute_trends(records: list[BatchRunRecord]) -> AnalyticsSummary:
         )
 
     total_policies = sum(r.total for r in records)
-    avg_time = sum(r.processing_time_ms for r in records) / len(records)
 
     risk_distribution = {
         "no_action_needed": sum(r.no_action_needed for r in records),
@@ -42,9 +46,6 @@ def compute_trends(records: list[BatchRunRecord]) -> AnalyticsSummary:
             TrendPoint(
                 date=day,
                 total_runs=len(day_records),
-                avg_processing_time_ms=round(
-                    sum(r.processing_time_ms for r in day_records) / len(day_records), 1
-                ),
                 urgent_review_ratio=round(day_urgent_review / day_total, 4) if day_total else 0.0,
             )
         )
@@ -52,7 +53,24 @@ def compute_trends(records: list[BatchRunRecord]) -> AnalyticsSummary:
     return AnalyticsSummary(
         total_runs=len(records),
         total_policies_reviewed=total_policies,
-        avg_processing_time_ms=round(avg_time, 1),
         risk_distribution=risk_distribution,
         trends=trends,
+    )
+
+
+def compute_broker_metrics(results: list[ReviewResult], total_policies: int = 0) -> BrokerMetrics:
+    reviewed_count = sum(1 for r in results if r.reviewed_at is not None)
+    total = max(total_policies, reviewed_count)
+    pending = total - reviewed_count
+    contact_needed = sum(1 for r in results if r.diff.flags and not r.broker_contacted)
+    contacted = sum(1 for r in results if r.broker_contacted)
+    quotes_generated = sum(1 for r in results if r.quote_generated)
+    reviewed = sum(1 for r in results if r.reviewed_at is not None)
+    return BrokerMetrics(
+        total=total,
+        pending=pending,
+        contact_needed=contact_needed,
+        contacted=contacted,
+        quotes_generated=quotes_generated,
+        reviewed=reviewed,
     )

@@ -1,7 +1,6 @@
 ---
 theme: seriph
-background: https://cover.sli.dev
-title: "Agent-Native Engineering: Renewal Review"
+title: 'Agent-Native Engineering: Renewal Review'
 info: |
   Insurance renewal review pipeline built with AI agents.
   Quandri interview presentation — Feb 2026.
@@ -13,170 +12,208 @@ mdc: true
 lineNumbers: false
 drawings:
   persist: false
+glowSeed: 14
 ---
 
 # Agent-Native Engineering
 
 ### Insurance Renewal Review Pipeline
 
-<div class="pt-4 text-gray-400">
+<div class="pt-6 text-gray-400 text-lg">
 8,000 Policies · Rule + LLM Hybrid · 5x Faster
 </div>
 
-<div class="pt-6 text-left max-w-2xl mx-auto text-sm text-gray-400 leading-snug">
+<div class="pt-6 text-sm text-gray-400 max-w-xl mx-auto">
 
-**Goal**: Agent-native setup → plan thoroughly → AI executes — compress a work week into a day. Experiment & package reusable workflows for the team.
+**Goal**: Agent-native setup → thorough planning → AI execution — compress a work week into one day.
 
 </div>
 
-<div class="abs-br m-6 flex gap-2 text-sm text-gray-500">
+<div class="abs-br m-6 text-sm text-gray-500">
   Yeonsu Choi · Feb 2026
 </div>
 
 <!--
-오프닝: "8,000건 보험 갱신 정책을 자동으로 심사하는 파이프라인을 만들었습니다.
-목표는 세 가지였습니다:
+### <자기소개> 
+안녕하세요. 겁 없이 AI라는 파도 위에 올라타는 소프트웨어 엔지니어 Ella 입니다. 
+
+사실 이 과제를 받고 나서 정말 설렜습니다.
+왜냐하면 이전 회사는 AI를 믿지 못해 쓰지 못하게 했기 때문에, AI에 대해 혼자서만 탐구했기 때문입니다.
+그러다가 오늘 이렇게 AI-First인 Quandri와 AI에 대해 깊게 이야기해볼 수 있어 정말 기쁩니다.
+소중한 기회인만큼 최선을 다해 과제에 임했고, 오늘 시간내주셔서 진심으로 감사합니다.
+
+### <오프닝> 
+이번 프로젝트를 한 마디로 요약하자면, 8,000건 보험 갱신 정책을 자동으로 심사하는 파이프라인을 만들었습니다.
+이 프로젝트를 하면서 세운 목표는 세 가지였습니다.
+
 1) agent-native 환경을 셋업하고, 충분히 계획한 다음, AI가 실행하게 해서 5일 걸릴 작업을 하루에 끝내기
 2) 그 과정에서 어떤 AI 워크플로우가 효과적인지 실험하기
 3) 실험 결과를 팀이 재사용할 수 있는 Skill과 가이드로 패키징하기
-이 발표에서는 무엇을 만들었는지, 얼마나 빨랐는지, 그리고 5가지 실험의 결과를 공유하겠습니다."
+
+이 발표에서는 무엇을 만들었는지, 얼마나 빨랐는지, 그리고 5가지 실험의 결과를 공유하겠습니다.
 -->
 
 ---
 layout: center
 class: text-center
+glowSeed: 7
 ---
 
 # The Problem
 
-<div class="text-xl text-gray-400 py-2">
-Brokers manually review 8,000 renewal policies every season
+<div class="text-lg text-gray-400 mb-6">
+Each policy takes ~20 min to review manually — the hours add up fast
 </div>
 
-<div class="grid grid-cols-3 gap-8 pt-6">
-<div>
-<div class="text-4xl font-bold text-red-400">Days</div>
-<div class="text-gray-400 text-xs">manual comparison</div>
+<div class="grid grid-cols-3 gap-6 max-w-2xl mx-auto">
+<v-click>
+<div class="border border-red-500/30 bg-red-950/20 rounded-lg p-5 text-center">
+  <div class="text-4xl font-bold text-red-400">Days</div>
+  <div class="text-sm text-gray-400 pt-1">manual comparison</div>
 </div>
-<div>
-<div class="text-4xl font-bold text-red-400">15+</div>
-<div class="text-gray-400 text-xs">risk categories</div>
+</v-click>
+<v-click>
+<div class="border border-red-500/30 bg-red-950/20 rounded-lg p-5 text-center">
+  <div class="text-4xl font-bold text-red-400">15+</div>
+  <div class="text-sm text-gray-400 pt-1">risk categories</div>
 </div>
-<div>
-<div class="text-4xl font-bold text-red-400">Missed</div>
-<div class="text-gray-400 text-xs">text-based signals</div>
+</v-click>
+<v-click>
+<div class="border border-red-500/30 bg-red-950/20 rounded-lg p-5 text-center">
+  <div class="text-4xl font-bold text-red-400">Missed</div>
+  <div class="text-sm text-gray-400 pt-1">text-based signals</div>
 </div>
+</v-click>
 </div>
 
+<v-click>
 <div class="pt-8 text-base text-gray-300">
 
 **Setup** → **Plan** → **Build** → **Experiment** → **Iterate**
 
 </div>
+</v-click>
 
 <!--
-"보험 갱신 시즌에 브로커가 수천 건의 정책을 하나하나 비교하는데 며칠이 걸립니다.
-15개 이상의 리스크 카테고리를 눈으로 체크해야 하고, 메모나 특약 텍스트에 숨어있는 위험 신호는 놓치기 쉽습니다.
-저의 접근 방식은 Setup → Plan → Build → Experiment → Iterate.
-먼저 환경을 세팅하고, 계획을 세우고, 빠르게 만들고, 실험하고, 반복합니다.
-이 흐름대로 발표를 진행하겠습니다."
+Quandri blog의 <A day in the life: With vs. without Quandri> 글에 따르면,
+브로커가 정책을 하나하나 검토하는데, 정책 1건당 평균 20분이 소요된다고 합니다.
+리스크 카테고리들을 눈으로 체크해야 하고, 메모나 특약 텍스트에 숨어있는 위험 신호는 놓치기 쉽습니다.
+
+저의 접근 방식은 Setup → Plan → Build → Experiment → Iterate 였습니다.
+Setup이란, AI agent가 잘 일할 수 있는 환경을 먼저 만드는 것입니다 — CLAUDE.md로 행동 규칙 정의, convention.md로 코드 컨벤션 통일, Git Hooks로 품질 게이트(테스트·린터·보안 스캐너) 자동 강제, 그리고 보험 도메인 지식을 Custom Skill로 주입하는 것까지 포함합니다.
+이 환경 위에서 계획을 세우고, 빠르게 만들고, 실험하고, 반복합니다.
+이 흐름을 담아 발표를 진행하겠습니다.
 -->
 
+---
+glowSeed: 20
 ---
 
 # What I Built
 
-<div class="grid grid-cols-2 gap-4">
-<div>
-
-```mermaid {scale: 0.55}
-flowchart TD
-    A["8,000 Policies<br/>(JSON / PostgreSQL)"] --> B["Parser<br/>ACORD normalization"]
-    B --> C["Diff Engine<br/>Prior vs Renewal"]
-    C --> D["Rule Flagger<br/>15 rules → DiffFlags"]
-    D --> E["Risk Classifier<br/>4 levels"]
-    E --> F{"Text changed?<br/>5-15%"}
-    F -->|Yes| G["LLM Analyzer"]
-    F -->|No| H["Aggregator"]
-    G --> H
-    H --> I["Review + Quotes"]
-```
-
+<div class="grid grid-cols-2 gap-5">
+<v-click>
+<div class="border border-cyan-500/30 bg-cyan-950/20 rounded-lg p-4">
+  <div class="text-cyan-400 font-bold mb-3">Processing Pipeline</div>
+  <div class="space-y-1.5 text-sm">
+    <div>📥 8,000 Policies <span class="text-gray-500">(JSON / PG)</span></div>
+    <div class="text-gray-600 pl-6 text-xs">↓</div>
+    <div>⚙️ Parser · ACORD normalization</div>
+    <div class="text-gray-600 pl-6 text-xs">↓</div>
+    <div>🔍 Diff Engine · Prior vs Renewal</div>
+    <div class="text-gray-600 pl-6 text-xs">↓</div>
+    <div>🚩 Rule Flagger · 23 rules → DiffFlags</div>
+    <div class="text-gray-600 pl-6 text-xs">↓</div>
+    <div>⚠️ Risk Classifier · 4 levels</div>
+    <div class="text-gray-600 pl-6 text-xs">↓</div>
+    <div class="text-yellow-400">📝 Text changed? → LLM (5-15% only)</div>
+  </div>
 </div>
-<div class="pl-4 text-sm">
-
-### Features
-
-- **Dashboard** — batch, risk overview
-- **Review Detail** — prior vs renewal diff
-- **Analytics** — history, trends
-- **Quote Generator** — 5 saving strategies
-- **Portfolio Analyzer** — bundles, duplicates
-- **LLM Insights** — risk signals, broker tips
-
-<div class="pt-2 text-xs text-gray-400">
-100 tests · 14+ endpoints · 7 pages · 8,000 policies < 1s
+</v-click>
+<v-click>
+<div class="border border-green-500/30 bg-green-950/20 rounded-lg p-4">
+  <div class="text-green-400 font-bold mb-3">Features</div>
+  <div class="space-y-2 text-sm">
+    <div>📊 Dashboard — batch overview, broker workflow tracking</div>
+    <div>🔎 Review Detail — diff, flags, inline quote generation</div>
+    <div>📈 Analytics — broker metrics, risk trends</div>
+    <div>📦 Portfolio Analyzer — bundles, duplicates</div>
+    <div>🤖 LLM Insights — Review Recommended 100 sample</div>
+  </div>
+  <div class="mt-4 pt-3 border-t border-gray-700 text-xs text-gray-400">
+    117 tests · 17+ endpoints · 6 pages · 8,000 policies &lt; 1s
+  </div>
 </div>
-</div>
+</v-click>
 </div>
 
 <!--
-"왼쪽이 전체 파이프라인입니다. 구조화된 필드는 100% rule-based로 처리하고,
-비정형 텍스트(메모, 특약)만 LLM에 선별 투입합니다. 전체 정책의 5-15%만 LLM을 호출하므로 비용 효율적입니다.
-오른쪽은 주요 기능 — 대시보드, 개별 리뷰, 분석, 견적, 포트폴리오 다 포함합니다."
+"왼쪽이 전체 파이프라인입니다.
+8,000건의 정책 데이터는 JSON 파일 또는 Docker Postgres에서 입력받습니다.
+먼저 Parser가 ACORD 표준에 맞게 정규화하고, Diff Engine이 이전 계약과 갱신 계약을 필드별로 비교합니다.
+그 다음 Rule Flagger가 23개 규칙으로 위험 신호를 탐지합니다 — 보험료 급등, 보장 삭제, SR-22, 운전자 위반 이력 등이요.
+이 flag들을 종합해서 Risk Classifier가 4단계 위험 등급을 매깁니다 — No Action, Review Recommended, Action Required, Urgent Review.
+여기까지가 100% rule-based이고, 마지막에 텍스트가 변경된 정책만 — 메모, 특약 같은 비정형 텍스트요 — LLM에 선별 투입합니다.
+전체의 5~15%만 LLM을 호출하도록 제가 직접 설계한 부분이라, 비용 효율적입니다.
+오른쪽은 주요 기능입니다 — 대시보드, 개별 리뷰, 분석, 견적, 포트폴리오.
+프레젠테이션을 마치면 데모 페이지로 자세히 보실 수 있습니다."
 -->
 
 ---
 layout: center
+glowSeed: 3
 ---
 
 # The Speed Story
 
-<div class="grid grid-cols-3 gap-12 items-center pt-4">
-<div class="text-center">
-<div class="text-5xl font-bold text-gray-500">5 days</div>
-<div class="text-gray-500 pt-1 text-sm">Manual (~37h estimated)</div>
+<div class="grid grid-cols-[1fr_auto_1fr] gap-6 items-center max-w-2xl mx-auto">
+<v-click>
+<div class="border border-red-500/30 bg-red-950/20 rounded-lg p-6 text-center">
+  <div class="text-5xl font-bold text-gray-500">5 days</div>
+  <div class="text-sm text-gray-500 pt-2">Manual (~37h estimated)</div>
 </div>
-<div class="text-center">
-<div class="text-4xl">→</div>
+</v-click>
+<div class="text-3xl text-gray-600">→</div>
+<v-click>
+<div class="border border-green-500/30 bg-green-950/20 rounded-lg p-6 text-center">
+  <div class="text-5xl font-bold text-green-400">1 day</div>
+  <div class="text-sm text-green-400/70 pt-2">With AI (~4h · 5x faster)</div>
 </div>
-<div class="text-center">
-<div class="text-5xl font-bold text-green-400">1 day</div>
-<div class="text-green-400/70 pt-1 text-sm">With AI (~4h · 5x)</div>
-</div>
-</div>
-
-<div class="pt-4 text-center text-xs text-gray-400">
-+ 5 experiments → total ~2 days
+</v-click>
 </div>
 
-<div class="pt-2 text-center text-xs">
+<v-click>
+<div class="pt-4 max-w-xl mx-auto">
 
-| Phase | AI | Manual | Speedup |
-|-------|-----|--------|---------|
-| Models + Parser (ACORD) | 30 min | 4h | 8x |
-| Diff Engine + 15 Rules | 45 min | 6h | 8x |
-| Mock Data (8,000) | 20 min | 3h | 9x |
-| LLM Client + Prompts | 30 min | 5h | 10x |
-| Batch + API + Frontend | 75 min | 10h | 8x |
+| Phase                   | AI     | Manual | Speedup |
+| ----------------------- | ------ | ------ | ------- |
+| Models + Parser (ACORD) | 30 min | 4h     | 8x      |
+| Diff Engine + 15 Rules  | 45 min | 6h     | 8x      |
+| Mock Data (8,000)       | 20 min | 3h     | 9x      |
+| LLM Client + Prompts    | 30 min | 5h     | 10x     |
+| Batch + API + Frontend  | 75 min | 10h    | 8x      |
 
 </div>
+</v-click>
 
 <!--
-"시니어 개발자 기준으로 산정하면 이 시스템은 순수 개발로 약 37시간, 5일 걸리는 작업입니다.
-AI agent로 코어 시스템을 하루 만에 완성했습니다. 5배 빠릅니다.
+"시니어 개발자 기준으로 산정하면 이 시스템은 순수 소프트웨어 개발로 약 37시간, 5일 걸리는 작업입니다.
+하지만, AI agent로 코어 시스템을 하루 만에 완성했습니다. 5배 빠릅니다.
 거기에 5가지 실험 — agent 오케스트레이션, 삼각검증, 자가수정 루프, LLM 벤치마크 — 까지 포함해서 총 2일에 완료했습니다.
-가장 큰 시간 절약은 도메인 리서치입니다. ACORD 보험 표준을 별도 학습 없이 바로 모델링할 수 있었습니다."
+가장 큰 시간 절약 중 하나는 도메인 리서치 였습니다. 
+자세한 보험 도메인은 몰랐지만 ACORD 보험 표준을 Claude.md와 Skills에 주입하여, 별도 학습 없이 바로 모델링할 수 있었습니다."
 -->
 
+---
+glowSeed: 10
 ---
 
 # How: Agent-Native Setup
 
-<div class="grid grid-cols-2 gap-6 text-xs">
-<div>
-
-### Rulesets — Agent Behavior
+<div class="grid grid-cols-2 gap-5">
+<v-click>
+<div class="border border-blue-500/30 bg-blue-950/20 rounded-lg p-4">
+  <div class="text-blue-400 font-bold mb-2">Rulesets</div>
 
 ```yaml
 # CLAUDE.md (every session)
@@ -189,93 +226,104 @@ AI agent로 코어 시스템을 하루 만에 완성했습니다. 5배 빠릅니
 ```yaml
 # convention.md
 - Files < 300 lines
-- Hexagonal layers (domain/ imports nothing)
+- Hexagonal (domain/ imports nothing)
 - StrEnum, Config, Immutable models
 ```
 
 </div>
-<div>
-
-### Quality Gates — Reward Signals
-
-| Gate | Purpose |
-|------|---------|
-| **pytest** (100) | Iterate until pass |
-| **Ruff** | Lint + format |
-| **Gitleaks** | Block secrets |
-| **Semgrep** | SAST scanning |
-| **Hypothesis** | Property-based tests |
-
-### Claude Code Hooks
-
-| Hook | Action |
-|------|--------|
-| `require-experiment-log` | Block commit w/o log |
-| `require-design-doc` | Block commit w/o doc |
-| `remind-design-doc` | Remind on code edit |
-
+</v-click>
+<v-click>
+<div class="border border-purple-500/30 bg-purple-950/20 rounded-lg p-4">
+  <div class="text-purple-400 font-bold mb-2">Quality Gates</div>
+  <div class="space-y-1.5 text-sm">
+    <div><span class="text-green-400">✅</span> pytest (100) — iterate until pass</div>
+    <div><span class="text-green-400">✅</span> Ruff — lint + format</div>
+    <div><span class="text-green-400">✅</span> Gitleaks — block secrets</div>
+    <div><span class="text-green-400">✅</span> Semgrep — SAST scanning</div>
+    <div><span class="text-green-400">✅</span> Hypothesis — property-based</div>
+  </div>
+  <div class="border-t border-gray-700 mt-3 pt-3">
+    <div class="text-purple-400 font-bold mb-1 text-sm">Claude Code Hooks</div>
+    <div class="space-y-1 text-sm">
+      <div>🔒 require-experiment-log</div>
+      <div>🔒 require-design-doc</div>
+      <div>💡 remind-design-doc</div>
+    </div>
+  </div>
 </div>
+</v-click>
 </div>
 
 <!--
 "Agent-native의 핵심은 agent에게 코드를 맡기는 게 아니라, agent가 잘 일할 수 있는 환경을 먼저 만드는 것입니다.
 CLAUDE.md와 convention.md로 행동 규칙을 정의하고, 품질 게이트(테스트, 린터, 보안 스캐너)를 agent의 reward signal로 설정합니다.
 커밋할 때마다 자동으로 전부 실행되고, 통과하지 못하면 커밋 자체가 불가합니다.
-추가로 Claude Code Hook 3개를 만들어서 — 실험 로그 없이 커밋 불가, 코드 변경 시 design-doc 없이 커밋 불가 — 문서 업데이트를 자동으로 강제합니다."
+추가로 이 프로젝트를 위해서는 Claude Code Hook 3개를 만들어서 — 실험 로그 없이 커밋 불가, 코드 변경 시 design-doc 없이 커밋 불가 — 문서 업데이트를 자동으로 강제했습니다."
 -->
 
+---
+glowSeed: 5
 ---
 
 # Documentation-Driven Planning
 
-<div class="grid grid-cols-3 gap-6 text-sm">
-<div>
+<div class="grid grid-cols-3 gap-4">
+<v-click>
+<div class="border border-cyan-500/30 bg-cyan-950/20 rounded-lg p-4 h-full">
+  <div class="text-cyan-400 font-bold mb-2">requirements.md</div>
+  <div class="space-y-1.5 text-sm">
+    <div>FR-1~9 functional specs</div>
+    <div>Success criteria w/ numbers</div>
+    <div>5 golden eval scenarios</div>
+    <div>NFR: &lt;10s for 8,000 policies</div>
+  </div>
+</div>
+</v-click>
+<v-click>
+<div class="border border-green-500/30 bg-green-950/20 rounded-lg p-4 h-full">
+  <div class="text-green-400 font-bold mb-2">design-doc.md</div>
+  <div class="space-y-1.5 text-sm">
+    <div>5-layer hexagonal arch</div>
+    <div>8 Pydantic models</div>
+    <div>23 DiffFlags, 4 risk levels</div>
+    <div>14+ API endpoints</div>
+    <div class="text-yellow-400">Auto-updated via hooks</div>
+  </div>
+</div>
+</v-click>
+<v-click>
+<div class="border border-purple-500/30 bg-purple-950/20 rounded-lg p-4 h-full">
+  <div class="text-purple-400 font-bold mb-2">implementation-plan.md</div>
+  <div class="space-y-1.5 text-sm">
+    <div>Phase 0-2C roadmap</div>
+    <div>Per-phase: files, lines, commit</div>
+    <div>V1 (rule) → V2 (LLM)</div>
+    <div>Flag: <code>RR_LLM_ENABLED</code></div>
+  </div>
+</div>
+</v-click>
+</div>
 
-### requirements.md
-- FR-1~9 functional specs
-- Success criteria w/ numbers
-- 5 golden eval scenarios
-- NFR: <10s for 8,000 policies
+<v-click>
+<div class="pt-5 text-center text-sm text-gray-400">
+
+_"Not 'build me an insurance system' — a phased plan with exact files, signatures, and criteria."_
 
 </div>
-<div>
-
-### design-doc.md
-- 5-layer hexagonal arch
-- 8 Pydantic models
-- 15 DiffFlags, 4 risk levels
-- 14+ API endpoints
-- Auto-updated via hooks
-
-</div>
-<div>
-
-### implementation-plan.md
-- Phase 0-2C roadmap
-- Per-phase: files, lines, commit msg
-- V1 (rule) → V2 (LLM) migration
-- Feature flag: `RR_LLM_ENABLED`
-
-</div>
-</div>
-
-<div class="pt-6 text-center text-sm text-gray-400">
-
-*"Not 'build me an insurance system' — but a phased plan with exact files, signatures, and verification criteria."*
-
-</div>
+</v-click>
 
 <!--
 "코드를 쓰기 전에 문서 3개를 먼저 작성했습니다.
 requirements.md에 기능 요구사항과 성공 기준, design-doc.md에 아키텍처와 데이터 모델,
 implementation-plan.md에 Phase별 실행 계획.
-Agent에게 '보험 시스템 만들어줘'가 아니라 '이 순서로, 이 구조로, 이 기준을 통과하게' 지시합니다.
-그리고 design-doc은 코드 변경 시 훅으로 자동 업데이트를 강제합니다."
+Agent에게 '보험 시스템 만들어줘'가 아니라 '이 순서로, 이 구조로, 이 기준을 통과하게' 라고 지시합니다.
+그리고 앞서 말했듯, design-doc은 코드 변경 시 훅으로 자동 업데이트를 강제합니다."
 -->
 
 ---
 layout: center
 class: text-center
+glowSeed: 22
 ---
 
 # Five Experiments
@@ -284,7 +332,7 @@ class: text-center
 Each answered a specific question about AI-assisted development
 </div>
 
-```mermaid {scale: 0.7}
+```mermaid {scale: 0.55}
 flowchart LR
     E1["<b>Exp 1</b><br/>SubAgent vs<br/>Agent Teams"] --> E2["<b>Exp 2</b><br/>Triangular<br/>Verification"]
     E2 --> E3["<b>Exp 3</b><br/>Self-Correcting<br/>Loop"]
@@ -298,16 +346,22 @@ flowchart LR
     style E5 fill:#5a3a1e,stroke:#ffaa4a
 ```
 
-<div class="grid grid-cols-5 gap-4 pt-2 text-xs text-gray-400">
+<v-clicks>
+
+<div class="grid grid-cols-5 gap-4 pt-2 text-sm text-gray-400">
 <div class="text-center">Multiple agents?</div>
-<div class="text-center">Agents verify each other?</div>
-<div class="text-center">Automate verify→fix?</div>
-<div class="text-center">Pipeline generalizes?</div>
-<div class="text-center">Which LLM is best?</div>
+<div class="text-center">Agents verify?</div>
+<div class="text-center">Automate fix?</div>
+<div class="text-center">Generalizes?</div>
+<div class="text-center">Best LLM?</div>
 </div>
+
+</v-clicks>
 
 <!--
 "5가지 실험을 순차적으로 진행했고, 각 실험은 이전 실험의 결과 위에 쌓입니다.
+실험을 간단하게 요약한다면 이와 같습니다. 자세한 내용은 다음 장부터 설명드리겠습니다.
+
 실험 1: 여러 agent를 동시에 돌릴 수 있는가?
 실험 2: agent끼리 서로 검증할 수 있는가?
 실험 3: 검증부터 수정까지 자동화할 수 있는가?
@@ -316,103 +370,112 @@ flowchart LR
 -->
 
 ---
+glowSeed: 18
+---
 
 # Exp 1: SubAgent vs Agent Teams
 
-<div class="text-xs text-gray-400 pb-1">Same task (Analytics module, ~300 lines) · Two orchestration patterns</div>
+<div class="text-sm text-gray-400 mb-3">Same task (Analytics, ~300 lines) · Two orchestration patterns</div>
 
-<div class="grid grid-cols-2 gap-6 text-xs">
-<div>
+<div class="grid grid-cols-2 gap-4">
+<v-click>
+<div class="border border-blue-500/30 bg-blue-950/20 rounded-lg p-4">
+  <div class="text-blue-400 font-bold mb-2">SubAgent Pattern</div>
 
-### SubAgent Pattern
 ```
 Orchestrator
   ├─ [1] Research (Explore)
-  ├─ [2] Model + Service ─┐
-  │                        ├─ parallel
+  ├─ [2] Model + Service ─┐ parallel
   ├─ [3] Routes + Main ───┘
   └─ [4] Tests (after 2,3)
 ```
-**Key**: Interface specs in prompt → parallel dispatch
 
+  <div class="text-sm text-gray-400 pt-1">Interface specs in prompt → parallel dispatch</div>
 </div>
-<div>
+</v-click>
+<v-click>
+<div class="border border-purple-500/30 bg-purple-950/20 rounded-lg p-4">
+  <div class="text-purple-400 font-bold mb-2">Agent Teams Pattern</div>
 
-### Agent Teams Pattern
 ```
 Team Lead
   ├─ TaskCreate: #1 → #2 → #3
-  ├─ [spawn] modeler  → task #1
-  ├─ [spawn] router   → task #2
-  └─ [spawn] tester   → task #3
+  ├─ [spawn] modeler → task #1
+  ├─ [spawn] router  → task #2
+  └─ [spawn] tester  → task #3
 ```
-**Key**: Explicit dependency (blockedBy)
 
+  <div class="text-sm text-gray-400 pt-1">Explicit dependency (blockedBy)</div>
 </div>
-</div>
-
-<div class="pt-2 text-xs">
-
-| Metric | SubAgent | Agent Teams |
-|--------|----------|-------------|
-| Time | 354s (~6 min) | 318s (~5 min) |
-| Code | 334 lines, 8 files | 335 lines, 8 files |
-| Tests | 73 all pass | 73 all pass |
-| Lint fixes | 1 | 0 |
-
+</v-click>
 </div>
 
-<div class="pt-2 text-xs text-gray-400">
+<v-click>
+<div class="pt-3">
 
-> **Insight**: ~300 lines → SubAgent simpler. Agent Teams shines at scale with complex dependencies.
+| Metric | SubAgent           | Agent Teams        |
+| ------ | ------------------ | ------------------ |
+| Time   | 354s (~6 min)      | 318s (~5 min)      |
+| Code   | 334 lines, 8 files | 335 lines, 8 files |
+| Tests  | 73 all pass        | 73 all pass        |
+
+<div class="text-sm text-gray-400 pt-1">~300 lines → SubAgent simpler. Agent Teams shines at scale with complex dependencies.</div>
 
 </div>
+</v-click>
 
 <!--
-"동일한 과제 — Analytics 모듈 추가 — 를 두 가지 방식으로 진행했습니다.
+"동일한 과제 — Analytics 모듈 추가 — 기능 구현을 두 가지 방식으로 진행했습니다.
 SubAgent는 오케스트레이터가 인터페이스 스펙을 프롬프트에 명시해서 병렬 디스패치합니다.
 Agent Teams는 TaskCreate로 태스크를 등록하고 의존성을 설정합니다.
 결과는 거의 동일 — 6분 안에 프로덕션 레디 모듈을 생성했습니다.
-차이가 없다는 것 자체가 인사이트입니다. 소규모에서는 SubAgent가 실용적이고,
+차이가 없다는 것 자체가 인사이트입니다.
+
+다만, 이번 기능 구현과 같이 소규모에서는 SubAgent가 실용적이고,
 대규모 프로젝트에서 Teams의 태스크 추적/의존성 관리가 빛날 것입니다.
-한계를 개선한다면, 1000줄 이상의 멀티모듈 과제로 재실험하면 Teams의 장점이 드러날 것입니다."
+
+한계를 개선한다면, 1000줄 이상의 멀티모듈 과제로 재실험하면 Teams의 장점이 드러날 것이라고 생각합니다."
 -->
 
+---
+glowSeed: 12
 ---
 
 # Exp 2: Triangular Verification — Concept
 
-<div class="text-xs text-gray-400 pb-1">3-agent information isolation catches what linters and tests cannot</div>
+<div class="text-sm text-gray-400 mb-3">3-agent information isolation catches what linters cannot</div>
 
-```mermaid {scale: 0.65}
-flowchart LR
-    subgraph "Information Isolation"
-        direction TB
-        R["📋 Requirements"]
-        B["🔍 Agent B<br/>Reads: code only<br/>Cannot see: requirements"]
-        C["⚖️ Agent C<br/>Reads: requirements + B's review<br/>Cannot see: code"]
-    end
-
-    Code["💻 Code"] --> B
-    B -->|"blind-review.md"| C
-    R --> C
-    C -->|"discrepancy-report.md"| Result{"PASS / FAIL"}
-```
-
-<div class="pt-1 text-xs">
-
-| Tool | Catches | Misses |
-|------|---------|--------|
-| **Ruff / Semgrep** | Syntax, security | Intent mismatch |
-| **Pytest** | Logic bugs (if test exists) | Missing features |
-| **Triangular** | **Intent mismatch, missing/extra features** | UI-level |
-
+<div class="grid grid-cols-[1fr_auto_1fr] gap-4 items-center">
+<div class="space-y-3">
+<v-click>
+<div class="border border-cyan-500/30 bg-cyan-950/20 rounded-lg p-4">
+  <div class="text-cyan-400 font-bold">Agent B (Blind Review)</div>
+  <div class="text-sm pt-1">Reads: code + convention</div>
+  <div class="text-red-400 text-sm">Cannot see requirements</div>
 </div>
+</v-click>
+<v-click>
+<div class="border border-yellow-500/30 bg-yellow-950/20 rounded-lg p-4">
+  <div class="text-yellow-400 font-bold">Agent C (Judge)</div>
+  <div class="text-sm pt-1">Reads: requirements + B's review</div>
+  <div class="text-red-400 text-sm">Cannot see code</div>
+</div>
+</v-click>
+</div>
+<div class="text-2xl text-gray-500">→</div>
+<v-click>
+<div>
+  <div class="text-center text-xl font-bold pb-3">PASS / FAIL</div>
 
-<div class="pt-1 text-xs text-gray-400">
+| Tool           | Catches          | Misses       |
+| -------------- | ---------------- | ------------ |
+| Ruff/Semgrep   | Syntax, security | Intent       |
+| Pytest         | Logic bugs       | Missing feat |
+| **Triangular** | **Intent, gaps** | UI           |
 
-*Agent B describes what code does (without knowing intent). Agent C compares against requirements (without seeing code).*
-
+  <div class="pt-2 text-sm text-gray-400">B describes what code does. C compares against requirements.</div>
+</div>
+</v-click>
 </div>
 
 <!--
@@ -420,410 +483,449 @@ flowchart LR
 Agent B는 코드와 컨벤션만 보고 '이 코드가 뭘 하는지' 설명합니다. 요구사항은 보지 못합니다.
 Agent C는 요구사항과 B의 설명만 보고 '불일치가 있는가' 판단합니다. 코드는 보지 못합니다.
 이 세 관점 — 요구사항, 코드, 독립 분석 — 이 일치하면 PASS입니다.
-기존 도구(ruff, pytest, semgrep)는 구문과 보안만 체크합니다.
-삼각 검증은 '의도대로 만들었는가'를 검증합니다."
+기존 도구(ruff, pytest, semgrep)는 구문과 보안만 체크했었으나,
+삼각 검증은 '의도대로 만들었는가'를 추가로 검증해, 개발자가 요구사항대로 잘 구현했는지 확인할 수 있습니다."
 -->
 
+---
+glowSeed: 8
 ---
 
 # Exp 2: Triangular Verification — Results
 
-<div class="text-xs text-gray-400 pb-1">Applied to code already passing all linters + tests</div>
+<div class="text-sm text-gray-400 mb-3">Applied to code already passing all linters + tests</div>
 
-<div class="grid grid-cols-2 gap-6 text-xs">
+<div class="grid grid-cols-2 gap-5">
+<v-click>
+<div class="border border-green-500/30 bg-green-950/20 rounded-lg p-4">
+  <div class="text-green-400 font-bold mb-2">Issues Found (9 total, 78% precision)</div>
+
+| Category             | Count | Status    |
+| -------------------- | ----- | --------- |
+| Intent Mismatch      | 2     | ✅ true+  |
+| Missing Feature      | 2     | ✅ true+  |
+| Extra Feature        | 3     | ✅ true+  |
+| Convention Violation | 2     | ✅ true+  |
+| False Positive       | 2     | ❌ false+ |
+
+  <div class="text-sm pt-2">Standard tools: <b>0</b> found · Triangular: <b>9</b> · Time: ~19 min</div>
+</div>
+</v-click>
+<v-click>
 <div>
-
-### Issues Found
-
-| Category | Count |
-|----------|-------|
-| Intent Mismatch | 2 |
-| Missing Feature | 2 |
-| Extra Feature | 3 |
-| Convention Violation | 2 |
-| False Positive | 2 |
-
-| Metric | Value |
-|--------|-------|
-| **Precision** | **78%** (7/9 true) |
-| Standard tools | 0 issues |
-| Triangular | **9 issues** |
-| Time | ~19 min |
-
+<div class="border border-red-500/30 bg-red-950/20 rounded-lg p-4 mb-3">
+  <div class="text-red-400 font-bold mb-2">Critical: Batch History Limit</div>
+  <div class="text-sm">Requirement: <em>"Maximum 100 entries, auto-evict oldest"</em></div>
+  <div class="text-sm pt-1">Code: unlimited <code>append()</code> — no cap</div>
+  <div class="pt-2 text-sm">
+    <span class="text-green-400">ruff ✅</span> <span class="text-green-400">pytest ✅</span> <span class="text-green-400">semgrep ✅</span>
+  </div>
+  <div class="text-red-400 font-bold pt-1">Triangular ❌ FOUND IT</div>
 </div>
-<div>
-
-### Critical: FIFO 100-Entry Limit
-
-Requirement: *"Maximum 100 entries, FIFO"*
-
-Code: unlimited `append()` — no cap
-
-ruff ✅ &nbsp; pytest ✅ &nbsp; semgrep ✅ &nbsp; **Triangular ❌ FOUND**
-
-<div class="pt-4">
-
-### Limitations
-- Agent B: Python only — **UI blind**
-- 78% precision — ~22% false positives
-- ~19 min — worth it for critical features, not every commit
-
+<div class="border border-gray-600/30 bg-gray-800/20 rounded-lg p-4">
+  <div class="text-gray-300 font-bold mb-1">Limitations</div>
+  <div class="text-sm space-y-1">
+    <div>Agent B: Python only — UI blind</div>
+    <div>~22% false positives</div>
+    <div>~19 min — for critical features only</div>
+  </div>
 </div>
 </div>
+</v-click>
 </div>
 
 <!--
 "이미 ruff, pytest, semgrep 전부 통과한 코드를 대상으로 삼각 검증을 실행했습니다.
-결과: 표준 도구가 발견한 이슈 0건, 삼각 검증이 발견한 이슈 9건.
-가장 중요한 발견은 FIFO 100건 제한 미구현입니다.
-요구사항에 '최대 100건, FIFO'라고 수치까지 명시했지만, 코드는 무제한 append였습니다.
-ruff는 구문만, pytest는 테스트 케이스에 없으면 모르고, semgrep은 보안 패턴만 체크합니다.
+결과: 표준 도구가 발견한 이슈 0건, 삼각 검증이 발견한 이슈 9건 이었습니다.
+
+여기서 가장 중요한 발견은 주요 기능 중 하나인 '배치 이력 100건 제한' 기능을 구현하지 않았다는 것입니다.
+요구사항에 '최대 100건, 오래된 것부터 자동 제거'라고 수치까지 명시했지만, 코드는 무제한 append였습니다.
+ruff는 구문만, pytest는 테스트 케이스에 없으면 모르고, semgrep은 보안 패턴만 체크했기 때문이었습니다.
 삼각 검증만이 '요구사항에 100건이라 적혀있는데 코드에는 없다'를 발견했습니다.
-한계로는 UI 검증이 불가능하고, false positive 22%.
-개선한다면 Agent B에 프론트엔드 분석 skill을 추가하면 됩니다."
+
+다만, 한계로는 UI 검증이 불가능하고, 9건 중 7건 적중 (78% precision)했다는 것입니다.
+즉, 삼각검증이 "문제다"라고 판단했는데 사람이 보니 "이건 문제가 아니다"인 케이스 2건이 있었습니다.
+UI 부분은 개선한다면 Agent B에 프론트엔드 분석 skill을 추가하면 어느정도 해결될 것으로 예상됩니다."
 -->
 
+---
+glowSeed: 15
 ---
 
 # Exp 3: Self-Correcting Loop
 
-<div class="text-xs text-gray-400 pb-1">Quality gates + triangular verification in one automated loop</div>
+<div class="text-sm text-gray-400 mb-3">Quality gates + triangular verification in one automated loop</div>
 
-```mermaid {scale: 0.65}
-flowchart TD
-    P["📝 PROMPT.md + requirements.md"] --> L
-
-    subgraph L["Loop (max N iterations)"]
-        direction TB
-        P1["Phase 1: Implement"]
-        P2{"Phase 2: Quality Gates<br/>ruff → pytest → semgrep"}
-        P3{"Phase 3: Triangular Verify"}
-        P4["Phase 4: Complete ✅"]
-
-        P1 --> P2
-        P2 -->|"❌"| FB1["error → feedback"]
-        FB1 --> P1
-        P2 -->|"✅"| P3
-        P3 -->|"❌"| FB2["report → feedback"]
-        FB2 --> P1
-        P3 -->|"✅"| P4
-    end
-
-    style P4 fill:#2d5a1e,stroke:#4aff4a
-    style FB1 fill:#5a1e1e,stroke:#ff4a4a
-    style FB2 fill:#5a1e1e,stroke:#ff4a4a
-```
-
-<div class="text-center pt-1 text-xs text-gray-400">
-
-**Failure = Data** — failure output becomes next iteration's input
-
+<div class="max-w-lg mx-auto">
+<v-click>
+<div class="text-center text-sm text-cyan-400 font-mono mb-1">PROMPT.md + requirements.md</div>
+<div class="text-center text-gray-600 text-xs">↓</div>
+</v-click>
+<div class="border border-gray-600/30 bg-gray-800/20 rounded-lg p-4 space-y-2">
+  <div class="text-xs text-gray-500 text-center font-mono">Loop (max N iterations)</div>
+<v-click>
+  <div class="border border-blue-500/30 bg-blue-950/20 rounded px-4 py-2 text-center text-sm">
+    Phase 1: <span class="text-white font-bold">Implement</span> <span class="text-gray-500">(or apply feedback)</span>
+  </div>
+</v-click>
+<v-click>
+  <div class="border border-yellow-500/30 bg-yellow-950/20 rounded px-4 py-2 text-center text-sm">
+    Phase 2: <span class="text-white font-bold">Quality Gates</span> <span class="text-gray-500">(ruff → pytest → semgrep)</span>
+  </div>
+  <div class="flex justify-center gap-6 text-xs">
+    <span class="text-red-400">❌ error → feedback → Phase 1</span>
+    <span class="text-green-400">✅ ↓</span>
+  </div>
+</v-click>
+<v-click>
+  <div class="border border-purple-500/30 bg-purple-950/20 rounded px-4 py-2 text-center text-sm">
+    Phase 3: <span class="text-white font-bold">Triangular Verify</span> <span class="text-gray-500">(Agent B + C)</span>
+  </div>
+  <div class="flex justify-center gap-6 text-xs">
+    <span class="text-red-400">❌ report → feedback → Phase 1</span>
+    <span class="text-green-400">✅ ↓</span>
+  </div>
+</v-click>
+<v-click>
+  <div class="border border-green-500/30 bg-green-950/20 rounded px-4 py-2 text-center text-sm text-green-400 font-bold">
+    Phase 4: COMPLETE
+  </div>
+</v-click>
+</div>
+<v-click>
+<div class="text-center text-sm text-gray-400 pt-2"><b>Failure = Data</b> — failure output becomes next iteration's input</div>
+</v-click>
 </div>
 
 <!--
 "실험 1에서 '여러 agent를 돌릴 수 있다', 실험 2에서 'agent끼리 검증할 수 있다'를 확인했으니,
-이제 '검증부터 수정까지 완전 자동화'를 시도합니다.
-PROMPT.md 하나로 기능을 정의하면 — 구현 → 품질 게이트 → 삼각 검증 → 수정 까지 사람 개입 없이 돌아갑니다.
-핵심 원칙은 '실패 = 데이터' — 실패 출력이 다음 반복의 입력이 됩니다.
-이걸 Claude Skill로 패키징해서 재사용 가능하게 만들었습니다."
+다음으로는 '기능 구현과 검증, 그리고 수정까지 완전 자동화'를 시도했습니다.
+
+이 루프를 돌리기 전에, PROMPT.md 하나로 기능을 정의하면 — 구현 → 품질 게이트 → 삼각 검증 → 수정 까지 사람 개입 없이 돌아갑니다.
+핵심 원칙은 실패 출력이 다음 반복의 입력이 된다는 것입니다.
+즉, 실패를 "멈춰야 할 이유"가 아니라 "다음 시도를 더 정확하게 만드는 정보"로 취급한다는 것입니다.
+사람이 에러를 읽고 고쳐줄 필요 없이, 실패 출력에 뭐가 잘못됐는지 그리고 왜 틀렸는지가 구체적으로 담겨 있으니, 
+이것을 그대로 다음 반복의 컨텍스트로 넘기면 Agent가 자동으로 수정할 수 있습니다."
 -->
 
+---
+glowSeed: 9
 ---
 
 # Exp 3: Results — Automated vs Manual
 
-<div class="text-xs text-gray-400 pb-1">Task: Quote Generator (5 strategies, models + engine + API + tests)</div>
+<div class="text-sm text-gray-400 mb-3">Task: Quote Generator (5 strategies, models + engine + API + tests)</div>
 
-<div class="grid grid-cols-2 gap-6">
-<div class="text-xs">
+<div class="grid grid-cols-2 gap-5">
+<v-click>
+<div class="border border-blue-500/30 bg-blue-950/20 rounded-lg p-4">
+  <div class="text-blue-400 font-bold mb-2">Comparison</div>
 
-### Comparison
-
-| Metric | Automated | Manual |
-|--------|-----------|--------|
-| Time | 641s | 549s |
-| Iterations | 1 | 1 (+retry) |
-| Phase 2 fails | 0 | 0 |
-| Phase 3 fails | 0 | 1 |
-| **Human intervention** | **0** | **1** |
-| Tests | 81/81 ✅ | 82/82 ✅ |
-| Triangular | PASS | PASS (2nd) |
-
-</div>
-<div class="text-xs">
-
-### What Happened
-
-Manual: Agent B reviewed the **wrong module** in first triangular run.
-
-Automated: `git diff` **auto-extracts file list** — structural fix, not prompt fix.
-
-<div class="pt-4">
-
-### Insight
-
-> **Value ≠ speed.** Automated was 92s slower but **zero human intervention**. Manual needed me to catch an agent error.
-
-> Streaming output (vs `claude --print` buffering) would close the speed gap.
+| Metric                 | Automated | Manual     |
+| ---------------------- | --------- | ---------- |
+| Time                   | 641s      | 549s       |
+| Iterations             | 1         | 1 (+retry) |
+| Phase 2/3 fails        | 0 / 0     | 0 / 1      |
+| **Human intervention** | **0**     | **1**      |
+| Tests                  | 81/81 ✅  | 82/82 ✅   |
+| Triangular             | PASS      | PASS (2nd) |
 
 </div>
+</v-click>
+<v-click>
+<div>
+<div class="border border-yellow-500/30 bg-yellow-950/20 rounded-lg p-4 mb-3">
+  <div class="text-yellow-400 font-bold mb-1">What Happened</div>
+  <div class="text-sm">Manual: Agent B reviewed <b>wrong module</b> first.</div>
+  <div class="text-sm pt-1">Automated: <code>git diff</code> auto-extracts file list — structural fix.</div>
 </div>
+<div class="border border-green-500/30 bg-green-950/20 rounded-lg p-4">
+  <div class="text-green-400 font-bold mb-1">Insight</div>
+  <div class="text-sm"><b>Value ≠ speed.</b> 92s slower but <b>zero human intervention</b>.</div>
+  <div class="text-sm text-gray-400 pt-1">Streaming (vs <code>--print</code> buffering) would close the gap.</div>
+</div>
+</div>
+</v-click>
 </div>
 
 <!--
-"Smart Quote Generator를 자동 루프와 수동으로 각각 구현했습니다.
-자동 루프가 92초 느렸지만 사람 개입 0으로 완료. 수동은 Agent B가 잘못된 모듈을 리뷰해서 수정이 필요했습니다.
-자동 스크립트는 git diff로 변경된 파일 목록을 자동 추출하므로 이 문제를 구조적으로 회피합니다.
-자동화의 가치는 속도가 아니라 신뢰성입니다.
-개선한다면 claude --print의 버퍼링 오버헤드를 스트리밍으로 바꾸면 속도 차이도 줄어듭니다."
+"프로젝트 내 Smart Quote Generator 라는 기능을 자동 루프와 수동으로 각각 구현해 보았습니다.
+자동 루프가 92초 더 느렸지만 사람 개입 0으로 완료했고, 수동은 Agent B가 잘못된 모듈을 리뷰해서 수정이 필요했습니다.
+자동 스크립트는 git diff로 변경된 파일 목록을 자동 추출하므로 이 문제를 구조적으로 회피할 수 있습니다.
+즉, 수동 방식에서는 사람이 삼각검증 리뷰 대상 파일을 지정하다가 실수할 수 있는데,
+자동 스크립트는 git diff로 실제 변경된 파일만 추출해서 Agent B에 넘기므로,
+"잘못된 파일을 리뷰하는 실수" 자체가 설계상 불가능하다는 뜻입니다.
+
+결과로만 보면 수동이 더 빨라서 좋게 느껴질 수 있지만,
+자동화의 가치는 속도도 중요하지만, 신뢰성에 있다고 생각합니다.
+
+개선한다면 claude --print의 버퍼링 오버헤드를 스트리밍으로 바꾸면 속도 차이도 줄어들 것으로 예상합니다.
+구체적으로 설명하자면, 현재는 각 Phase마다 claude --print를 별도 프로세스로 실행하고, 
+전체 응답이 완료될 때까지 대기 → 파싱 → 다음 Phase 프로세스 시작. 
+이 프로세스 시작/종료/버퍼링이 쌓여서 92초 오버헤드가 됩니다.
+
+만약 스트리밍으로 바꾸면: Claude API를 직접 호출해서 토큰이 생성되는 대로 실시간으로 받으면, 
+버퍼링 대기 시간과 프로세스 재시작 오버헤드가 상당부분 줄어들 수 있을 것으로 예상합니다.
+"
 -->
 
+---
+glowSeed: 6
 ---
 
 # Exp 4: Pipeline Reusability
 
-<div class="text-xs text-gray-400 pb-1">Same pipeline, different feature — Portfolio Risk Aggregator</div>
+<div class="text-sm text-gray-400 mb-3">Same pipeline, different feature — Portfolio Risk Aggregator</div>
 
-<div class="grid grid-cols-2 gap-6">
-<div class="text-xs">
+<div class="grid grid-cols-2 gap-5">
+<v-click>
+<div class="border border-blue-500/30 bg-blue-950/20 rounded-lg p-4">
+  <div class="text-blue-400 font-bold mb-2">Design</div>
+  <div class="text-sm mb-2"><b>Same pipeline:</b></div>
 
-### Design
-
-**Same pipeline:**
 ```
 PROMPT.md → Implement → Gates → Triangular
 ```
 
-**Different feature:**
-- Cross-policy bundle analysis
-- Carrier mismatch detection
-- Duplicate coverage check
-- 5 files, 182 lines, 8 tests
+  <div class="text-sm pt-2"><b>Different feature:</b></div>
+  <div class="text-sm space-y-1 pt-1">
+    <div>Cross-policy bundle analysis</div>
+    <div>Carrier mismatch detection</div>
+    <div>Duplicate coverage check</div>
+    <div class="text-gray-400">5 files, 182 lines, 8 tests</div>
+  </div>
+</div>
+</v-click>
+<v-click>
+<div>
+<div class="border border-green-500/30 bg-green-950/20 rounded-lg p-4 mb-3">
+  <div class="text-green-400 font-bold mb-2">Results</div>
+
+| Metric             | Exp 3 (Quotes) | Exp 4 (Portfolio) |
+| ------------------ | -------------- | ----------------- |
+| Iterations         | 1              | 1                 |
+| Human intervention | 0              | 0                 |
+| Quality gates      | All pass       | All pass          |
+| Triangular         | PASS           | PASS              |
 
 </div>
-<div class="text-xs">
-
-### Results
-
-| Metric | Exp 3 (Quotes) | Exp 4 (Portfolio) |
-|--------|----------------|-------------------|
-| Iterations | 1 | 1 |
-| Human intervention | 0 | 0 |
-| Quality gates | All pass | All pass |
-| Triangular | PASS | PASS |
-
-<div class="pt-3 text-green-400 font-bold text-sm">
-Pipeline reusability: PROVEN
+<div class="border border-green-500/30 bg-green-950/20 rounded-lg p-4 text-center">
+  <div class="text-green-400 font-bold text-lg">Pipeline Reusability: PROVEN</div>
+  <div class="text-sm text-gray-400 pt-1">Swap <code>PROMPT.md</code> → any feature. Packaged as <b>Claude Skill</b>.</div>
 </div>
-
-> Swap `PROMPT.md` → pipeline handles any feature. Packaged as **Claude Skill**.
-
 </div>
+</v-click>
 </div>
 
 <!--
-"실험 3의 파이프라인이 다른 도메인에서도 작동하는지 검증했습니다.
-Portfolio Risk Aggregator — 완전히 다른 비즈니스 로직을 같은 파이프라인에 넣었더니
-1회 반복, 사람 개입 0, 모든 게이트 통과.
-PROMPT.md만 바꾸면 어떤 기능이든 자동 구현됩니다.
-이걸 Claude Skill로 패키징해서 팀이 재사용할 수 있게 만들었습니다.
-개선한다면, 3개 레이어를 동시에 건드는 크로스 모듈 기능으로 스트레스 테스트하면 좋겠습니다."
+"실험 3의 파이프라인이 다른 기능을 구현할 때도 잘 작동하는지 검증했습니다.
+Portfolio Risk Aggregator 라는 기능 구현할 때
+완전히 다른 비즈니스 로직을 같은 파이프라인에 넣었더니 1회 반복, 사람 개입 0, 모든 게이트를 통과했습니다.
+
+이 실험 결과, PROMPT.md만 바꾸면 어떤 기능이든 자동 구현이 가능할 것으로 예상합니다.
+저는 이것을 Claude Skill로 패키징해서 재사용 가능하게 만들었는데, 이 내용은 잠시 후에 자세하게 말씀드리겠습니다.
+
+만약 이 기능을 개선한다면, 3개 레이어를 동시에 건드는 크로스 모듈 기능으로 스트레스 테스트하면 좋겠습니다."
 -->
 
+---
+glowSeed: 25
 ---
 
 # Exp 5: Langfuse LLM Benchmark
 
-<div class="text-xs text-gray-400 pb-1">3 models × 3 tasks × 5 cases = 45 evaluations</div>
+<div class="text-sm text-gray-400 mb-3">3 models × 3 tasks × 5 cases = 45 evaluations</div>
 
-<div class="grid grid-cols-2 gap-4 text-xs">
+<div class="grid grid-cols-2 gap-5">
+<v-click>
+<div class="border border-blue-500/30 bg-blue-950/20 rounded-lg p-4">
+  <div class="text-blue-400 font-bold mb-2">Accuracy (key_match avg)</div>
+
+| Task        | gpt-4o-mini | Sonnet   | Haiku    |
+| ----------- | ----------- | -------- | -------- |
+| Risk Signal | 0.70        | **0.90** | 0.80     |
+| Endorsement | 0.70        | **1.00** | **1.00** |
+| Coverage    | 1.00        | 1.00     | 1.00     |
+| **Overall** | **0.80**    | **0.97** | **0.93** |
+
+  <div class="text-sm pt-2">
+    <b>Speed</b>: mini 1.7s · Sonnet 3.3s · Haiku 1.7s<br/>
+    <b>Cost</b>: Haiku ≈ 90% of Sonnet at 1/10 price
+  </div>
+</div>
+</v-click>
+<v-click>
 <div>
+<div class="border border-green-500/30 bg-green-950/20 rounded-lg p-4 mb-3">
+  <div class="text-green-400 font-bold mb-2">Per-Task Routing (Implemented)</div>
 
-### Accuracy (key_match avg)
-
-| Task | gpt-4o-mini | Sonnet | Haiku |
-|------|-------------|--------|-------|
-| Risk Signal | 0.70 | **0.90** | 0.80 |
-| Endorsement | 0.70 | **1.00** | **1.00** |
-| Coverage | 1.00 | 1.00 | 1.00 |
-| **Overall** | **0.80** | **0.97** | **0.93** |
-
-**Speed**: mini 1.7s · Sonnet 3.3s · Haiku 1.7s
-**Cost**: Haiku ≈ Sonnet 90% accuracy at 1/10 price
+| Task            | Model          | Why                        |
+| --------------- | -------------- | -------------------------- |
+| **risk_signal** | **Sonnet 4.5** | Under-detection dangerous  |
+| endorsement     | Haiku 4.5      | Same accuracy, 10x cheaper |
+| review_summary  | Haiku 4.5      | No complex reasoning       |
+| quote           | Haiku 4.5      | Sufficient                 |
 
 </div>
-<div>
-
-### Per-Task Model Routing (Implemented)
-
-| Task | Model | Why |
-|------|-------|-----|
-| **risk_signal** | **Sonnet 4.5** | Under-detection dangerous |
-| endorsement | Haiku 4.5 | Same accuracy, 10x cheaper |
-| review_summary | Haiku 4.5 | No complex reasoning |
-| quote_personalization | Haiku 4.5 | Haiku sufficient |
-
-<div class="pt-1 text-[10px] text-gray-500">
-
-| | Sonnet 4.5 | Haiku 4.5 |
-|--|-----------|-----------|
-| **ID** | `claude-sonnet-4-5-20250929` | `claude-haiku-4-5-20251001` |
-| **Cost** | $3 / $15 per MTok | $1 / $5 per MTok |
-| **Context** | 200K (1M beta) | 200K |
-
+<div class="border border-yellow-500/30 bg-yellow-950/20 rounded-lg p-4">
+  <div class="text-yellow-400 font-bold mb-1">Key Findings</div>
+  <div class="text-sm space-y-1">
+    <div>Simple → all equal; complex → Sonnet wins</div>
+    <div>gpt-4o-mini under-detects risk</div>
+    <div>Prompt v2: fixing one model broke another</div>
+  </div>
 </div>
-
-### Key Findings
-- Simple tasks → all equal; complex → Sonnet wins
-- gpt-4o-mini under-detects risk signals
-- Prompt v2: fixing one model broke another
-
 </div>
+</v-click>
 </div>
 
 <!--
 "Langfuse Datasets + Experiments SDK로 3개 모델을 정량 비교했습니다.
-결론: Haiku가 Sonnet의 90% 정확도를 1/10 가격에 제공합니다.
-중요한 발견은 gpt-4o-mini가 리스크 시그널을 적게 찾는 경향이 있다는 것.
-보험에서는 under-detection이 over-detection보다 위험합니다.
-이 벤치마크 결과를 반영해서 task별 모델 라우팅을 실제로 구현했습니다.
+결론은 Haiku가 Sonnet의 90% 정확도를 1/10 가격에 제공할 수 있다는 것입니다.
+
+중요한 발견은 gpt-4o-mini가 리스크 시그널을 적게 찾는 경향이 있다는 것이었습니다.
+보험에서는 under-detection이 over-detection보다 위험하다고 알고 있습니다.
+
+저는 이와 같은 벤치마크 결과를 반영해서 task별 모델 라우팅을 실제로 구현했습니다.
 risk_signal만 Sonnet, 나머지 3개는 Haiku — LLMClient가 trace_name으로 자동 라우팅합니다.
-프롬프트 v2도 시도했는데, 한 모델을 고치면 다른 모델이 깨지는 현상을 확인.
-프롬프트 변경은 반드시 모든 대상 모델에서 회귀 테스트를 거쳐야 합니다."
+
+또한, 프롬프트를 정교하게 다듬어 ver.2도 시도했는데, 한 모델을 고치면 다른 모델이 깨지는 현상을 확인했습니다.
+프롬프트 변경은 반드시 모든 대상 모델에서 회귀 테스트를 거쳐야 한다는 것을 알았습니다."
 -->
 
+---
+glowSeed: 11
 ---
 
 # Architecture: Iterate, Don't Overthink
 
-<div class="text-xs text-gray-400 pb-1">Fast flat structure → hexagonal when boundaries became clear</div>
+<div class="text-sm text-gray-400 mb-3">Fast flat → hexagonal when boundaries became clear</div>
 
-<div class="grid grid-cols-2 gap-6 text-xs">
-<div>
+<div class="grid grid-cols-2 gap-5">
+<v-click>
+<div class="border border-red-500/30 bg-red-950/20 rounded-lg p-4">
+  <div class="text-red-400 font-bold mb-2">Day 1 — Flat</div>
 
-### Day 1 — Flat
 ```
 app/
-├── models/        # Pydantic
-├── engine/        # Business logic
-├── llm/           # LLM integration
-├── routes/        # FastAPI
-└── templates/     # Jinja2
+├── models/      # Pydantic
+├── engine/      # Business logic
+├── llm/         # LLM integration
+├── routes/      # FastAPI
+└── templates/   # Jinja2
 ```
-<div class="text-gray-400 pt-1">
-Fast to build, but domain mixed with externals
-</div>
 
+  <div class="text-sm text-gray-400 pt-1">Domain mixed with externals</div>
 </div>
-<div>
+</v-click>
+<v-click>
+<div class="border border-green-500/30 bg-green-950/20 rounded-lg p-4">
+  <div class="text-green-400 font-bold mb-2">Day 2 — Hexagonal</div>
 
-### Day 2 — Hexagonal
 ```
 app/
-├── domain/        # Pure logic
-│   ├── models/    #   (imports nothing)
+├── domain/      # Pure logic
+│   ├── models/  #   imports nothing
 │   ├── services/
-│   └── ports/     #   Protocol interfaces
-├── application/   # Use case orchestration
-├── api/           # Inbound (FastAPI)
-├── adaptor/       # Outbound (LLM, DB)
-└── infra/         # DI wiring
+│   └── ports/   #   Protocol interfaces
+├── application/ # Use case orchestration
+├── api/         # Inbound (FastAPI)
+├── adaptor/     # Outbound (LLM, DB)
+└── infra/       # DI wiring
 ```
-<div class="text-gray-400 pt-1">
-BMS changes → adaptor/ only, domain untouched
+
+  <div class="text-sm text-gray-400 pt-1">BMS changes → adaptor/ only</div>
+</div>
+</v-click>
 </div>
 
+<v-click>
+<div class="pt-3 text-sm">
+AI refactored <b>44 files</b> (740+, 578-) maintaining <b>100/100 tests</b>. StrEnum, Config, Immutability, DI.
 </div>
-</div>
-
-<div class="pt-3 text-xs">
-
-AI refactored **44 files** (740+, 578-) maintaining **100/100 tests**. StrEnum, Config, Immutability, DI patterns applied.
-
-> *"Build fast, learn boundaries, restructure. AI makes restructuring cost near-zero."*
-
-</div>
+</v-click>
 
 <!--
 "아키텍처는 정하고 → 반영하고 → 교체하는 iteration의 반복이라 생각합니다.
-처음에 기능 구현부터 하고자 해서 flat 구조로 빠르게 만들었고,
-경계가 명확해진 시점에 헥사고날로 리팩토링했습니다.
-AI가 44개 파일을 리팩토링하면서 100개 테스트를 하나도 깨뜨리지 않았습니다.
-BMS가 바뀌어도 adaptor/ 레이어만 수정하면 됩니다.
-솔직히 처음부터 아키텍처를 세팅했으면 더 좋았을 텐데, 다시 한다면 convention.md에 레이어 규칙을 처음부터 넣어놓겠습니다."
+처음에는 기능 구현부터 하고자 해서 flat 구조로 빠르게 만들었고, 경계가 명확해진 시점에 헥사고날로 리팩토링했습니다.
+헥사고날 아키텍쳐를 선택한 이유는 ~
+
+아키텍쳐 적용 이후, AI가 44개 파일을 리팩토링하면서 100개 테스트를 하나도 깨뜨리지 않았습니다.
+따라서 BMS가 바뀌어도 adaptor/ 레이어만 수정하면 됩니다.
+
+솔직히 처음부터 아키텍처를 세팅했으면 더 좋았을 텐데, 
+다시 한다면 convention.md에 레이어 규칙을 처음부터 넣어놓겠습니다."
 -->
 
+---
+glowSeed: 17
 ---
 
 # Rule-based vs LLM
 
-<div class="text-xs text-gray-400 pb-1">LLM earns its place through a clear decision framework</div>
+<div class="text-sm text-gray-400 mb-3">LLM earns its place through a decision framework</div>
 
-<div class="grid grid-cols-2 gap-6 text-xs">
-<div>
-
-### Decision Framework
-
-| Question | → Rule | → LLM |
-|----------|--------|-------|
-| Structured input? | ✅ boolean, numeric | free text |
-| Deterministic? | ✅ threshold | context-dependent |
-| Simple rule? | ✅ 1-line if | no simple logic |
-| LLM output richer? | same quality | ✅ clearly richer |
-
-**3+ answers → Rule: don't use LLM.**
-
-### Where LLM Earned Its Place
-
-| Point | Why Not Rule |
-|-------|-------------|
-| **Risk Signal** | Free-text → multi-signal reasoning |
-| **Endorsement** | NL → material change type |
-| **Summary** | Flags → coherent story |
-| **Quote** | Context → tailored advice |
-
+<div class="grid grid-cols-2 gap-5">
+<v-click>
+<div class="border border-blue-500/30 bg-blue-950/20 rounded-lg p-4">
+  <div class="text-blue-400 font-bold mb-3">When to use LLM?</div>
+  <div class="space-y-2 text-sm">
+    <div><span class="text-gray-400">Structured?</span> → <span class="text-green-400">Rule</span> · <span class="text-gray-500">free text → LLM</span></div>
+    <div><span class="text-gray-400">Deterministic?</span> → <span class="text-green-400">Rule</span> · <span class="text-gray-500">context-dependent → LLM</span></div>
+    <div><span class="text-gray-400">Simple rule?</span> → <span class="text-green-400">Rule</span> · <span class="text-gray-500">complex → LLM</span></div>
+    <div><span class="text-gray-400">LLM adds value?</span> → <span class="text-gray-500">same</span> · <span class="text-blue-400">yes → LLM</span></div>
+  </div>
+  <div class="border-t border-gray-700 mt-3 pt-2 text-sm"><b>3+ Rule → skip LLM.</b> Only 4 LLM points:</div>
+  <div class="text-sm space-y-1 pt-1">
+    <div><span class="text-blue-400">1.</span> Risk Signal — free-text reasoning</div>
+    <div><span class="text-blue-400">2.</span> Endorsement — NL change detection</div>
+    <div><span class="text-blue-400">3.</span> Summary — flags → story</div>
+    <div><span class="text-blue-400">4.</span> Quote — context → advice</div>
+  </div>
 </div>
-<div>
-
-### The Principle
+</v-click>
+<v-click>
+<div class="border border-green-500/30 bg-green-950/20 rounded-lg p-4">
+  <div class="text-green-400 font-bold mb-2">The Principle</div>
 
 ```
-Core pipeline:   100% rule-based (always runs)
-LLM layer:       opt-in (RR_LLM_ENABLED)
-Failure:         graceful fallback to rules
-User-facing LLM: 4/12 outputs (33%)
-Code ratio:      Rule 42% · LLM 19% · Hybrid 25%
+Core:     100% rule-based (always runs)
+LLM:      opt-in (RR_LLM_ENABLED)
+Failure:  graceful fallback to rules
+Ratio:    4/12 outputs (33%)
+Code:     Rule 42% · LLM 19% · Hybrid 25%
 ```
 
-<div class="pt-3">
-
-**Core works without any LLM.** LLM is additive — if all LLM calls fail, system functions on rules alone.
-
-- Only 5-15% of policies trigger LLM
-- Deterministic = easier to test & trust
-- Cost scales with text changes, not policy count
-
+  <div class="text-sm pt-2 font-bold">Core works without any LLM.</div>
+  <div class="text-sm text-gray-400 pt-1">If all LLM fails, system runs on rules alone.</div>
+  <div class="space-y-1 text-sm pt-2">
+    <div>Only 5-15% of policies trigger LLM</div>
+    <div>Deterministic = testable</div>
+    <div>Cost scales with text, not policy count</div>
+  </div>
 </div>
-</div>
+</v-click>
 </div>
 
 <!--
 "이 프로젝트에서 LLM을 적용할 때의 판단 기준입니다.
 'LLM을 쓸 수 있으니까 쓴다'가 아니라, 4가지 질문을 던져서 3개 이상 Rule을 가리키면 LLM을 쓰지 않습니다.
-결과적으로 4개 포인트만 LLM을 사용합니다. 전부 비정형 텍스트를 다루는 작업입니다.
+결과적으로 4개 포인트만 LLM을 사용했습니다. 전부 비정형 텍스트를 다루는 작업입니다.
 코어 엔진은 100% rule-based이고, LLM은 위에 얹는 additive layer입니다.
 LLM이 전부 실패해도 시스템은 정상 동작합니다.
 이게 비용, 속도, 테스트 가능성 측면에서 가장 합리적인 구조라고 생각했습니다."
 -->
 
 ---
+glowSeed: 19
+---
 
 # Backend, Domain & Engineering
 
-<div class="grid grid-cols-3 gap-4 text-xs">
-<div>
-
-### DB Integration
+<div class="grid grid-cols-3 gap-4">
+<v-click>
+<div class="border border-cyan-500/30 bg-cyan-950/20 rounded-lg p-4 h-full">
+  <div class="text-cyan-400 font-bold mb-2">DB Integration</div>
 
 ```
 JSON → Docker Postgres
@@ -831,47 +933,51 @@ JSON → Docker Postgres
   └ fail → JSON fallback
 ```
 
-- AI solved 4 backend issues in sequence
-- **MCP Toolbox**: Agent queries DB via SQL
-- Production: 3 changes (upsert, API, cache)
-
+  <div class="text-sm space-y-1 pt-2">
+    <div>AI solved 4 backend issues</div>
+    <div>MCP: Agent queries DB via SQL</div>
+    <div>Prod: 3 changes (upsert, API, cache)</div>
+  </div>
 </div>
-<div>
-
-### Pydantic + LLM Trust
-
-LLM response = **untrusted external API**
-- 4 schemas enforce format
-- Fail → rule-based fallback
-- Users see no difference
-
-### Domain Knowledge
-
-- `CLAUDE.md`: core terms (L1 cache)
-- Custom Skill: full ACORD mapping (L2)
-
+</v-click>
+<v-click>
+<div class="border border-purple-500/30 bg-purple-950/20 rounded-lg p-4 h-full">
+  <div class="text-purple-400 font-bold mb-2">Pydantic + LLM Trust</div>
+  <div class="text-sm space-y-1.5">
+    <div>LLM = <b>untrusted external API</b></div>
+    <div>4 schemas enforce format</div>
+    <div>Fail → rule-based fallback</div>
+  </div>
+  <div class="border-t border-gray-700 mt-3 pt-2">
+    <div class="text-purple-400 font-bold mb-1">Domain Knowledge</div>
+    <div class="text-sm space-y-1">
+      <div><code>CLAUDE.md</code>: core terms (L1)</div>
+      <div>Custom Skill: ACORD mapping (L2)</div>
+    </div>
+  </div>
 </div>
-<div>
-
-### Hooks & Skills
-
-| Name | Action |
-|------|--------|
-| `require-design-doc` | Block commit w/o doc |
-| `require-experiment-log` | Block commit w/o log |
-| Skill: `insurance-domain` | ACORD mapping |
-| Skill: `self-correcting-loop` | Automated pipeline |
-
-### Architecture
-
-Flat → Hexagonal: **44 files** refactored, 100/100 tests. Domain imports zero externals.
-
+</v-click>
+<v-click>
+<div class="border border-green-500/30 bg-green-950/20 rounded-lg p-4 h-full">
+  <div class="text-green-400 font-bold mb-2">Hooks & Skills</div>
+  <div class="text-sm space-y-1.5">
+    <div>🔒 require-design-doc</div>
+    <div>🔒 require-exp-log</div>
+    <div>🧠 insurance-domain skill</div>
+    <div>🔄 self-correcting skill</div>
+  </div>
+  <div class="border-t border-gray-700 mt-3 pt-2">
+    <div class="text-green-400 font-bold mb-1">Architecture</div>
+    <div class="text-sm">Flat → Hex: <b>44 files</b>, 100/100 tests. Domain imports zero externals.</div>
+  </div>
 </div>
+</v-click>
 </div>
 
 <!--
 "몇 가지 기술적 하이라이트입니다.
-DB — Docker + Postgres + SQLAlchemy + MCP 연동을 AI agent가 백엔드 이슈 4개를 연쇄적으로 해결해줘서 프론트엔드 개발자인 저도 순조롭게 완료했습니다.
+DB — Docker + Postgres + SQLAlchemy + MCP 연동을 AI agent가 백엔드 이슈 4개를 연쇄적으로 해결해줘서 프론트엔드 개발을 주로 했던 저였지만 AI agent 덕분에 순조롭게 완료했습니다.
+
 Pydantic — LLM 응답을 외부 API처럼 취급해서 스키마로 계약을 걸고, 실패 시 rule-based fallback.
 도메인 지식 — 컨텍스트 윈도우는 유한한 자원이니까, CLAUDE.md에는 핵심만, 상세는 Custom Skill에 분리했습니다.
 훅 — 코드 변경 시 design-doc 없이 커밋 불가, 실험 브랜치에서 로그 없이 커밋 불가.
@@ -879,47 +985,49 @@ Pydantic — LLM 응답을 외부 API처럼 취급해서 스키마로 계약을 
 -->
 
 ---
+glowSeed: 4
+---
 
 # Skills for the Team
 
-<div class="text-xs text-gray-400 pb-1">Packaging experiments into reusable workflows</div>
+<div class="text-sm text-gray-400 mb-3">Packaging experiments into reusable workflows</div>
 
-<div class="grid grid-cols-2 gap-6 text-sm">
-<div>
+<div class="grid grid-cols-2 gap-5">
+<v-click>
+<div class="border border-cyan-500/30 bg-cyan-950/20 rounded-lg p-4">
+  <div class="text-cyan-400 font-bold mb-2">What I Packaged</div>
+  <div class="text-sm mb-3"><b>Skill: <code>self-correcting-loop</code></b></div>
 
-### What I Packaged
-
-**Claude Skill: `self-correcting-loop`**
 ```
 PROMPT.md → Implement → Gates → Triangular
                  ↑_______ feedback _______↓
 ```
-- One command to run
-- Swap `PROMPT.md` for any feature
-- Proven on 2 domain features
 
-**Guide: `guide-self-correcting-loop.md`**
-- Prerequisites, step-by-step, troubleshooting
-
+  <div class="text-sm space-y-1 pt-2">
+    <div>One command to run any feature</div>
+    <div>Proven on 2 domain features</div>
+  </div>
+  <div class="border-t border-gray-700 mt-3 pt-2 text-sm">
+    <b>Guide: <code>guide-self-correcting-loop.md</code></b><br/>
+    Prerequisites, step-by-step, troubleshooting
+  </div>
 </div>
-<div>
-
-### Why This Matters
-
-Skills = **organizational knowledge**, not personal tools.
-
-Engineers use individual skills — but good patterns aren't shared across the org yet.
+</v-click>
+<v-click>
+<div class="border border-green-500/30 bg-green-950/20 rounded-lg p-4">
+  <div class="text-green-400 font-bold mb-2">Why This Matters</div>
+  <div class="text-sm">Skills = <b>organizational knowledge</b></div>
+  <div class="text-sm text-gray-400 pt-2">Engineers use individual skills — but good patterns aren't shared across the org yet.</div>
 
 ```
 ~/.claude/skills/self-correcting-loop/
-└── SKILL.md  ← install this, get the pipeline
+└── SKILL.md  ← install, get the pipeline
 ```
 
-**One engineer experiments → packages → whole team benefits.**
-
-Not just building fast — **making the team faster**.
-
+  <div class="text-sm pt-2"><b>One engineer experiments → packages → team benefits.</b></div>
+  <div class="text-sm text-gray-400 pt-2">Not just building fast — <b>making the team faster</b>.</div>
 </div>
+</v-click>
 </div>
 
 <!--
@@ -934,39 +1042,46 @@ Quandri에서 Chloe와 이야기했을 때, 지금은 각 엔지니어가 자기
 
 ---
 layout: center
+glowSeed: 2
 ---
 
 # What I'd Improve
 
-<div class="grid grid-cols-2 gap-6 pt-2 text-sm">
-<div>
+<div class="grid grid-cols-2 gap-5 pt-2">
+<v-click>
+<div class="border border-red-500/30 bg-red-950/20 rounded-lg p-5">
+  <div class="text-red-400 font-bold mb-3">Limitations</div>
+  <div class="space-y-2 text-sm">
+    <div>Triangular <b>blind to UI</b> — Python only</div>
+    <div>5 test cases insufficient — need 20+</div>
+    <div>Prompt v2 cross-model regression</div>
+    <div>Loop speed — <code>--print</code> buffering +90s</div>
+    <div>Hexagonal added late — should be day 1</div>
+  </div>
+</div>
+</v-click>
+<v-click>
+<div class="border border-green-500/30 bg-green-950/20 rounded-lg p-5">
+  <div class="text-green-400 font-bold mb-3">With More Time</div>
+  <div class="space-y-2 text-sm">
+    <div>Frontend analysis skill for Agent B</div>
+    <div>30+ Langfuse cases for production</div>
+    <div>Model-specific prompt variants</div>
+    <div>Streaming output for loop</div>
+    <div>Architecture-aware skill from start</div>
+    <div>Batch ingestion API for BMS</div>
+  </div>
+</div>
+</v-click>
+</div>
 
-### Limitations
-- Triangular **blind to UI** — Python only
-- 5 test cases insufficient — need 20+
-- Prompt v2 cross-model regression
-- Loop speed — `--print` buffering +90s
-- Hexagonal added late — should be day 1
+<v-click>
+<div class="pt-5 text-center text-sm text-gray-300 max-w-2xl mx-auto">
+
+> _"Agent-native isn't delegating code to AI. It's building an environment where AI does its best work — rulesets, quality gates, clear plans. Then a week becomes two days."_
 
 </div>
-<div>
-
-### With More Time
-- Frontend analysis skill for Agent B
-- 30+ Langfuse cases for production
-- Model-specific prompt variants
-- Streaming output for loop
-- Architecture-aware skill from start
-- Batch ingestion API for BMS
-
-</div>
-</div>
-
-<div class="pt-6 text-center text-base">
-
-> *"Agent-native isn't delegating code to AI. It's building an environment where AI does its best work — rulesets, quality gates, clear plans. Then a week becomes two days."*
-
-</div>
+</v-click>
 
 <!--
 "한계와 개선 방향입니다.
@@ -980,11 +1095,12 @@ Agent-native는 AI에게 코드를 맡기는 게 아니라, AI가 잘 일할 수
 ---
 layout: center
 class: text-center
+glowSeed: 14
 ---
 
 # Q & A
 
-<div class="pt-6 text-sm text-gray-400">
+<div class="pt-4 text-sm text-gray-400 space-y-2">
 
 **Tech Stack**: Python 3.13 · FastAPI · Pydantic v2 · SQLAlchemy · Docker · PostgreSQL
 
@@ -992,17 +1108,24 @@ class: text-center
 
 **AI Tools**: Claude Code · MCP Toolbox · Custom Skills & Hooks
 
-**Metrics**: 100 tests · 14+ endpoints · 8,000 policies < 1s · ~2,500 lines · 2 days
+**Metrics**: 117 tests · 17+ endpoints · 8,000 policies < 1s · ~2,500 lines · 2 days
 
 </div>
 
-<div class="pt-10 text-sm text-gray-500">
+<div class="pt-8 text-sm text-gray-500">
 
 github.com/[repo] · Yeonsu Choi
 
 </div>
 
 <!--
+
+마무리:
+
+AI 도구를 쓰더라도 기여자는 여전히 스스로 검토를 마친 양질의 코드를 제출해야 합니다. 한 번 쳐다보지도 않은 코드를 보내는 건 용납될 수 없습니다. 더 나아가, 충분한 고민이 담기지 않은 코드를 보내는 것 역시 용납될 수 없습니다.
+이것이 최적의 해결책인가? 더 간단한 방법은 없는가? 중요한 테스트가 빠지진 않았는가? 소프트웨어 엔지니어링에 대한 신중한 고민을 AI 도구에 떠넘겨서는 안 됩니다.
+-> 이런걸 지키는 문화가 있어야 한다고 생각합니다. 저는 이런 걸 생각해서 검토를 꼭 했고, AI 가 생성한 코드를 그대로 믿는게 아니라 더 나은 방식을 고민해 보았습니다.
+
 "감사합니다. 질문 있으시면 말씀해 주세요."
 
 예상 Q&A:

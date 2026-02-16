@@ -1,0 +1,15 @@
+{
+  "mcpServers": {
+    "postgres": {
+      "command": "./toolbox",
+      "args": ["--prebuilt", "postgres", "--stdio"],
+      "env": {
+        "POSTGRES_HOST": "127.0.0.1",
+        "POSTGRES_PORT": "5432",
+        "POSTGRES_DATABASE": "renewal_review",
+        "POSTGRES_USER": "rr_user",
+        "POSTGRES_PASSWORD": "rr_local_dev"
+      }
+    }
+  }
+}
