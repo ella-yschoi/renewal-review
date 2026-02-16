@@ -1,4 +1,4 @@
-from app.config import settings
+from app.config import PortfolioThresholds
 from app.domain.models.enums import FlagType, Severity, UnbundleRisk
 from app.domain.models.policy import PolicyType
 from app.domain.models.portfolio import BundleAnalysis, CrossPolicyFlag, PortfolioSummary
@@ -95,8 +95,9 @@ def _detect_duplicate_coverage(results: list[ReviewResult]) -> list[CrossPolicyF
     return flags
 
 
-def _calculate_exposure_flags(results: list[ReviewResult]) -> list[CrossPolicyFlag]:
-    cfg = settings.portfolio
+def _calculate_exposure_flags(
+    results: list[ReviewResult], cfg: PortfolioThresholds
+) -> list[CrossPolicyFlag]:
     flags: list[CrossPolicyFlag] = []
     total_liability = 0.0
     affected: list[str] = []
@@ -145,9 +146,11 @@ def _calculate_exposure_flags(results: list[ReviewResult]) -> list[CrossPolicyFl
 
 
 def _detect_premium_concentration(
-    results: list[ReviewResult], total_premium: float, premium_change_pct: float
+    results: list[ReviewResult],
+    total_premium: float,
+    premium_change_pct: float,
+    cfg: PortfolioThresholds,
 ) -> list[CrossPolicyFlag]:
-    cfg = settings.portfolio
     flags: list[CrossPolicyFlag] = []
 
     if total_premium > 0:
@@ -187,7 +190,13 @@ def _detect_premium_concentration(
 def analyze_portfolio(
     policy_numbers: list[str],
     results_store: dict[str, ReviewResult],
+    cfg: PortfolioThresholds | None = None,
 ) -> PortfolioSummary:
+    if cfg is None:
+        from app.config import settings
+
+        cfg = settings.portfolio
+
     unique_numbers = list(dict.fromkeys(policy_numbers))
 
     results: list[ReviewResult] = []
@@ -213,9 +222,9 @@ def analyze_portfolio(
     bundle_analysis = _build_bundle_analysis(results)
     cross_policy_flags: list[CrossPolicyFlag] = []
     cross_policy_flags.extend(_detect_duplicate_coverage(results))
-    cross_policy_flags.extend(_calculate_exposure_flags(results))
+    cross_policy_flags.extend(_calculate_exposure_flags(results, cfg))
     cross_policy_flags.extend(
-        _detect_premium_concentration(results, total_premium, premium_change_pct)
+        _detect_premium_concentration(results, total_premium, premium_change_pct, cfg)
     )
 
     return PortfolioSummary(

@@ -1,4 +1,4 @@
-from app.config import settings
+from app.config import RuleThresholds
 from app.domain.models.diff import DiffFlag, DiffResult, FieldChange
 from app.domain.models.policy import RenewalPair
 
@@ -31,16 +31,15 @@ def _parse_limit(val: str) -> float:
     return sum(float(p) for p in parts)
 
 
-def _flag_premium(pair: RenewalPair) -> list[DiffFlag]:
+def _flag_premium(pair: RenewalPair, thresholds: RuleThresholds) -> list[DiffFlag]:
     prior_p, renewal_p = pair.prior.premium, pair.renewal.premium
     if prior_p == 0:
         return []
     pct = (renewal_p - prior_p) / prior_p * 100
     flags: list[DiffFlag] = []
-    cfg = settings.rules
-    if pct >= cfg.premium_critical_pct:
+    if pct >= thresholds.premium_critical_pct:
         flags.append(DiffFlag.PREMIUM_INCREASE_CRITICAL)
-    elif pct >= cfg.premium_high_pct:
+    elif pct >= thresholds.premium_high_pct:
         flags.append(DiffFlag.PREMIUM_INCREASE_HIGH)
     if pct < 0:
         flags.append(DiffFlag.PREMIUM_DECREASE)
@@ -120,9 +119,16 @@ def _flag_changes(changes: list[FieldChange]) -> tuple[list[DiffFlag], list[Fiel
     return flags, updated
 
 
-def flag_diff(diff: DiffResult, pair: RenewalPair) -> DiffResult:
+def flag_diff(
+    diff: DiffResult, pair: RenewalPair, thresholds: RuleThresholds | None = None
+) -> DiffResult:
+    if thresholds is None:
+        from app.config import settings
+
+        thresholds = settings.rules
+
     flags: list[DiffFlag] = []
-    flags.extend(_flag_premium(pair))
+    flags.extend(_flag_premium(pair, thresholds))
     flags.extend(_flag_carrier(pair))
     change_flags, updated_changes = _flag_changes(diff.changes)
     flags.extend(change_flags)

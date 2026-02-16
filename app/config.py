@@ -32,11 +32,9 @@ class PortfolioThresholds(BaseModel):
 
 
 class LLMConfig(BaseModel):
-    openai_model: str = "gpt-4o-mini"
     sonnet_model: str = "claude-sonnet-4-5-20250929"
     haiku_model: str = "claude-haiku-4-5-20251001"
     max_tokens: int = 1024
-    temperature: float = 0.1
     task_models: dict[str, str] = {
         "risk_signal_extractor": "sonnet",
         "endorsement_comparison": "haiku",

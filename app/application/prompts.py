@@ -105,10 +105,3 @@ QUOTE_PERSONALIZATION = (
     "Respond with ONLY valid JSON:\n"
     '{{"quotes": [{{"quote_id": "Q1", "trade_off": "...", "broker_tip": "..."}}]}}'
 )
-
-PROMPT_MAP = {
-    "endorsement_comparison": ENDORSEMENT_COMPARISON,
-    "risk_signal_extractor": RISK_SIGNAL_EXTRACTOR,
-    "review_summary": REVIEW_SUMMARY,
-    "quote_personalization": QUOTE_PERSONALIZATION,
-}

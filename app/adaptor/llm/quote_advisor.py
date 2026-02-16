@@ -2,8 +2,8 @@ import json
 
 from pydantic import ValidationError
 
-from app.adaptor.llm.prompts import QUOTE_PERSONALIZATION
-from app.adaptor.llm.schemas import QuotePersonalizationResponse
+from app.application.prompts import QUOTE_PERSONALIZATION
+from app.domain.models.llm_schemas import QuotePersonalizationResponse
 from app.domain.models.policy import RenewalPair
 from app.domain.models.quote import QuoteRecommendation
 from app.domain.ports.llm import LLMPort
