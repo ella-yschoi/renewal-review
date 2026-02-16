@@ -102,6 +102,13 @@ _diff 통계_
 - 기존 내용이 있으면 변경 부분만 업데이트한다
 - 구현과 일치하는 정확한 내용만 작성한다 (추측 금지)
 
+## Insurance Domain
+
+보험 갱신(renewal) 리뷰 시스템. ACORD 표준 기반 Personal Lines (Auto + Home).
+핵심 용어: Renewal(갱신), Endorsement(특약), Premium(보험료), Deductible(공제액), Liability Limit(배상한도), Coverage(보장), Bundle(묶음), SR-22(고위험증명).
+`domain/models/`, `domain/services/`, `adaptor/llm/` 변경 시 `/insurance-domain` 스킬을 참조할 것.
+현재 모델은 ACORD 표준 대비 UIM/PIP, Loss History, HO Form Type 등이 미구현 — 스킬에 갭 분석 포함.
+
 ## What NOT to Do
 
 - Don't add docstrings, type annotations, or comments to code you didn't change.

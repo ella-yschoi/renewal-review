@@ -67,7 +67,7 @@
           "water_backup": true,
           "replacement_cost": true
         },
-        "endorsements": [{"code": "WB01", "description": "Water backup and sump overflow coverage", "premium": 75}]
+        "endorsements": [{"code": "HO 04 95", "description": "Water backup and sump overflow coverage", "premium": 75}]
       },
       "renewal": {
         "policy_number": "EVAL-HOME-001",
@@ -223,7 +223,7 @@
           "replacement_cost": true
         },
         "endorsements": [
-          {"code": "HO-61", "description": "Scheduled personal property", "premium": 120},
+          {"code": "HO 04 61", "description": "Scheduled personal property", "premium": 120},
           {"code": "EQ01", "description": "Earthquake coverage endorsement", "premium": 200}
         ]
       },
@@ -247,7 +247,7 @@
           "replacement_cost": true
         },
         "endorsements": [
-          {"code": "HO-61", "description": "Scheduled personal property — updated valuations", "premium": 140},
+          {"code": "HO 04 61", "description": "Scheduled personal property — updated valuations", "premium": 140},
           {"code": "EQ01", "description": "Earthquake coverage endorsement", "premium": 220}
         ]
       }

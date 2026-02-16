@@ -9,15 +9,27 @@
 
 ---
 
+### 2026-02-15 14:51 | `main` | uncommitted
+
+**refactor: align LLM prompts, mock responses, and sample data with ACORD standards**
+
+_10 files changed_
+
+> **Context**: ACORD 표준 갭 분석 결과를 CLAUDE.md + Custom Skill 인프라로 구축한 뒤, 실제 코드에 도메인 지식을 반영하는 작업. LLM 프롬프트 4개가 보험 업계 표준 용어를 사용하도록 정렬하고, mock 응답의 버그(`property_condition`이 프롬프트 enum에 없는 값)를 수정하고, 샘플 데이터의 endorsement code를 ACORD 표준 form number(`HO 04 61`, `HO 04 95`)로 교체.
+> **Result**: 프롬프트가 ACORD 커버리지 코드(BI, PD, UM, HO 04 xx, PP 03 xx)를 직접 참조하고, 보호 필드 목록이 명시되어 LLM이 liability 감소를 추천하는 것을 구조적으로 방지. mock의 잠재 validation 버그 해결. 샘플 데이터가 데모에서 업계 표준 form number로 표시됨. 100/100 테스트 유지.
+> **Insight**: 도메인 지식의 가치는 문서에 정리하는 것이 아니라 코드가 실행하는 결정에 스며드는 것 — ACORD form number가 프롬프트에 있으면 LLM이 "HO 04 95 제거"라고 구체적으로 설명하고, 보호 필드 목록이 프롬프트에 있으면 LLM이 liability 감소를 추천하지 않는다.
+
+---
+
 ### 2026-02-15 12:39 | `experiment/portfolio-aggregator` | uncommitted
 
 **refactor: hexagonal architecture + design patterns (Enum, Config, Immutability, DI)**
 
 _45 files changed, 765 insertions(+), 578 deletions(-)_
 
-> **Context**: BMS 교체 가능성을 대비하여 도메인 로직이 외부 시스템(BMS 데이터 포맷, LLM 프로바이더, DB)에 의존하지 않도록 헥사고날 아키텍처를 적용. 동시에 코드베이스 전반의 일관성을 높이기 위해 4가지 디자인 패턴(Enum 중앙화, Config 중앙화, Immutability, DI)을 함께 적용. 기존 `engine/`, `models/`, `routes/`, `llm/` 플랫 구조에서 `domain/`, `application/`, `api/`, `adaptor/`, `infra/` 5-레이어 구조로 전환.
-> **Result**: 의존성 방향 `api/ → application/ → domain/ ← adaptor/` 확립. domain/에서 외부 레이어 import 0건 달성. 8단계 리팩토링(디렉토리 이동 → 포트 정의 → Enum/Config → Immutability → 어댑터 분리 → DI 와이어링 → 테스트 업데이트 → convention/design-doc 반영) 전 과정에서 100/100 테스트 유지. ruff 0, semgrep 0, 경계 위반 0건.
-> **Insight**: 헥사고날 아키텍처의 가치는 "현재 코드가 예뻐지는 것"이 아니라 "미래의 변경이 한 레이어에서 끝나는 것" — BMS가 바뀌면 `adaptor/persistence/`에 새 loader 하나 추가하면 끝, domain/은 한 줄도 안 건드린다.
+> **Context**: BMS 교체 가능성을 대비하여 도메인 로직이 외부 시스템(BMS 데이터 포맷, LLM 프로바이더, DB)에 의존하지 않도록 헥사고날 아키텍처를 적용. 동시에 코드베이스 전반의 일관성을 높이기 위해 4가지 디자인 패턴(Enum 중앙화, Config 중앙화, Immutability, DI)을 함께 적용. 기존 `engine/`, `models/`, `routes/`, `llm/` 플랫 구조에서 `domain/`, `application/`, `api/`, `adaptor/`, `infra/` 5-레이어 구조로 전환. 추가로, LLM 응답을 `dict[str, Any]`에서 `.get()`으로 수동 파싱하던 패턴을 Pydantic 스키마 검증(`adaptor/llm/schemas.py`)으로 전환하여 타입 안전성과 에러 핸들링 일관성을 확보.
+> **Result**: 의존성 방향 `api/ → application/ → domain/ ← adaptor/` 확립. domain/에서 외부 레이어 import 0건 달성. LLM 응답 4종(risk_signal, endorsement, review_summary, quote_personalization)에 대한 Pydantic 검증 스키마 도입 — `model_validate()` + `ValidationError` fallback으로 기존 `.get()` 방어 코드 제거. malformed 응답 테스트 4건 추가. 8단계 리팩토링 전 과정에서 100/100 테스트 유지. ruff 0, semgrep 0, 경계 위반 0건.
+> **Insight**: 헥사고날 아키텍처의 가치는 "현재 코드가 예뻐지는 것"이 아니라 "미래의 변경이 한 레이어에서 끝나는 것" — BMS가 바뀌면 `adaptor/persistence/`에 새 loader 하나, LLM 프로바이더가 바뀌면 `adaptor/llm/`에 새 클라이언트 하나 추가하면 끝. Pydantic 스키마는 LLM 응답의 "계약"을 명시하여, 프롬프트를 바꿔도 응답 형식이 맞는지 자동 검증한다.
 
 ---
 

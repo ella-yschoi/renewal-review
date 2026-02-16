@@ -70,14 +70,14 @@
     "carrier": "USAA",
     "premium": 3465.22,
     "endorsements": [
-      { "code": "WB01", "description": "Water backup and sump overflow coverage", "premium": 71.76 },
+      { "code": "HO 04 95", "description": "Water backup and sump overflow coverage", "premium": 71.76 },
       { "code": "FL01", "description": "Flood insurance supplement", "premium": 61.41 }
     ]
   },
   "renewal": {
     "premium": 3308.99,
     "endorsements": [
-      { "code": "WB01", "description": "Water backup and sump overflow coverage", "premium": 71.76 }
+      { "code": "HO 04 95", "description": "Water backup and sump overflow coverage", "premium": 71.76 }
     ]
   }
 }

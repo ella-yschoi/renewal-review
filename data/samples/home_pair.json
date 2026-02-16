@@ -22,12 +22,12 @@
     },
     "endorsements": [
       {
-        "code": "HO-61",
+        "code": "HO 04 61",
         "description": "Scheduled personal property",
         "premium": 120.00
       },
       {
-        "code": "WB01",
+        "code": "HO 04 95",
         "description": "Water backup and sump overflow coverage",
         "premium": 75.00
       }
@@ -56,7 +56,7 @@
     },
     "endorsements": [
       {
-        "code": "HO-61",
+        "code": "HO 04 61",
         "description": "Scheduled personal property — updated valuations",
         "premium": 145.00
       }

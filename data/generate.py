@@ -27,8 +27,8 @@ ENDORSEMENT_CODES_AUTO = [
 ]
 
 ENDORSEMENT_CODES_HOME = [
-    ("HO-61", "Scheduled personal property"),
-    ("WB01", "Water backup and sump overflow coverage"),
+    ("HO 04 61", "Scheduled personal property"),
+    ("HO 04 95", "Water backup and sump overflow coverage"),
     ("ID01", "Identity theft protection"),
     ("EQ01", "Earthquake coverage endorsement"),
     ("FL01", "Flood insurance supplement"),
