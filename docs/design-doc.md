@@ -100,8 +100,7 @@ app/
 │
 ├── adaptor/                   # 아웃바운드 어댑터 — 외부 시스템 구현체
 │   ├── llm/
-│   │   ├── client.py          # create_llm_client() 팩토리
-│   │   ├── openai.py          # OpenAIClient (LLMPort 구현)
+│   │   ├── client.py          # LLMClient — trace_name 기반 모델 라우팅
 │   │   ├── anthropic.py       # AnthropicClient (LLMPort 구현)
 │   │   └── mock.py            # MockLLMClient
 │   ├── storage/
@@ -462,9 +461,8 @@ Quote의 hardcoded trade_off를 고객 맥락 기반 개인화 텍스트로 대�
 
 ### Provider 구성 (`app/adaptor/llm/`)
 
-- **OpenAI** (`openai.py`): `OpenAIClient(model=)` — model 주입 가능, 기본값 gpt-4o-mini
-- **Anthropic** (`anthropic.py`): `AnthropicClient(model=)` — model 주입 가능, 기본값 claude-sonnet
-- **Routing** (`app/adaptor/llm/client.py`): `LLMClient` — `trace_name` 기반 task별 모델 라우팅. `settings.llm.task_models` 매핑에 따라 provider+model 자동 선택. 동일 (provider, model) 조합은 인스턴스 재사용
+- **Anthropic** (`anthropic.py`): `AnthropicClient(model=)` — model 주입 가능, markdown 코드 블록 자동 제거 후 JSON 파싱
+- **Routing** (`app/adaptor/llm/client.py`): `LLMClient` — `trace_name` 기반 task별 모델 라우팅. `ModelKey` StrEnum + `settings.llm.task_models` 매핑으로 Sonnet/Haiku 자동 선택. 동일 model은 인스턴스 재사용
 - **MockLLMClient** (`app/adaptor/llm/mock.py`): 테스트·migration 비교용 하드코딩 응답
 - **Langfuse tracing**: 각 provider에 내장. `LANGFUSE_PUBLIC_KEY` 환경변수 존재 시 자동 활성화
 
@@ -492,7 +490,7 @@ Quote의 hardcoded trade_off를 고객 맥락 기반 개인화 텍스트로 대�
 | 상황 | Fallback | 코드 위치 |
 |------|----------|----------|
 | DB 로드 실패 | JSON 파일로 폴백 | `app/data_loader.py:42-44` |
-| LLM JSON 파싱 실패 | `{"error": ..., "raw_response": ...}` 반환 | `app/adaptor/llm/openai.py`, `anthropic.py` |
+| LLM JSON 파싱 실패 | `{"error": ..., "raw_response": ...}` 반환 | `app/adaptor/llm/anthropic.py` |
 | LLM 분석 에러 / 응답 스키마 불일치 | confidence=0.0인 에러 LLMInsight 생성 | `app/application/llm_analysis.py` |
 | LLM summary 실패 | 기존 mechanical summary 유지 | `app/application/batch.py` |
 | LLM quote 개인화 실패 | 원본 trade_off 유지, broker_tip="" | `app/application/quote_advisor.py` |
