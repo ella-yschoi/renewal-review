@@ -120,11 +120,11 @@ async def migration_comparison(
     llm_client = get_llm_client()
 
     job_id = str(uuid.uuid4())[:8]
-    total_steps = len(pairs) * 2
+    n_policies = len(pairs)
     _migration_jobs[job_id] = {
         "status": "running",
         "processed": 0,
-        "total": total_steps,
+        "total": n_policies,
         "phase": "basic",
         "result": None,
         "error": None,
@@ -139,7 +139,6 @@ async def migration_comparison(
                 from app.adaptor.llm.mock import MockLLMClient
 
                 client = llm_client or MockLLMClient()
-                n = len(pairs)
 
                 basic_start = time.perf_counter()
                 basic_results = []
@@ -149,11 +148,12 @@ async def migration_comparison(
                 basic_time = (time.perf_counter() - basic_start) * 1000
 
                 _migration_jobs[job_id]["phase"] = "llm"
+                _migration_jobs[job_id]["processed"] = 0
                 llm_start = time.perf_counter()
                 llm_results = []
                 for i, p in enumerate(pairs):
                     llm_results.append(process_pair(p, llm_client=client))
-                    _migration_jobs[job_id]["processed"] = n + i + 1
+                    _migration_jobs[job_id]["processed"] = i + 1
                 llm_time = (time.perf_counter() - llm_start) * 1000
 
                 return basic_results, basic_time, llm_results, llm_time
@@ -235,7 +235,7 @@ async def migration_comparison(
             _migration_jobs[job_id]["error"] = str(e)
 
     asyncio.create_task(_process())
-    return {"job_id": job_id, "status": "running", "total": total_steps}
+    return {"job_id": job_id, "status": "running", "total": n_policies}
 
 
 @router.get("/migration/status/{job_id}")

@@ -5,7 +5,7 @@ from fastapi import APIRouter, Depends, HTTPException, Query, Request
 from fastapi.templating import Jinja2Templates
 
 from app.adaptor.storage.memory import InMemoryReviewStore
-from app.data_loader import load_pairs, total_count
+from app.data_loader import invalidate_cache, load_pairs, total_count
 from app.domain.labels import LABELS, get_label
 from app.domain.models.diff import DiffResult
 from app.domain.models.review import ReviewResult, RiskLevel
@@ -164,13 +164,26 @@ def review_detail(
     )
 
 
-def _build_account_lookup() -> dict[str, tuple[str, str]]:
-    pairs = load_pairs()
+def _extract_account_lookup(
+    pairs: list,
+) -> dict[str, tuple[str, str]]:
     lookup: dict[str, tuple[str, str]] = {}
     for p in pairs:
-        pn = p.prior.policy_number
         if p.renewal.account_id:
-            lookup[pn] = (p.renewal.account_id, p.renewal.insured_name)
+            lookup[p.prior.policy_number] = (
+                p.renewal.account_id,
+                p.renewal.insured_name,
+            )
+    return lookup
+
+
+def _build_account_lookup() -> dict[str, tuple[str, str]]:
+    pairs = load_pairs()
+    lookup = _extract_account_lookup(pairs)
+    if not lookup and pairs:
+        # Cache may hold stale data from before account_id was added
+        invalidate_cache()
+        lookup = _extract_account_lookup(load_pairs())
     return lookup
 
 

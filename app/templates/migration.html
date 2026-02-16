@@ -221,15 +221,20 @@ function renderAllResultsPage() {
 }
 
 var progressStartTime = 0;
+var currentPhase = '';
 
 function updateProgress(processed, total, phase) {
+  if (phase !== currentPhase) {
+    progressStartTime = Date.now();
+    currentPhase = phase;
+  }
   var pct = total > 0 ? Math.round((processed / total) * 100) : 0;
   document.getElementById('progress-bar').style.width = pct + '%';
   document.getElementById('progress-text').textContent = pct + '%';
 
   var phaseLabel = phase === 'llm' ? 'LLM analysis' : 'Rule-based analysis';
   var elapsed = (Date.now() - progressStartTime) / 1000;
-  var detail = phaseLabel + ': ' + processed + ' / ' + total + ' steps';
+  var detail = phaseLabel + ': ' + processed + ' / ' + total + ' policies';
 
   if (processed > 0 && pct < 100) {
     var rate = processed / elapsed;
@@ -255,6 +260,7 @@ async function runComparison() {
   document.getElementById('progress-text').textContent = '0%';
   document.getElementById('progress-detail').textContent = '';
   progressStartTime = Date.now();
+  currentPhase = '';
 
   const resp = await fetch('/migration/comparison', {method:'POST'});
   if (!resp.ok) {
