@@ -86,25 +86,41 @@ class MockLLMClient:
             return {
                 "quotes": [
                     {
-                        "quote_id": "Q1",
+                        "quote_id": "Quote 1",
                         "trade_off": (
-                            "Raising the deductible to $2,500 saves 12.5% but means higher "
-                            "out-of-pocket costs given the prior water damage claim history."
+                            "This option raises the home deductible from $1,000 to $2,500, "
+                            "saving approximately $607/year (12.5%). If a covered event like "
+                            "a storm or fire occurs, the client would pay the first $2,500 "
+                            "out of pocket before insurance covers the rest. Given the prior "
+                            "water damage claim and aging roof noted in this policy, the risk "
+                            "of needing to file a claim is above average. Best suited for "
+                            "clients with strong emergency savings who rarely file claims."
                         ),
                         "broker_tip": (
-                            "Verify the client has emergency savings above $2,500 before "
-                            "recommending this option, especially with the aging roof."
+                            "Ask the client whether they have at least $2,500 in liquid savings "
+                            "set aside for emergencies. With the aging roof and prior water "
+                            "damage history on this property, a claim in the near term is "
+                            "plausible — confirm they're comfortable absorbing that cost before "
+                            "binding."
                         ),
                     },
                     {
-                        "quote_id": "Q2",
+                        "quote_id": "Quote 2",
                         "trade_off": (
-                            "Dropping water backup saves 3% but removes sewer/drain coverage "
-                            "on a property with known prior water damage."
+                            "Removing water backup coverage saves about $146/year (3%). "
+                            "This means the client loses protection for sewer backup, sump "
+                            "pump failure, and foundation seepage damage. A typical water "
+                            "backup claim averages $7,000–$10,000 in restoration costs. "
+                            "This policy already has a prior water damage claim on file, "
+                            "making this a higher-risk removal. Not recommended for "
+                            "properties with known water issues or older plumbing."
                         ),
                         "broker_tip": (
-                            "Given the claim history, discuss plumbing condition with the client "
-                            "before removing this coverage."
+                            "Before removing this coverage, ask the client about the age "
+                            "and condition of their sump pump, plumbing, and drainage system. "
+                            "Given the prior water damage claim, discuss whether they've "
+                            "made repairs since — if not, dropping this endorsement could "
+                            "leave them exposed to a repeat loss."
                         ),
                     },
                 ],

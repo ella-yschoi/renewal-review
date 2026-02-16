@@ -1,6 +1,8 @@
 from app.config import settings
 from app.domain.models.diff import DiffFlag
 from app.domain.models.policy import (
+    AutoCoverages,
+    Driver,
     HomeCoverages,
     PolicySnapshot,
     RenewalPair,
@@ -144,3 +146,88 @@ def test_flags_match_changes(auto_pair: RenewalPair):
     flagged_changes = [c for c in result.changes if c.flag is not None]
     for c in flagged_changes:
         assert c.flag in result.flags
+
+
+def test_driver_violations_flag():
+    prior = PolicySnapshot(
+        policy_number="DV-001",
+        policy_type="auto",
+        carrier="X",
+        effective_date="2024-01-01",
+        expiration_date="2025-01-01",
+        premium=1000,
+        drivers=[Driver(license_number="L1", name="John", age=35, violations=2)],
+    )
+    renewal = prior.model_copy(deep=True)
+    pair = RenewalPair(prior=prior, renewal=renewal)
+    diff = compute_diff(pair)
+    result = flag_diff(diff, pair)
+    assert DiffFlag.DRIVER_VIOLATIONS in result.flags
+
+
+def test_sr22_flag():
+    prior = PolicySnapshot(
+        policy_number="SR-001",
+        policy_type="auto",
+        carrier="X",
+        effective_date="2024-01-01",
+        expiration_date="2025-01-01",
+        premium=1000,
+        drivers=[Driver(license_number="L1", name="Jane", age=30, sr22=True)],
+    )
+    renewal = prior.model_copy(deep=True)
+    pair = RenewalPair(prior=prior, renewal=renewal)
+    diff = compute_diff(pair)
+    result = flag_diff(diff, pair)
+    assert DiffFlag.SR22_FILING in result.flags
+
+
+def test_youthful_operator_flag():
+    prior = PolicySnapshot(
+        policy_number="YO-001",
+        policy_type="auto",
+        carrier="X",
+        effective_date="2024-01-01",
+        expiration_date="2025-01-01",
+        premium=1000,
+        drivers=[Driver(license_number="L1", name="Teen", age=19)],
+    )
+    renewal = prior.model_copy(deep=True)
+    pair = RenewalPair(prior=prior, renewal=renewal)
+    diff = compute_diff(pair)
+    result = flag_diff(diff, pair)
+    assert DiffFlag.YOUTHFUL_OPERATOR in result.flags
+
+
+def test_coverage_gap_flag():
+    prior = PolicySnapshot(
+        policy_number="CG-001",
+        policy_type="auto",
+        carrier="X",
+        effective_date="2024-01-01",
+        expiration_date="2025-01-01",
+        premium=1000,
+        auto_coverages=AutoCoverages(uninsured_motorist="25/50"),
+    )
+    renewal = prior.model_copy(deep=True)
+    pair = RenewalPair(prior=prior, renewal=renewal)
+    diff = compute_diff(pair)
+    result = flag_diff(diff, pair)
+    assert DiffFlag.COVERAGE_GAP in result.flags
+
+
+def test_no_coverage_gap_when_adequate():
+    prior = PolicySnapshot(
+        policy_number="CG-002",
+        policy_type="auto",
+        carrier="X",
+        effective_date="2024-01-01",
+        expiration_date="2025-01-01",
+        premium=1000,
+        auto_coverages=AutoCoverages(uninsured_motorist="100/300"),
+    )
+    renewal = prior.model_copy(deep=True)
+    pair = RenewalPair(prior=prior, renewal=renewal)
+    diff = compute_diff(pair)
+    result = flag_diff(diff, pair)
+    assert DiffFlag.COVERAGE_GAP not in result.flags

@@ -2,15 +2,46 @@
 {% block title %}{{ result.policy_number }} — Renewal Review{% endblock %}
 
 {% block content %}
+<style>
+  .quote-card { border:1px solid #e2e8f0; border-radius:10px; padding:20px; margin-bottom:16px; }
+  .quote-header { display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:4px; }
+  .quote-title { font-weight:700; font-size:15px; color:#2d3748; }
+  .quote-savings-box { text-align:right; }
+  .quote-savings-pct { font-size:22px; font-weight:700; color:#22543d; }
+  .quote-savings-dollar { font-size:12px; color:#22543d; }
+  .adjustment-row { display:flex; align-items:center; gap:12px; padding:10px 14px; background:#f7fafc; border-radius:6px; margin-bottom:8px; }
+  .adj-label { font-size:13px; font-weight:600; color:#2d3748; min-width:180px; }
+  .adj-values { display:flex; align-items:center; gap:8px; font-size:13px; }
+  .adj-old { color:#9b2c2c; text-decoration:line-through; }
+  .adj-arrow { color:#a0aec0; }
+  .adj-new { color:#22543d; font-weight:600; }
+  .quote-tradeoff { margin-top:14px; font-size:13px; color:#744210; background:#fefcbf; padding:12px 16px; border-radius:6px; line-height:1.6; }
+  .quote-tradeoff strong { display:block; margin-bottom:4px; font-size:11px; text-transform:uppercase; letter-spacing:0.5px; }
+  .quote-broker-tip { margin-top:8px; font-size:13px; color:#2a4365; background:#ebf8ff; padding:12px 16px; border-radius:6px; line-height:1.6; }
+  .quote-broker-tip strong { display:block; margin-bottom:4px; font-size:11px; text-transform:uppercase; letter-spacing:0.5px; color:#2b6cb0; }
+</style>
+
 <div style="margin-bottom:16px;">
-  <a href="{{ back_url }}" style="color:#3182ce; font-size:13px;">&larr; {{ back_label }}</a>
+  <a href="{{ back_url }}" id="back-link" style="color:#3182ce; font-size:13px;">&larr; {{ back_label }}</a>
 </div>
 
 <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px;">
-  <h1 style="font-size:20px;">{{ result.policy_number }}</h1>
-  <span class="badge badge-{{ result.risk_level.value }}" style="font-size:14px; padding:4px 12px;">
-    {{ result.risk_level.value }}
-  </span>
+  <div>
+    <h1 style="font-size:20px; display:inline;">{{ result.policy_number }}</h1>
+    <span class="badge badge-{{ result.risk_level.value }}" style="font-size:14px; padding:4px 12px; margin-left:8px;">
+      {{ result.risk_level.value|label }}
+    </span>
+  </div>
+  <div style="display:flex; gap:8px; align-items:center;">
+    <label style="font-size:12px; color:#718096; display:flex; align-items:center; gap:4px; cursor:pointer;">
+      <input type="checkbox" id="contacted-cb" {% if result.broker_contacted %}checked{% endif %}
+        onchange="toggleBrokerContacted()">
+      Contacted
+    </label>
+    {% if result.diff.flags and result.pair %}
+    <button class="btn btn-primary" id="generate-quote-btn" onclick="generateQuotes()">Generate Quote</button>
+    {% endif %}
+  </div>
 </div>
 
 <div class="card">
@@ -24,6 +55,50 @@
     <span style="font-size:12px; color:#805ad5;">Generating AI summary...</span>
   </div>
   {% endif %}
+</div>
+
+<div id="quote-section" style="display:{% if result.quote_generated %}block{% else %}none{% endif %};">
+  <div class="card" style="border-left:4px solid #22543d;">
+    <h2 style="color:#22543d;">Quote Recommendations</h2>
+    <div id="quote-loading" style="display:none; align-items:center; gap:8px;">
+      <div class="spinner" style="width:16px; height:16px; border-width:2px;"></div>
+      <span style="font-size:12px; color:#22543d;">Generating quotes...</span>
+    </div>
+    <div id="quote-content">
+      {% if result.quote_generated %}
+      <p style="font-size:12px; color:#718096;">Quote previously generated. Click "Regenerate Quote" to refresh.</p>
+      {% endif %}
+    </div>
+  </div>
+</div>
+
+<div id="llm-insights-section">
+{% if result.llm_insights %}
+<div class="card" style="border-left:4px solid #805ad5;">
+  <h2 style="color:#805ad5;"><span class="llm-sparkle"></span> LLM Insights ({{ result.llm_insights|length }})</h2>
+  <p style="font-size:11px; color:#805ad5; margin-bottom:10px;">LLM Analytics — analyzed by LLM for unstructured text signals</p>
+  <table>
+    <thead>
+      <tr><th>Type</th><th>Finding</th><th>Confidence</th><th>Reasoning</th></tr>
+    </thead>
+    <tbody>
+      {% for i in result.llm_insights %}
+      <tr>
+        <td><span class="flag-tag" style="background:#e9d8fd; color:#553c9a;">{{ i.analysis_type|label }}</span></td>
+        <td>{{ i.finding }}</td>
+        <td>{{ "%.0f"|format(i.confidence * 100) }}%</td>
+        <td style="font-size:12px; color:#718096;">{{ i.reasoning }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% elif result.risk_level.value == 'review_recommended' %}
+<div class="card" style="border-left:4px solid #cbd5e0;">
+  <h2 style="color:#718096;">AI Insights</h2>
+  <p style="font-size:12px; color:#a0aec0;">LLM analysis available via LLM Insights page for Review Recommended policies</p>
+</div>
+{% endif %}
 </div>
 
 {% if result.pair %}
@@ -154,7 +229,7 @@
   <h2>Flags ({{ result.diff.flags|length }})</h2>
   <div style="display:flex; flex-wrap:wrap; gap:6px;">
     {% for flag in result.diff.flags %}
-    <span class="flag-tag">{{ flag.value }}</span>
+    <span class="flag-tag">{{ flag.value|label }}</span>
     {% endfor %}
   </div>
 </div>
@@ -169,50 +244,100 @@
     <tbody>
       {% for c in result.diff.changes %}
       <tr>
-        <td style="font-weight:500;">{{ c.field }}</td>
+        <td style="font-weight:500;">{{ c.field|label }}</td>
         <td>{{ c.prior_value or "—" }}</td>
         <td>{{ c.renewal_value or "—" }}</td>
         <td>{% if c.change_pct is not none %}{{ "%.1f"|format(c.change_pct) }}%{% else %}—{% endif %}</td>
-        <td>{% if c.flag %}<span class="flag-tag">{{ c.flag.value }}</span>{% endif %}</td>
+        <td>{% if c.flag %}<span class="flag-tag">{{ c.flag.value|label }}</span>{% endif %}</td>
       </tr>
       {% endfor %}
     </tbody>
   </table>
-</div>
-
-<div id="llm-insights-section">
-{% if result.llm_insights %}
-<div class="card" style="border-left:4px solid #805ad5;">
-  <h2 style="color:#805ad5;"><span class="llm-sparkle"></span> LLM Insights ({{ result.llm_insights|length }})</h2>
-  <p style="font-size:11px; color:#805ad5; margin-bottom:10px;">LLM Analytics — analyzed by LLM for unstructured text signals</p>
-  <table>
-    <thead>
-      <tr><th>Type</th><th>Finding</th><th>Confidence</th><th>Reasoning</th></tr>
-    </thead>
-    <tbody>
-      {% for i in result.llm_insights %}
-      <tr>
-        <td><span class="flag-tag" style="background:#e9d8fd; color:#553c9a;">{{ i.analysis_type }}</span></td>
-        <td>{{ i.finding }}</td>
-        <td>{{ "%.0f"|format(i.confidence * 100) }}%</td>
-        <td style="font-size:12px; color:#718096;">{{ i.reasoning }}</td>
-      </tr>
-      {% endfor %}
-    </tbody>
-  </table>
-</div>
-{% else %}
-<div class="card" style="border-left:4px solid #cbd5e0;">
-  <h2 style="color:#718096;">AI Insights</h2>
-  <p style="font-size:12px; color:#a0aec0;">Standard review — no text analysis needed for this policy</p>
-</div>
-{% endif %}
 </div>
 {% endblock %}
 
 {% block scripts %}
-{% if not result.llm_summary_generated and result.diff.flags %}
 <script>
+var BOOLEAN_FIELDS = ['rental_reimbursement', 'roadside_assistance', 'water_backup', 'replacement_cost'];
+
+function formatValue(field, val) {
+  if (BOOLEAN_FIELDS.indexOf(field) !== -1) return val === 'True' ? 'Included' : 'Not Included';
+  var num = parseFloat(val);
+  if (!isNaN(num) && val !== 'True' && val !== 'False') return '$' + num.toLocaleString('en-US', {minimumFractionDigits:0, maximumFractionDigits:0});
+  return val;
+}
+
+async function toggleBrokerContacted() {
+  await fetch('/reviews/{{ result.policy_number }}/broker-contacted', {method: 'PATCH'});
+}
+
+async function generateQuotes() {
+  var section = document.getElementById('quote-section');
+  var loading = document.getElementById('quote-loading');
+  var content = document.getElementById('quote-content');
+  section.style.display = 'block';
+  loading.style.display = 'flex';
+  content.innerHTML = '';
+
+  try {
+    var reviewResp = await fetch('/reviews/{{ result.policy_number }}');
+    var review = await reviewResp.json();
+
+    var quotesResp = await fetch('/quotes/generate', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify(review.pair)
+    });
+    loading.style.display = 'none';
+
+    if (!quotesResp.ok) {
+      content.innerHTML = '<p style="color:#9b2c2c;">Quote generation failed.</p>';
+      return;
+    }
+
+    var data = await quotesResp.json();
+    var quotes = data.quotes || [];
+    if (quotes.length === 0) {
+      var msg = '<p style="font-size:13px; color:#718096; margin-bottom:8px;">No alternative quotes available — coverages are already optimized.</p>';
+      if (data.reasons && data.reasons.length > 0) {
+        msg += '<ul style="font-size:12px; color:#718096; margin:0; padding-left:20px;">';
+        data.reasons.forEach(function(r) { msg += '<li style="margin-bottom:4px;">' + r + '</li>'; });
+        msg += '</ul>';
+      }
+      content.innerHTML = msg;
+      return;
+    }
+
+    var html = '';
+    quotes.forEach(function(q) {
+      html += '<div class="quote-card">';
+      html += '<div class="quote-header"><div><span class="quote-title">' + q.quote_id + '</span></div>';
+      html += '<div class="quote-savings-box"><div class="quote-savings-pct">-' + q.estimated_savings_pct + '%</div>';
+      html += '<div class="quote-savings-dollar">Save $' + q.estimated_savings_dollar.toFixed(2) + '/yr</div></div></div>';
+
+      q.adjustments.forEach(function(a) {
+        html += '<div class="adjustment-row"><div style="flex:1;"><div class="adj-label">' + getLabel(a.field) + '</div></div>';
+        html += '<div class="adj-values"><span class="adj-old">' + formatValue(a.field, a.original_value) + '</span>';
+        html += '<span class="adj-arrow">&rarr;</span><span class="adj-new">' + formatValue(a.field, a.proposed_value) + '</span></div></div>';
+      });
+
+      html += '<div class="quote-tradeoff"><strong>Trade-off</strong>' + q.trade_off + '</div>';
+      if (q.broker_tip) {
+        html += '<div class="quote-broker-tip"><strong>Broker Tip</strong>' + q.broker_tip + '</div>';
+      }
+      html += '</div>';
+    });
+    content.innerHTML = html;
+
+    await fetch('/reviews/{{ result.policy_number }}/quote-generated', {method: 'PATCH'});
+    document.getElementById('generate-quote-btn').textContent = 'Regenerate Quote';
+  } catch (e) {
+    loading.style.display = 'none';
+    content.innerHTML = '<p style="color:#9b2c2c;">Error: ' + e.message + '</p>';
+  }
+}
+
+{% if not result.llm_summary_generated and result.diff.flags %}
 (async function() {
   try {
     var resp = await fetch('/reviews/{{ result.policy_number }}');
@@ -234,7 +359,7 @@
       html += '<table><thead><tr><th>Type</th><th>Finding</th><th>Confidence</th><th>Reasoning</th></tr></thead><tbody>';
       data.llm_insights.forEach(function(i) {
         html += '<tr>';
-        html += '<td><span class="flag-tag" style="background:#e9d8fd; color:#553c9a;">' + i.analysis_type + '</span></td>';
+        html += '<td><span class="flag-tag" style="background:#e9d8fd; color:#553c9a;">' + getLabel(i.analysis_type) + '</span></td>';
         html += '<td>' + i.finding + '</td>';
         html += '<td>' + Math.round(i.confidence * 100) + '%</td>';
         html += '<td style="font-size:12px; color:#718096;">' + (i.reasoning || '') + '</td>';
@@ -248,6 +373,17 @@
     if (loadingEl) loadingEl.style.display = 'none';
   }
 })();
-</script>
 {% endif %}
+
+// Restore dashboard filters in back link
+(function() {
+  var backLink = document.getElementById('back-link');
+  if (backLink && backLink.href.indexOf('/?') === -1 && backLink.pathname === '/') {
+    try {
+      var filters = sessionStorage.getItem('rr_dashboard_filters');
+      if (filters) backLink.href = '/?' + filters;
+    } catch(e) {}
+  }
+})();
+</script>
 {% endblock %}

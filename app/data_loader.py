@@ -23,5 +23,9 @@ def load_pairs(sample: int | None = None) -> list[RenewalPair]:
     return _get_data_source().load_pairs(sample)
 
 
+def total_count() -> int:
+    return _get_data_source().total_count()
+
+
 def invalidate_cache() -> None:
     _get_data_source().invalidate_cache()

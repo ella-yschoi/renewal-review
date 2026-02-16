@@ -26,5 +26,10 @@ class JsonDataSource:
         raw = json.loads(data_path.read_text())
         return [parse_pair(rp) for rp in raw]
 
+    def total_count(self) -> int:
+        if self._cached_pairs is None:
+            self._cached_pairs = self._load()
+        return len(self._cached_pairs)
+
     def invalidate_cache(self) -> None:
         self._cached_pairs = None

@@ -1,6 +1,6 @@
 from app.config import RuleThresholds
 from app.domain.models.diff import DiffFlag, DiffResult, FieldChange
-from app.domain.models.policy import RenewalPair
+from app.domain.models.policy import PolicyType, RenewalPair
 
 LIABILITY_FIELDS = {
     "bodily_injury_limit",
@@ -119,6 +119,31 @@ def _flag_changes(changes: list[FieldChange]) -> tuple[list[DiffFlag], list[Fiel
     return flags, updated
 
 
+def _flag_drivers(pair: RenewalPair, thresholds: RuleThresholds) -> list[DiffFlag]:
+    flags: list[DiffFlag] = []
+    for d in pair.renewal.drivers:
+        if d.violations > 0 and DiffFlag.DRIVER_VIOLATIONS not in flags:
+            flags.append(DiffFlag.DRIVER_VIOLATIONS)
+        if d.sr22 and DiffFlag.SR22_FILING not in flags:
+            flags.append(DiffFlag.SR22_FILING)
+        if d.age < thresholds.youthful_operator_age and DiffFlag.YOUTHFUL_OPERATOR not in flags:
+            flags.append(DiffFlag.YOUTHFUL_OPERATOR)
+    return flags
+
+
+def _flag_coverage_gap(pair: RenewalPair, thresholds: RuleThresholds) -> list[DiffFlag]:
+    if pair.renewal.policy_type != PolicyType.AUTO:
+        return []
+    cov = pair.renewal.auto_coverages
+    if cov is None:
+        return []
+    current = _parse_limit(cov.uninsured_motorist)
+    minimum = _parse_limit(thresholds.um_uim_min_limit)
+    if current < minimum:
+        return [DiffFlag.COVERAGE_GAP]
+    return []
+
+
 def flag_diff(
     diff: DiffResult, pair: RenewalPair, thresholds: RuleThresholds | None = None
 ) -> DiffResult:
@@ -132,6 +157,13 @@ def flag_diff(
     flags.extend(_flag_carrier(pair))
     change_flags, updated_changes = _flag_changes(diff.changes)
     flags.extend(change_flags)
+    flags.extend(_flag_drivers(pair, thresholds))
+    flags.extend(_flag_coverage_gap(pair, thresholds))
+
+    from app.domain.services.notes_rules import flag_notes_keywords
+
+    notes_flags = flag_notes_keywords(pair.renewal.notes)
+    flags.extend(notes_flags)
 
     # premium flags also annotate the premium change
     premium_flags = {

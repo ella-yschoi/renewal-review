@@ -10,8 +10,18 @@ from app.domain.services.aggregator import aggregate
 from app.domain.services.differ import compute_diff
 from app.domain.services.rules import flag_diff
 
-URGENT_REVIEW_FLAGS = {DiffFlag.PREMIUM_INCREASE_CRITICAL, DiffFlag.LIABILITY_LIMIT_DECREASE}
-ACTION_REQUIRED_FLAGS = {DiffFlag.PREMIUM_INCREASE_HIGH, DiffFlag.COVERAGE_DROPPED}
+URGENT_REVIEW_FLAGS = {
+    DiffFlag.PREMIUM_INCREASE_CRITICAL,
+    DiffFlag.LIABILITY_LIMIT_DECREASE,
+    DiffFlag.SR22_FILING,
+}
+ACTION_REQUIRED_FLAGS = {
+    DiffFlag.PREMIUM_INCREASE_HIGH,
+    DiffFlag.COVERAGE_DROPPED,
+    DiffFlag.DRIVER_VIOLATIONS,
+    DiffFlag.COVERAGE_GAP,
+    DiffFlag.CLAIMS_HISTORY,
+}
 
 
 def assign_risk_level(flags: list[DiffFlag]) -> RiskLevel:
@@ -74,6 +84,17 @@ def enrich_with_llm(result: ReviewResult, client: LLMPort) -> None:
             result.llm_summary_generated = True
 
 
+def risk_distribution(results: list[ReviewResult]) -> dict[str, int]:
+    return {
+        "no_action_needed": sum(1 for r in results if r.risk_level == RiskLevel.NO_ACTION_NEEDED),
+        "review_recommended": sum(
+            1 for r in results if r.risk_level == RiskLevel.REVIEW_RECOMMENDED
+        ),
+        "action_required": sum(1 for r in results if r.risk_level == RiskLevel.ACTION_REQUIRED),
+        "urgent_review": sum(1 for r in results if r.risk_level == RiskLevel.URGENT_REVIEW),
+    }
+
+
 def process_batch(
     pairs: list[RenewalPair],
     llm_client: LLMPort | None = None,
@@ -89,12 +110,13 @@ def process_batch(
             on_progress(i + 1, total)
     elapsed_ms = (time.perf_counter() - start) * 1000
 
+    dist = risk_distribution(results)
     summary = BatchSummary(
         total=len(results),
-        no_action_needed=sum(1 for r in results if r.risk_level == RiskLevel.NO_ACTION_NEEDED),
-        review_recommended=sum(1 for r in results if r.risk_level == RiskLevel.REVIEW_RECOMMENDED),
-        action_required=sum(1 for r in results if r.risk_level == RiskLevel.ACTION_REQUIRED),
-        urgent_review=sum(1 for r in results if r.risk_level == RiskLevel.URGENT_REVIEW),
+        no_action_needed=dist["no_action_needed"],
+        review_recommended=dist["review_recommended"],
+        action_required=dist["action_required"],
+        urgent_review=dist["urgent_review"],
         llm_analyzed=sum(1 for r in results if r.llm_insights),
         processing_time_ms=round(elapsed_ms, 1),
     )

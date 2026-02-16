@@ -1,13 +1,13 @@
 from datetime import date, datetime
 
-from sqlalchemy import JSON, DateTime, Float, Integer, String, func
+from sqlalchemy import JSON, Boolean, DateTime, Float, Integer, String, Text, func
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.infra.db import Base
 
 
 class RenewalPairRow(Base):
-    __tablename__ = "renewal_pairs"
+    __tablename__ = "raw_renewals"
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
     policy_number: Mapped[str] = mapped_column(String(50), index=True)
@@ -26,15 +26,33 @@ class RenewalPairRow(Base):
     )
 
 
-class BatchResultRow(Base):
-    __tablename__ = "batch_results"
+class RuleResultRow(Base):
+    __tablename__ = "rule_results"
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
-    job_id: Mapped[str] = mapped_column(String(8), index=True)
     policy_number: Mapped[str] = mapped_column(String(50), index=True)
-    risk_level: Mapped[str] = mapped_column(String(10))
+    job_id: Mapped[str] = mapped_column(String(8), index=True)
+    risk_level: Mapped[str] = mapped_column(String(30))
     flags_json: Mapped[list] = mapped_column(JSON, default=list)
-    summary_text: Mapped[str] = mapped_column(String(500), default="")
+    changes_json: Mapped[list] = mapped_column(JSON, default=list)
+    summary_text: Mapped[str] = mapped_column(Text, default="")
+    broker_contacted: Mapped[bool] = mapped_column(Boolean, default=False)
+    quote_generated: Mapped[bool] = mapped_column(Boolean, default=False)
+    reviewed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now()
+    )
+
+
+class LLMResultRow(Base):
+    __tablename__ = "llm_results"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    policy_number: Mapped[str] = mapped_column(String(50), index=True)
+    job_id: Mapped[str] = mapped_column(String(8), index=True)
+    risk_level: Mapped[str] = mapped_column(String(30))
+    insights_json: Mapped[list] = mapped_column(JSON, default=list)
+    summary_text: Mapped[str] = mapped_column(Text, default="")
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now()
     )

@@ -5,6 +5,19 @@
 
 ---
 
+## 2026-02-16 03:34 | `main`
+
+### 무엇을 했는가
+8-Phase 대규모 리팩토링 실행. Phase 0(코드 정리) → Phase 1(도메인 모델 + DB 스키마) → Phase 2(규칙 확장) → Phase 3(DB write-through) → Phase 4-5(Dashboard 강화 + Quote 통합) → Phase 6(Analytics 브로커 관점 개편) → Phase 7(LLM Insights 설명) → Phase 8(문서 + 정리). 테스트 100→117개, DiffFlag 15→23개. 3개 PATCH 엔드포인트, 1개 GET 엔드포인트 추가. quotes.html 삭제, Quote Generator 페이지 제거 → Review Detail에 인라인 통합. DB 테이블 3개(raw_renewals, rule_results, llm_results) 재설계. Analytics에서 시간 지표 삭제, 브로커 워크플로우 지표(Contact Needed, Contacted, Quotes Generated, Reviewed) 추가.
+
+### 왜 했는가
+핵심 문제: DB에 아무것도 저장되지 않아 앱 재시작 시 모든 결과 소실. 동시에 브로커 관점의 워크플로우 추적(연락 여부, 견적 생성, 리뷰 완료)이 없어 실용성이 부족했다. Rule-based 리스크 판별도 구조화 필드(violations, SR-22, 25세 미만)와 notes 키워드 매칭이 빠져 있어 실제 보험 도메인의 위험 요소를 충분히 감지하지 못했다.
+
+### 어떻게 했는가
+Phase 간 의존성 그래프에 따라 순차 실행. Phase 0에서 중복 코드 헬퍼 추출(`_bool_change`, `_diff_entities`, `risk_distribution`), Pydantic mutation 수정(`model_copy`), LLM 클라이언트 싱글턴 팩토리 도입. Phase 1에서 DiffFlag 8개 확장, ReviewResult 3개 필드 추가, DB 테이블 3개 재설계. Phase 2에서 `_flag_drivers`, `_flag_coverage_gap`, `notes_rules.py` 키워드 매칭 추가. Phase 3에서 `ResultWriter` Protocol + `DbResultWriter`(try/except graceful) + `NoopResultWriter` + lifespan cache restore. Phase 4-5에서 PATCH 3개, Dashboard 필터/체크박스, Review Detail 인라인 Quote + reviewed_at 자동 기록. Phase 6에서 `AnalyticsSummary`/`TrendPoint`에서 `avg_processing_time_ms` 제거, `BrokerMetrics` 모델 + `compute_broker_metrics()` + `/analytics/broker` 엔드포인트 추가. Phase 7에서 migration.html에 LLM 분석 맥락 설명 추가. 매 Phase 후 `ruff check` + `pytest` 검증.
+
+---
+
 ## 2026-02-15 18:06 | `main`
 
 ### 무엇을 했는가

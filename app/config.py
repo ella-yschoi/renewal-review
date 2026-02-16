@@ -12,9 +12,43 @@ class ModelKey(StrEnum):
     HAIKU = "haiku"
 
 
+class NotesKeywords(BaseModel):
+    claims_history: list[str] = [
+        "claim",
+        "loss",
+        "accident",
+        "incident",
+        "damage report",
+    ]
+    property_risk: list[str] = [
+        "roof",
+        "foundation",
+        "mold",
+        "flood zone",
+        "sinkhole",
+        "brush area",
+    ]
+    regulatory: list[str] = [
+        "non-renewal",
+        "cancellation",
+        "compliance",
+        "surplus lines",
+        "state filing",
+    ]
+    driver_risk: list[str] = [
+        "DUI",
+        "DWI",
+        "suspended license",
+        "reckless driving",
+        "at-fault",
+    ]
+
+
 class RuleThresholds(BaseModel):
     premium_high_pct: float = 10.0
     premium_critical_pct: float = 20.0
+    youthful_operator_age: int = 25
+    um_uim_min_limit: str = "50/100"
 
 
 class QuoteConfig(BaseModel):
@@ -42,6 +76,7 @@ class LLMConfig(BaseModel):
     sonnet_model: str = "claude-sonnet-4-5-20250929"
     haiku_model: str = "claude-haiku-4-5-20251001"
     max_tokens: int = 1024
+    comparison_sample_size: int = 100
     task_models: dict[str, str] = {
         "risk_signal_extractor": ModelKey.SONNET,
         "endorsement_comparison": ModelKey.HAIKU,
@@ -51,13 +86,14 @@ class LLMConfig(BaseModel):
 
 
 class Settings(BaseSettings):
-    model_config = {"env_prefix": "RR_"}
+    model_config = {"env_prefix": "RR_", "env_nested_delimiter": "__"}
 
     llm_enabled: bool = False
     data_path: str = "data/renewals.json"
     db_url: str = ""
 
     rules: RuleThresholds = RuleThresholds()
+    notes_keywords: NotesKeywords = NotesKeywords()
     quotes: QuoteConfig = QuoteConfig()
     portfolio: PortfolioThresholds = PortfolioThresholds()
     llm: LLMConfig = LLMConfig()

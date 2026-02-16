@@ -1,0 +1,8 @@
+{
+  "git.ignoreLimitWarning": true,
+  "[markdown]": {
+    "editor.formatOnSave": true
+  },
+  "markdownlint.ignore": ["docs/ppt/slides.md"],
+  "prettier.ignorePath": ".prettierignore"
+}

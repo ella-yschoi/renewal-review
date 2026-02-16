@@ -47,14 +47,18 @@
   <nav>
     <span class="logo">Renewal Review</span>
     <a href="/" class="{% if active == 'dashboard' %}active{% endif %}">Dashboard</a>
-    <a href="/ui/analytics" class="{% if active == 'analytics' %}active{% endif %}">Analytics</a>
     <a href="/ui/insight" class="{% if active == 'insight' %}active{% endif %}">LLM Insights</a>
-    <a href="/ui/quotes" class="{% if active == 'quotes' %}active{% endif %}">Quote Generator</a>
     <a href="/ui/portfolio" class="{% if active == 'portfolio' %}active{% endif %}">Portfolio</a>
   </nav>
   <div class="container">
     {% block content %}{% endblock %}
   </div>
+  <script>
+  var LABELS = {{ labels_json|safe }};
+  function getLabel(raw) {
+    return LABELS[raw] || raw.replace(/_/g, ' ').replace(/\b\w/g, function(c) { return c.toUpperCase(); });
+  }
+  </script>
   {% block scripts %}{% endblock %}
 </body>
 </html>

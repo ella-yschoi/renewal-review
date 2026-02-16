@@ -97,7 +97,7 @@
         <td>{{ r.pair.prior.policy_type.value if r.pair else "—" }}</td>
         <td>{{ r.pair.renewal.carrier if r.pair else "—" }}</td>
         <td>${{ "%.2f"|format(r.pair.renewal.premium) if r.pair else "—" }}</td>
-        <td><span class="badge badge-{{ r.risk_level.value }}">{{ r.risk_level.value }}</span></td>
+        <td><span class="badge badge-{{ r.risk_level.value }}">{{ r.risk_level.value|label }}</span></td>
       </tr>
       {% endfor %}
     </tbody>
@@ -262,10 +262,10 @@ function renderStats(data) {
 
 function renderRiskBar(breakdown) {
   var levels = [
-    {key: 'no_action_needed', color: '#c6f6d5', label: 'No Action'},
-    {key: 'review_recommended', color: '#fefcbf', label: 'Review'},
-    {key: 'action_required', color: '#fed7d7', label: 'Action'},
-    {key: 'urgent_review', color: '#9b2c2c', label: 'Urgent', textColor: '#fff'}
+    {key: 'no_action_needed', color: '#c6f6d5', label: getLabel('no_action_needed')},
+    {key: 'review_recommended', color: '#fefcbf', label: getLabel('review_recommended')},
+    {key: 'action_required', color: '#fed7d7', label: getLabel('action_required')},
+    {key: 'urgent_review', color: '#9b2c2c', label: getLabel('urgent_review'), textColor: '#fff'}
   ];
   var total = 0;
   levels.forEach(function(l) { total += breakdown[l.key] || 0; });
@@ -343,8 +343,8 @@ function renderFlags(flags) {
   flags.forEach(function(f) {
     html += '<div class="flag-card severity-' + f.severity + '">';
     html += '<div class="flag-header">';
-    html += '<span class="flag-type">' + f.flag_type.replace(/_/g, ' ') + '</span>';
-    html += '<span class="severity-badge ' + f.severity + '">' + f.severity + '</span>';
+    html += '<span class="flag-type">' + getLabel(f.flag_type) + '</span>';
+    html += '<span class="severity-badge ' + f.severity + '">' + getLabel(f.severity) + '</span>';
     html += '</div>';
     html += '<div class="flag-desc">' + f.description + '</div>';
     if (FLAG_ACTIONS[f.flag_type]) {

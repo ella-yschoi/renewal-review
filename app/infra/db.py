@@ -42,5 +42,7 @@ async def init_db():
     engine = get_engine()
     if engine is None:
         return
+    import app.infra.db_models  # noqa: F401  — register all models with Base.metadata
+
     async with engine.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)

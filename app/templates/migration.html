@@ -2,12 +2,40 @@
 {% block title %}Basic vs. LLM Analytics — Renewal Review{% endblock %}
 
 {% block content %}
+<style>
+  .progress-container { background:#edf2f7; border-radius:8px; overflow:hidden; height:24px; position:relative; }
+  .progress-bar { height:100%; background:linear-gradient(90deg, #805ad5, #6b46c1); border-radius:8px; transition:width 0.3s ease; min-width:0; }
+  .progress-text { position:absolute; top:0; left:0; right:0; bottom:0; display:flex; align-items:center; justify-content:center; font-size:12px; font-weight:600; color:#2d3748; }
+  .results-table td, .results-table th { font-size:12px; }
+  .risk-changed-row { background:#faf5ff; }
+</style>
+
 <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px;">
-  <h1 style="font-size:20px;">Basic vs. LLM Analytics</h1>
-  <button class="btn btn-primary" onclick="runComparison(100)">Compare Sample (100)</button>
+  <h1 style="font-size:20px;">LLM Insights</h1>
+  <button class="btn btn-primary" id="compare-btn" onclick="runComparison()">Compare</button>
 </div>
 
-<div id="loading"><div class="spinner"></div><p style="margin-top:8px;">Comparing policies...</p></div>
+<div class="card" style="margin-bottom:16px; background:#faf5ff; border-left:4px solid #805ad5;">
+  <p style="font-size:13px; color:#553c9a; margin-bottom:6px; font-weight:600;">Reviewed + Review Recommended policies only</p>
+  <p style="font-size:12px; color:#718096; line-height:1.6;">
+    LLM analysis targets policies that have been <strong>reviewed</strong> and classified as <strong>Review Recommended</strong>
+    — those flagged by rules but not yet critical.
+    The AI re-evaluates risk using context that rules alone cannot capture (e.g., notes, claim patterns, coverage gaps).
+  </p>
+  <p style="font-size:12px; color:#805ad5; line-height:1.6; margin-top:6px;">
+    <strong>Production:</strong> All reviewed Review Recommended policies are analyzed via LLM API.
+    <br><strong>Demo:</strong> Random sample of up to 100 policies to manage API costs.
+  </p>
+</div>
+
+<div id="loading" style="display:none; max-width:480px;">
+  <p style="margin-bottom:8px; font-size:13px; color:#553c9a; font-weight:500;" id="loading-msg">Comparing policies with AI...</p>
+  <div class="progress-container">
+    <div class="progress-bar" id="progress-bar" style="width:0%;"></div>
+    <div class="progress-text" id="progress-text">0%</div>
+  </div>
+  <p style="font-size:12px; color:#718096; margin-top:6px;" id="progress-detail"></p>
+</div>
 
 <div id="result" style="display:none;">
   <div class="stats-grid">
@@ -62,25 +90,39 @@
     </table>
   </div>
 
-  <div class="card" id="examples-section" style="display:none;">
-    <h2 style="color:#805ad5;">Risk Changed — Individual Cases <span style="font-weight:400; font-size:12px; color:#718096;" id="examples-count"></span></h2>
-    <p style="font-size:12px; color:#718096; margin-bottom:10px;">Policies where LLM analysis changed the risk assessment vs rule-only</p>
-    <table>
+  <div class="card" id="all-results-section" style="display:none;">
+    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
+      <div>
+        <h2 style="display:inline;">All Compared Policies</h2>
+        <span style="font-weight:400; font-size:12px; color:#718096; margin-left:8px;" id="all-results-count"></span>
+      </div>
+      <div style="display:flex; gap:8px; align-items:center;">
+        <label style="font-size:12px; color:#718096; display:flex; align-items:center; gap:4px; cursor:pointer;">
+          <input type="checkbox" id="filter-risk-changed" onchange="filterAllResults()">
+          Risk changed only
+        </label>
+      </div>
+    </div>
+    <p style="font-size:12px; color:#718096; margin-bottom:10px;">
+      All policies compared in this run. <span style="background:#faf5ff; padding:2px 6px; border-radius:3px; color:#805ad5;">Purple rows</span> = risk level changed by LLM.
+    </p>
+    <table class="results-table">
       <thead>
         <tr>
           <th>Policy #</th>
-          <th>Basic Risk</th>
+          <th>Rule Risk</th>
           <th>LLM Risk</th>
           <th>Flags</th>
           <th>LLM Insights</th>
+          <th>Summary</th>
         </tr>
       </thead>
-      <tbody id="examples-body"></tbody>
+      <tbody id="all-results-body"></tbody>
     </table>
-    <div id="examples-pager" style="display:none; justify-content:center; align-items:center; gap:12px; margin-top:16px;">
-      <button class="btn btn-secondary" style="padding:4px 12px; font-size:12px;" id="examples-prev" onclick="examplesPage(-1)">&larr; Prev</button>
-      <span style="font-size:13px; color:#4a5568;" id="examples-page-info"></span>
-      <button class="btn btn-secondary" style="padding:4px 12px; font-size:12px;" id="examples-next" onclick="examplesPage(1)">Next &rarr;</button>
+    <div id="all-results-pager" style="display:none; justify-content:center; align-items:center; gap:12px; margin-top:16px;">
+      <button class="btn btn-secondary" style="padding:4px 12px; font-size:12px;" id="all-prev" onclick="allResultsPage(-1)">&larr; Prev</button>
+      <span style="font-size:13px; color:#4a5568;" id="all-page-info"></span>
+      <button class="btn btn-secondary" style="padding:4px 12px; font-size:12px;" id="all-next" onclick="allResultsPage(1)">Next &rarr;</button>
     </div>
   </div>
 </div>
@@ -88,8 +130,16 @@
 
 {% block scripts %}
 <script>
+var allCompared = [];
+var filteredCompared = [];
+var allCurrentPage = 1;
+var ALL_PAGE_SIZE = 20;
+
 function renderResult(d) {
-  document.getElementById('sample-size').textContent = d.sample_size;
+  var sizeText = d.total_eligible && d.total_eligible > d.sample_size
+    ? d.sample_size + ' / ' + d.total_eligible
+    : String(d.sample_size);
+  document.getElementById('sample-size').textContent = sizeText;
   document.getElementById('risk-changes').textContent = d.delta.risk_level_changes;
   document.getElementById('llm-analyzed').textContent = d.llm.llm_analyzed;
   document.getElementById('new-insights').textContent = d.delta.new_llm_insights;
@@ -111,92 +161,170 @@ function renderResult(d) {
   document.getElementById('delta-insights').textContent = d.delta.new_llm_insights;
   document.getElementById('delta-latency').textContent = (d.delta.latency_overhead_ms / 1000).toFixed(1) + 's';
 
-  allExamples = d.examples || [];
-  exCurrentPage = 1;
-  renderExamplesPage();
+  allCompared = d.all_compared || d.examples || [];
+  allCurrentPage = 1;
+  document.getElementById('filter-risk-changed').checked = false;
+  filterAllResults();
+
+  document.getElementById('result').style.display = 'block';
 }
 
-var allExamples = [];
-var exCurrentPage = 1;
-var EX_PAGE_SIZE = 20;
-
-function examplesPage(delta) {
-  var totalPages = Math.max(1, Math.ceil(allExamples.length / EX_PAGE_SIZE));
-  exCurrentPage = Math.max(1, Math.min(exCurrentPage + delta, totalPages));
-  renderExamplesPage();
+function filterAllResults() {
+  var onlyChanged = document.getElementById('filter-risk-changed').checked;
+  filteredCompared = onlyChanged ? allCompared.filter(function(r) { return r.risk_changed; }) : allCompared;
+  allCurrentPage = 1;
+  renderAllResultsPage();
 }
 
-function renderExamplesPage() {
-  var section = document.getElementById('examples-section');
-  var body = document.getElementById('examples-body');
+function allResultsPage(delta) {
+  var totalPages = Math.max(1, Math.ceil(filteredCompared.length / ALL_PAGE_SIZE));
+  allCurrentPage = Math.max(1, Math.min(allCurrentPage + delta, totalPages));
+  renderAllResultsPage();
+}
+
+function renderAllResultsPage() {
+  var section = document.getElementById('all-results-section');
+  var body = document.getElementById('all-results-body');
   body.innerHTML = '';
 
-  if (allExamples.length === 0) {
+  if (allCompared.length === 0) {
     section.style.display = 'none';
     return;
   }
   section.style.display = 'block';
 
-  var totalPages = Math.max(1, Math.ceil(allExamples.length / EX_PAGE_SIZE));
-  exCurrentPage = Math.min(exCurrentPage, totalPages);
-  var start = (exCurrentPage - 1) * EX_PAGE_SIZE;
-  var page = allExamples.slice(start, start + EX_PAGE_SIZE);
+  var totalPages = Math.max(1, Math.ceil(filteredCompared.length / ALL_PAGE_SIZE));
+  allCurrentPage = Math.min(allCurrentPage, totalPages);
+  var start = (allCurrentPage - 1) * ALL_PAGE_SIZE;
+  var page = filteredCompared.slice(start, start + ALL_PAGE_SIZE);
 
-  document.getElementById('examples-count').textContent = allExamples.length + ' total — page ' + exCurrentPage + '/' + totalPages;
+  var countText = filteredCompared.length + ' policies';
+  if (filteredCompared.length < allCompared.length) countText += ' (filtered from ' + allCompared.length + ')';
+  countText += ' — page ' + allCurrentPage + '/' + totalPages;
+  document.getElementById('all-results-count').textContent = countText;
 
-  page.forEach(function(ex) {
-    var flags = ex.flags.map(function(f) { return '<span class="flag-tag">'+f+'</span>'; }).join(' ');
+  page.forEach(function(r) {
+    var rowClass = r.risk_changed ? ' class="risk-changed-row"' : '';
+    var flags = (r.flags || []).map(function(f) { return '<span class="flag-tag">'+getLabel(f)+'</span>'; }).join(' ');
+
     var insights = '—';
-    if (ex.llm_insights && ex.llm_insights.length > 0) {
-      insights = ex.llm_insights.map(function(i) {
-        return '<span class="flag-tag" style="background:#e9d8fd;color:#553c9a;">'+i.type+'</span> ' +
+    if (r.llm_insights && r.llm_insights.length > 0) {
+      insights = r.llm_insights.map(function(i) {
+        return '<span class="flag-tag" style="background:#e9d8fd;color:#553c9a;">'+getLabel(i.type)+'</span> ' +
           i.finding + ' <span style="font-size:11px;color:#718096;">('+Math.round(i.confidence*100)+'%)</span>';
       }).join('<br>');
     }
-    body.innerHTML += '<tr>' +
-      '<td style="font-weight:500;"><a href="/ui/review/'+ex.policy_number+'" style="color:#3182ce;">'+ex.policy_number+'</a></td>' +
-      '<td><span class="badge badge-'+ex.basic_risk+'">'+ex.basic_risk+'</span></td>' +
-      '<td><span class="badge badge-'+ex.llm_risk+'">'+ex.llm_risk+'</span></td>' +
+
+    var summary = r.summary ? '<span style="font-size:11px; line-height:1.4; display:block; max-width:250px;">' + r.summary + '</span>' : '—';
+    var riskArrow = r.risk_changed ? ' &rarr; ' : ' = ';
+
+    body.innerHTML += '<tr' + rowClass + '>' +
+      '<td style="font-weight:500;"><a href="/ui/review/'+r.policy_number+'?ref=insight" style="color:#3182ce;">'+r.policy_number+'</a></td>' +
+      '<td><span class="badge badge-'+r.basic_risk+'">'+getLabel(r.basic_risk)+'</span></td>' +
+      '<td><span class="badge badge-'+r.llm_risk+'">'+getLabel(r.llm_risk)+'</span>' +
+      (r.risk_changed ? ' <span style="font-size:10px; color:#805ad5; font-weight:600;">CHANGED</span>' : '') + '</td>' +
       '<td>'+flags+'</td>' +
       '<td style="font-size:12px;">'+insights+'</td>' +
+      '<td>'+summary+'</td>' +
       '</tr>';
   });
 
-  var pager = document.getElementById('examples-pager');
+  var pager = document.getElementById('all-results-pager');
   if (totalPages > 1) {
     pager.style.display = 'flex';
-    document.getElementById('examples-prev').style.visibility = exCurrentPage > 1 ? 'visible' : 'hidden';
-    document.getElementById('examples-next').style.visibility = exCurrentPage < totalPages ? 'visible' : 'hidden';
-    document.getElementById('examples-page-info').textContent = exCurrentPage + ' / ' + totalPages;
+    document.getElementById('all-prev').style.visibility = allCurrentPage > 1 ? 'visible' : 'hidden';
+    document.getElementById('all-next').style.visibility = allCurrentPage < totalPages ? 'visible' : 'hidden';
+    document.getElementById('all-page-info').textContent = allCurrentPage + ' / ' + totalPages;
   } else {
     pager.style.display = 'none';
   }
 }
 
-async function runComparison(sample) {
-  document.getElementById('loading').style.display = 'block';
-  document.getElementById('result').style.display = 'none';
+var progressStartTime = 0;
 
-  const resp = await fetch('/migration/comparison?sample='+sample, {method:'POST'});
+function updateProgress(processed, total, phase) {
+  var pct = total > 0 ? Math.round((processed / total) * 100) : 0;
+  document.getElementById('progress-bar').style.width = pct + '%';
+  document.getElementById('progress-text').textContent = pct + '%';
+
+  var phaseLabel = phase === 'llm' ? 'LLM analysis' : 'Rule-based analysis';
+  var elapsed = (Date.now() - progressStartTime) / 1000;
+  var detail = phaseLabel + ': ' + processed + ' / ' + total + ' steps';
+
+  if (processed > 0 && pct < 100) {
+    var rate = processed / elapsed;
+    var remaining = (total - processed) / rate;
+    if (remaining < 60) {
+      detail += ' (~' + Math.ceil(remaining) + 's remaining)';
+    } else {
+      detail += ' (~' + Math.ceil(remaining / 60) + 'min remaining)';
+    }
+  }
+  document.getElementById('progress-detail').textContent = detail;
+}
+
+async function runComparison() {
+  var loading = document.getElementById('loading');
+  var resultDiv = document.getElementById('result');
+  loading.style.display = 'block';
+  resultDiv.style.display = 'none';
+  document.getElementById('compare-btn').disabled = true;
+  document.getElementById('compare-btn').textContent = 'Comparing...';
+  document.getElementById('loading-msg').textContent = 'Comparing policies with AI...';
+  document.getElementById('progress-bar').style.width = '0%';
+  document.getElementById('progress-text').textContent = '0%';
+  document.getElementById('progress-detail').textContent = '';
+  progressStartTime = Date.now();
+
+  const resp = await fetch('/migration/comparison', {method:'POST'});
+  if (!resp.ok) {
+    var err = await resp.json();
+    loading.innerHTML = '<p style="color:#e53e3e;">' + (err.detail || 'Failed') + '</p>';
+    document.getElementById('compare-btn').disabled = false;
+    document.getElementById('compare-btn').textContent = 'Compare';
+    return;
+  }
   const job = await resp.json();
+
+  if (job.total) updateProgress(0, job.total, 'basic');
 
   if (job.job_id) {
     while (true) {
       await new Promise(r => setTimeout(r, 300));
       const status = await fetch('/migration/status/' + job.job_id).then(r => r.json());
+
+      if (status.processed !== undefined && status.total) {
+        updateProgress(status.processed, status.total, status.phase || 'basic');
+      }
+
       if (status.status === 'completed' && status.result) {
+        updateProgress(status.total, status.total, 'done');
         renderResult(status.result);
         break;
       }
       if (status.status === 'failed') {
-        document.getElementById('loading').innerHTML = '<p style="color:#e53e3e;">Failed: ' + (status.error || 'unknown') + '</p>';
+        loading.innerHTML = '<p style="color:#e53e3e;">Failed: ' + (status.error || 'unknown') + '</p>';
+        document.getElementById('compare-btn').disabled = false;
+        document.getElementById('compare-btn').textContent = 'Compare';
         return;
       }
     }
   }
 
-  document.getElementById('loading').style.display = 'none';
-  document.getElementById('result').style.display = 'block';
+  loading.style.display = 'none';
+  document.getElementById('compare-btn').disabled = false;
+  document.getElementById('compare-btn').textContent = 'Re-Compare';
 }
+
+// Load persisted comparison result on page load
+(async function() {
+  try {
+    var resp = await fetch('/migration/latest');
+    if (!resp.ok) return;
+    var data = await resp.json();
+    if (data.status === 'none') return;
+    renderResult(data);
+  } catch (e) {}
+})();
 </script>
 {% endblock %}

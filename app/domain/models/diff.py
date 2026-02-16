@@ -19,6 +19,14 @@ class DiffFlag(StrEnum):
     ENDORSEMENT_ADDED = "endorsement_added"
     ENDORSEMENT_REMOVED = "endorsement_removed"
     NOTES_CHANGED = "notes_changed"
+    DRIVER_VIOLATIONS = "driver_violations"
+    SR22_FILING = "sr22_filing"
+    YOUTHFUL_OPERATOR = "youthful_operator"
+    COVERAGE_GAP = "coverage_gap"
+    CLAIMS_HISTORY = "claims_history"
+    PROPERTY_RISK = "property_risk"
+    REGULATORY = "regulatory"
+    DRIVER_RISK_NOTE = "driver_risk_note"
 
 
 class FieldChange(BaseModel):

@@ -17,7 +17,7 @@ def test_home_pair_structure(home_pair: RenewalPair):
 
 
 def test_diff_flag_values():
-    assert len(DiffFlag) == 15
+    assert len(DiffFlag) == 23
 
 
 def test_diff_result_with_flags():

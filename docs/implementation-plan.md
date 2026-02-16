@@ -306,7 +306,7 @@ main.py                      ← 라우터 등록
 3. _results_store에 결과 저장 (기존 동작, 변경 없음)
 4. _last_summary에 저장 (기존 동작, 변경 없음)
 5. [NEW] BatchRunRecord 생성 (summary 필드 매핑 + job_id + timestamp)
-6. [NEW] _history에 append (100건 초과 시 FIFO)
+6. [NEW] _history에 append (100건 초과 시 오래된 것부터 자동 제거)
 7. _jobs[job_id]["status"] = COMPLETED
 
 --- 별도 요청 시 ---
@@ -439,7 +439,7 @@ def analytics_page(request: Request):
 - 이력 비어 있음 → 총 실행 0, 시계열 빈 목록, 분포 전부 0 (에러 아님)
 - 특정 실행에서 total=0 → 해당 실행 비율 0.0%
 - 이력 목록 조회 → 최신순(descending)
-- FIFO: 새 이력 추가 시점에 100건 초과 시 가장 오래된 것부터 즉시 제거
+- Batch History Limit: 새 이력 추가 시점에 100건 초과 시 가장 오래된 것부터 즉시 제거
 
 ### 테스트
 

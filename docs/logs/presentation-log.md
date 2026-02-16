@@ -9,6 +9,18 @@
 
 ---
 
+### 2026-02-16 03:34 | `main` | uncommitted
+
+**refactor: major 8-phase overhaul — DB persistence, rule expansion, broker workflow, analytics**
+
+_30+ files changed_
+
+> **Context**: DB에 아무것도 저장되지 않아 앱 재시작 시 모든 결과 소실되는 핵심 문제를 해결하면서, 브로커 관점의 워크플로우 추적, 규칙 기반 리스크 판별 확장, UI 개편을 동시에 진행. 8개 Phase를 의존성 그래프에 따라 순차 실행하여 100→117 테스트 유지하면서 완료.
+> **Result**: Write-through DB 전략(메모리 + DB 동시 저장), 23개 DiffFlag(+8 신규: violations, SR-22, 25세 미만, coverage gap, notes 키워드 4종), 브로커 워크플로우(contacted/quote/reviewed 체크박스), Analytics 브로커 지표 카드, Quote Generator 페이지 제거 → Review Detail 인라인 통합. DB 실패 시 graceful degradation(log warning, 정상 동작).
+> **Insight**: 대규모 리팩토링에서 핵심은 Phase 간 의존성을 명확히 하고 각 Phase 완료 후 테스트 검증을 반복하는 것 — 117개 테스트가 매 단계 안전망 역할을 하여 8개 Phase를 연속으로 실행할 수 있었다.
+
+---
+
 ### 2026-02-15 18:06 | `main` | uncommitted
 
 **feat: implement per-task LLM model routing based on Langfuse benchmark**
