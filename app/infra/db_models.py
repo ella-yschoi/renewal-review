@@ -19,6 +19,8 @@ class RenewalPairRow(Base):
     effective_date_prior: Mapped[date] = mapped_column()
     effective_date_renewal: Mapped[date] = mapped_column()
     state: Mapped[str] = mapped_column(String(2), default="CA")
+    insured_name: Mapped[str] = mapped_column(String(200), default="")
+    account_id: Mapped[str] = mapped_column(String(50), default="", index=True)
     prior_json: Mapped[dict] = mapped_column(JSON)
     renewal_json: Mapped[dict] = mapped_column(JSON)
     created_at: Mapped[datetime] = mapped_column(

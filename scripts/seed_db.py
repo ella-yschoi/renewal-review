@@ -51,6 +51,8 @@ async def seed():
                     effective_date_prior=date.fromisoformat(prior["effective_date"]),
                     effective_date_renewal=date.fromisoformat(renewal["effective_date"]),
                     state=prior.get("state", "CA"),
+                    insured_name=prior.get("insured_name", ""),
+                    account_id=prior.get("account_id", ""),
                     prior_json=prior,
                     renewal_json=renewal,
                 )

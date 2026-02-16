@@ -5,6 +5,27 @@
 
 ---
 
+## 2026-02-16 14:15 | `main`
+
+### 무엇을 했는가
+Dashboard와 Portfolio 페이지의 UX 강화 및 DB 스키마 확장. 5개 주요 변경:
+
+1. **Dashboard 배치 프로그레스 바**: Review All / Review(n) 버튼 실행 시 파란색 프로그레스 바(진행률 %, 정책 수, ETA) 표시. LLM Insights 페이지와 동일 패턴(비동기 job → polling)을 재사용하되 파란 그라데이션으로 시각 구분
+2. **DB 스키마 확장**: `RenewalPairRow`에 `insured_name`(String 200)과 `account_id`(String 50, indexed) 탑레벨 컬럼 추가. `seed_db.py`에서 JSON 내부 값을 탑레벨로 복사
+3. **Dashboard Policy # / Account 컬럼 분리**: 기존 하나의 컬럼에 섞여있던 정책 번호와 고객명을 독립 컬럼으로 분리
+4. **Account 정렬 기능**: Dashboard와 Portfolio 양쪽에 Account 컬럼 클릭 시 오름차순/내림차순 정렬 구현. 서버사이드 sort/order 쿼리 파라미터 + 페이지네이션/필터 상태 보존
+5. **Portfolio 안내 배너**: LLM Insights 페이지의 보라색 배너 스타일 재사용. Account-level risk analysis 설명
+
+검증: ruff 0 errors, pytest 116/116 passed. 7개 파일 변경, +185줄/-27줄.
+
+### 왜 했는가
+배치 리뷰 실행 시 브로커가 진행 상황을 알 수 없어 (기존 스피너만 표시) 중도 이탈 위험이 있었다. 또한 Dashboard에서 정책 번호와 고객명이 한 셀에 혼재되어 시인성이 떨어졌고, 8,000건의 정책을 탐색하려면 Account 기준 정렬이 필수적이었다. Portfolio 페이지에는 역할 설명이 없어 처음 방문한 브로커가 페이지 목적을 모를 수 있었다.
+
+### 어떻게 했는가
+Dashboard 프로그레스 바는 LLM Insights(migration.html)와 동일 패턴: `POST /batch/run` → `GET /batch/status/{job_id}` polling → `updateBatchProgress()` JS 함수로 percentage/count/ETA 렌더링. 버튼 비활성화와 에러 복구 포함. Account 정렬은 서버사이드 구현 — `sort`/`order` 쿼리 파라미터를 `ui.py`의 Dashboard/Portfolio 라우트에 추가하고, lambda sort key로 insured_name 기준 정렬. 페이지네이션 링크와 `applyFilters()` JS에 sort/order 전달하여 상태 보존. DB 컬럼 추가 후 DROP TABLE + re-seed로 마이그레이션 (개발 환경).
+
+---
+
 ## 2026-02-16 13:11 | `main`
 
 ### 무엇을 했는가

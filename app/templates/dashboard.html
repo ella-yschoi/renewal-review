@@ -2,15 +2,28 @@
 {% block title %}Dashboard — Renewal Review{% endblock %}
 
 {% block content %}
+<style>
+  .batch-progress-container { background:#edf2f7; border-radius:8px; overflow:hidden; height:24px; position:relative; }
+  .batch-progress-bar { height:100%; background:linear-gradient(90deg, #3182ce, #2b6cb0); border-radius:8px; transition:width 0.3s ease; min-width:0; }
+  .batch-progress-text { position:absolute; top:0; left:0; right:0; bottom:0; display:flex; align-items:center; justify-content:center; font-size:12px; font-weight:600; color:#2d3748; }
+</style>
+
 <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px;">
   <h1 style="font-size:20px;">Dashboard</h1>
   <div style="display:flex; gap:8px; align-items:center;">
     <button class="btn btn-primary" id="btn-review-selected" onclick="reviewSelected()" disabled style="opacity:0.5;">Review (<span id="selected-count">0</span>)</button>
-    <button class="btn btn-secondary" onclick="runBatch()">Review All ({{ data_total | default(0) }})</button>
+    <button class="btn btn-secondary" id="btn-review-all" onclick="runBatch()">Review All ({{ data_total | default(0) }})</button>
   </div>
 </div>
 
-<div id="loading"><div class="spinner"></div><p style="margin-top:8px;" id="loading-text">Processing...</p></div>
+<div id="batch-loading" style="display:none; max-width:480px; margin:0 auto 16px; text-align:center;">
+  <p style="margin-bottom:8px; font-size:13px; color:#2b6cb0; font-weight:500;" id="batch-loading-msg">Processing...</p>
+  <div class="batch-progress-container">
+    <div class="batch-progress-bar" id="batch-progress-bar" style="width:0%;"></div>
+    <div class="batch-progress-text" id="batch-progress-text">0%</div>
+  </div>
+  <p style="font-size:12px; color:#718096; margin-top:6px;" id="batch-progress-detail"></p>
+</div>
 
 <div class="card" style="margin-bottom:16px;">
   <h2 style="margin-bottom:12px;">Broker Workflow</h2>
@@ -133,7 +146,9 @@
     <thead>
       <tr>
         <th style="width:32px;"><input type="checkbox" id="select-all" onchange="toggleSelectAll(this)" style="cursor:pointer; width:15px; height:15px; accent-color:#3182ce;"></th>
-        <th>Policy #</th><th>Risk</th><th>Flags</th><th>Changes</th><th>Contacted</th><th>Quote</th><th>Reviewed</th><th>LLM</th><th>Action</th>
+        <th>Policy #</th>
+        <th style="cursor:pointer; user-select:none;" onclick="sortByAccount()">Account {% if sort == 'account' %}{% if order == 'asc' %}&#9650;{% else %}&#9660;{% endif %}{% else %}<span style="color:#cbd5e0;">&#9650;</span>{% endif %}</th>
+        <th>Risk</th><th>Flags</th><th>Changes</th><th>Contacted</th><th>Quote</th><th>Reviewed</th><th>LLM</th><th>Action</th>
       </tr>
     </thead>
     <tbody id="results-body">
@@ -141,6 +156,7 @@
       <tr>
         <td><input type="checkbox" class="row-select" value="{{ r.policy_number }}" onchange="onRowCheckChange(this)" style="cursor:pointer; width:15px; height:15px; accent-color:#3182ce;"></td>
         <td>{% if r.reviewed_at %}<a href="/ui/review/{{ r.policy_number }}">{{ r.policy_number }}</a>{% else %}{{ r.policy_number }}{% endif %}</td>
+        <td style="font-size:12px; color:#4a5568;">{% if r.pair and r.pair.renewal.insured_name %}{{ r.pair.renewal.insured_name }}{% else %}—{% endif %}</td>
         {% if r.reviewed_at %}
         <td><span class="badge badge-{{ r.risk_level.value }}">{{ r.risk_level.value|label }}</span></td>
         <td>{{ r.diff.flags|length }}</td>
@@ -176,11 +192,11 @@
   {% if total_pages > 1 %}
   <div style="display:flex; justify-content:center; align-items:center; gap:12px; margin-top:16px;">
     {% if page > 1 %}
-    <a href="/?page={{ page - 1 }}&risk={{ filter_risk }}&contacted={{ filter_contacted }}&quoted={{ filter_quoted }}&reviewed={{ filter_reviewed }}&llm={{ filter_llm }}" class="btn btn-secondary" style="padding:4px 12px; font-size:12px;">&larr; Prev</a>
+    <a href="/?page={{ page - 1 }}&risk={{ filter_risk }}&contacted={{ filter_contacted }}&quoted={{ filter_quoted }}&reviewed={{ filter_reviewed }}&llm={{ filter_llm }}&sort={{ sort }}&order={{ order }}" class="btn btn-secondary" style="padding:4px 12px; font-size:12px;">&larr; Prev</a>
     {% endif %}
     <span style="font-size:13px; color:#4a5568;">{{ page }} / {{ total_pages }}</span>
     {% if page < total_pages %}
-    <a href="/?page={{ page + 1 }}&risk={{ filter_risk }}&contacted={{ filter_contacted }}&quoted={{ filter_quoted }}&reviewed={{ filter_reviewed }}&llm={{ filter_llm }}" class="btn btn-secondary" style="padding:4px 12px; font-size:12px;">Next &rarr;</a>
+    <a href="/?page={{ page + 1 }}&risk={{ filter_risk }}&contacted={{ filter_contacted }}&quoted={{ filter_quoted }}&reviewed={{ filter_reviewed }}&llm={{ filter_llm }}&sort={{ sort }}&order={{ order }}" class="btn btn-secondary" style="padding:4px 12px; font-size:12px;">Next &rarr;</a>
     {% endif %}
   </div>
   {% endif %}
@@ -297,7 +313,67 @@ function applyFilters() {
   if (quoted) params.set('quoted', quoted);
   if (reviewed) params.set('reviewed', reviewed);
   if (llm) params.set('llm', llm);
+  var curSort = new URLSearchParams(window.location.search).get('sort');
+  var curOrder = new URLSearchParams(window.location.search).get('order');
+  if (curSort) { params.set('sort', curSort); params.set('order', curOrder || 'asc'); }
   window.location.href = '/?' + params.toString();
+}
+
+function sortByAccount() {
+  var params = new URLSearchParams(window.location.search);
+  var curSort = params.get('sort');
+  var curOrder = params.get('order') || 'asc';
+  if (curSort === 'account' && curOrder === 'asc') {
+    params.set('order', 'desc');
+  } else {
+    params.set('order', 'asc');
+  }
+  params.set('sort', 'account');
+  params.set('page', '1');
+  window.location.href = '/?' + params.toString();
+}
+
+var batchProgressStart = 0;
+
+function updateBatchProgress(processed, total) {
+  var pct = total > 0 ? Math.round((processed / total) * 100) : 0;
+  document.getElementById('batch-progress-bar').style.width = pct + '%';
+  document.getElementById('batch-progress-text').textContent = pct + '%';
+
+  var elapsed = (Date.now() - batchProgressStart) / 1000;
+  var detail = processed + ' / ' + total + ' policies';
+
+  if (processed > 0 && pct < 100) {
+    var rate = processed / elapsed;
+    var remaining = (total - processed) / rate;
+    if (remaining < 60) {
+      detail += ' (~' + Math.ceil(remaining) + 's remaining)';
+    } else {
+      detail += ' (~' + Math.ceil(remaining / 60) + 'min remaining)';
+    }
+  }
+  document.getElementById('batch-progress-detail').textContent = detail;
+}
+
+function showBatchLoading(msg) {
+  document.getElementById('btn-review-selected').disabled = true;
+  document.getElementById('btn-review-selected').style.opacity = '0.5';
+  document.getElementById('btn-review-all').disabled = true;
+  document.getElementById('btn-review-all').style.opacity = '0.5';
+  document.getElementById('batch-loading').style.display = 'block';
+  document.getElementById('batch-loading-msg').textContent = msg;
+  document.getElementById('batch-progress-bar').style.width = '0%';
+  document.getElementById('batch-progress-text').textContent = '0%';
+  document.getElementById('batch-progress-detail').textContent = '';
+  batchProgressStart = Date.now();
+}
+
+function showBatchError(msg) {
+  document.getElementById('batch-loading-msg').textContent = msg;
+  document.getElementById('batch-loading-msg').style.color = '#e53e3e';
+  document.getElementById('btn-review-all').disabled = false;
+  document.getElementById('btn-review-all').style.opacity = '1';
+  updateSelectedCountDisplay();
 }
 
 async function reviewSelected() {
@@ -305,54 +381,76 @@ async function reviewSelected() {
   var policyNumbers = [...selected];
   if (policyNumbers.length === 0) return;
 
-  document.getElementById('loading').style.display = 'block';
-  document.getElementById('loading-text').textContent = 'Reviewing ' + policyNumbers.length + ' policies...';
+  showBatchLoading('Reviewing ' + policyNumbers.length + ' policies...');
 
   var resp = await fetch('/batch/review-selected', {
     method: 'POST',
     headers: {'Content-Type': 'application/json'},
     body: JSON.stringify({policy_numbers: policyNumbers})
   });
+  if (!resp.ok) {
+    var err = await resp.json();
+    showBatchError('Failed: ' + (err.detail || 'unknown'));
+    return;
+  }
   var data = await resp.json();
+
+  if (data.total) updateBatchProgress(0, data.total);
 
   if (data.job_id) {
     while (true) {
       await new Promise(function(r) { setTimeout(r, 300); });
       var status = await fetch('/batch/status/' + data.job_id).then(function(r) { return r.json(); });
-      if (status.status === 'completed') { break; }
+      if (status.processed !== undefined && status.total) {
+        updateBatchProgress(status.processed, status.total);
+      }
+      if (status.status === 'completed') {
+        updateBatchProgress(status.total, status.total);
+        break;
+      }
       if (status.status === 'failed') {
-        document.getElementById('loading-text').textContent = 'Failed: ' + (status.error || 'unknown');
+        showBatchError('Failed: ' + (status.error || 'unknown'));
         return;
       }
     }
   }
 
   sessionStorage.removeItem(SELECTED_KEY);
-  document.getElementById('loading').style.display = 'none';
   window.location.href = '/?page=1';
 }
 
 async function runBatch(sample) {
-  document.getElementById('loading').style.display = 'block';
-  document.getElementById('loading-text').textContent = 'Processing...';
+  showBatchLoading('Reviewing all policies...');
   var url = sample ? '/batch/run?sample='+sample : '/batch/run';
   var resp = await fetch(url, {method:'POST'});
+  if (!resp.ok) {
+    var err = await resp.json();
+    showBatchError('Failed: ' + (err.detail || 'unknown'));
+    return;
+  }
   var data = await resp.json();
+
+  if (data.total) updateBatchProgress(0, data.total);
 
   if (data.job_id) {
     while (true) {
       await new Promise(function(r) { setTimeout(r, 300); });
       var status = await fetch('/batch/status/' + data.job_id).then(function(r) { return r.json(); });
-      if (status.status === 'completed') { break; }
+      if (status.processed !== undefined && status.total) {
+        updateBatchProgress(status.processed, status.total);
+      }
+      if (status.status === 'completed') {
+        updateBatchProgress(status.total, status.total);
+        break;
+      }
       if (status.status === 'failed') {
-        document.getElementById('loading-text').textContent = 'Failed: ' + (status.error || 'unknown');
+        showBatchError('Failed: ' + (status.error || 'unknown'));
         return;
       }
     }
   }
 
   sessionStorage.removeItem(SELECTED_KEY);
-  document.getElementById('loading').style.display = 'none';
   window.location.href = '/?page=1';
 }
 

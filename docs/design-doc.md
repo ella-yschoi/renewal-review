@@ -246,7 +246,7 @@ JSON/DB → load_pairs → [RenewalPair]
 
 | 모델 | 테이블명 | 설명 |
 |------|---------|------|
-| `RenewalPairRow` | `raw_renewals` | 정책 쌍 영구 저장. prior_json, renewal_json으로 원본 보존 |
+| `RenewalPairRow` | `raw_renewals` | 정책 쌍 영구 저장. prior_json, renewal_json으로 원본 보존. insured_name, account_id 탑레벨 컬럼으로 별도 인덱싱 |
 | `RuleResultRow` | `rule_results` | 규칙 기반 리뷰 결과. policy_number, job_id, risk_level, flags_json, changes_json, summary_text, broker_contacted, quote_generated, reviewed_at |
 | `LLMResultRow` | `llm_results` | LLM 분석 결과. policy_number, job_id, risk_level, insights_json, summary_text |
 | `ComparisonRunRow` | `comparison_runs` | LLM 비교 집계 결과. job_id (unique), result_json (JSON blob), created_at |
@@ -398,10 +398,10 @@ POST /batch/run  →  {"job_id": "abc12345", "status": "running"}
 
 | Method | Path | Description |
 |--------|------|-------------|
-| GET | `/` | Dashboard (Broker Workflow 포함) |
+| GET | `/` | Dashboard (Broker Workflow 포함). `sort`, `order` 쿼리 파라미터로 Account 정렬 지원 |
 | GET | `/ui/review/{policy_number}` | 리뷰 상세 |
 | GET | `/ui/insight` | LLM Insights (Basic vs LLM 비교) |
-| GET | `/ui/portfolio` | Portfolio Risk Aggregator |
+| GET | `/ui/portfolio` | Portfolio Risk Aggregator. `sort`, `order` 쿼리 파라미터로 Account 정렬 지원 |
 
 ---
 
@@ -409,10 +409,10 @@ POST /batch/run  →  {"job_id": "abc12345", "status": "running"}
 
 | # | 페이지 | Route | 주요 기능 |
 |---|--------|-------|----------|
-| 1 | Dashboard | `GET /` | 초기 진입 시 미리뷰 정책을 "Pending" 상태로 표시. **Risk Distribution은 `reviewed_at is not None`인 정책만 카운트** — Pending = `total - actually_reviewed`. Broker Workflow 지표 5종 (pending도 `reviewed_at` 기반 계산). 선택 체크박스 sessionStorage 기반 페이지/필터 간 유지 + Review(N) 버튼 (전역 선택 카운트), Review All(N). 필터 6종: 리뷰 여부(Reviewed/Pending), Risk Level, Contacted, Quote, LLM 분석 여부 (필터 상태 sessionStorage 저장, 상세→대시보드 복귀 시 유지). Contacted 체크박스 (사용자 토글), Quote 체크박스 (read-only), Reviewed At 표시, 페이지네이션 (50건/page) |
+| 1 | Dashboard | `GET /` | 초기 진입 시 미리뷰 정책을 "Pending" 상태로 표시. **Risk Distribution은 `reviewed_at is not None`인 정책만 카운트** — Pending = `total - actually_reviewed`. Broker Workflow 지표 5종 (pending도 `reviewed_at` 기반 계산). 선택 체크박스 sessionStorage 기반 페이지/필터 간 유지 + Review(N) 버튼 (전역 선택 카운트), Review All(N). **배치 진행률 표시**: Review All/Review(N) 실행 시 파란색 프로그레스 바 + 정책 수 + 잔여 시간(ETA) 표시. **Policy #와 Account 컬럼 분리**: Policy # 컬럼과 Account(insured_name) 컬럼 독립. **Account 정렬**: 클릭 시 오름차순/내림차순 전환 (▲/▼), 페이지네이션·필터와 sort/order 상태 연동. 필터 6종: 리뷰 여부(Reviewed/Pending), Risk Level, Contacted, Quote, LLM 분석 여부 (필터 상태 sessionStorage 저장, 상세→대시보드 복귀 시 유지). Contacted 체크박스 (사용자 토글), Quote 체크박스 (read-only), Reviewed At 표시, 페이지네이션 (50건/page) |
 | 2 | Review Detail | `GET /ui/review/{pn}` | 레이아웃: Summary → Quote Recommendations (trade_off + broker_tip) → LLM Insights → Policy Overview → Flags → Changes. AI summary는 모든 flagged 정책 대상 (lazy enrichment), LLM insights는 Review Recommended만. Quote trade_off: 3-4문장 구체적 시나리오/금액, broker_tip: 2-3문장 actionable 대화 가이드. 뒤로가기 시 Dashboard 필터 상태 복원 (sessionStorage). `?ref=insight`로 진입 시 "Back to LLM Insights" 표시 |
 | 3 | LLM Insights | `GET /ui/insight` | **reviewed + Review Recommended** 대상 (`reviewed_at is not None` 필수). 실제 LLM API 호출 (llm_enabled=false 시 MockLLMClient fallback). 프로덕션: 전체 대상 분석. 데모: 100건 랜덤 샘플. LLM 결과 DB 저장 + 기존 메타데이터 보존. 비동기 실행 후 progress bar polling (phase/processed/total + 잔여 시간 추정). 결과: 상단 summary 카드 + 하단 전체 비교 테이블 (All Compared Policies, Risk Changed 필터, 페이지네이션 20건/page). 정책 링크에 `?ref=insight` 전달 |
-| 4 | Portfolio | `GET /ui/portfolio` | 계정(account_id) 단위 그룹핑 목록 표시. 컬럼: Insured Name, Policies, Type (Auto/Home/Bundle), Total Premium, Highest Risk, Action. Bundle 계정(2+ policies)은 Analyze 버튼 → 기존 모달, 단일 정책 계정은 View 링크 → review 상세. Rule-based verdict/recommendations/action items |
+| 4 | Portfolio | `GET /ui/portfolio` | 상단 안내 배너(보라색): Account-level risk analysis 설명. 계정(account_id) 단위 그룹핑 목록 표시. **Account 컬럼**: insured_name이 메인, policy_numbers가 서브텍스트. **Account 정렬**: 클릭 시 오름차순/내림차순 전환 (▲/▼), 페이지네이션과 sort/order 상태 연동. 컬럼: Account, Policies, Type (Auto/Home/Bundle), Total Premium, Highest Risk, Action. Bundle 계정(2+ policies)은 Analyze 버튼 → 기존 모달, 단일 정책 계정은 View 링크 → review 상세. Rule-based verdict/recommendations/action items |
 | 5 | Base Layout | — | 공통 nav (Dashboard, LLM Insights, Portfolio), 전역 `getLabel()` JS 함수 |
 
 ### Label Registry (`app/domain/labels.py`)
@@ -661,7 +661,7 @@ data/
 
 ### 테스트 현황
 
-13개 파일, 116개 테스트.
+13개 파일, 116개 테스트. (기존 117개에서 1개 정리)
 
 | 파일 | 테스트 수 | 검증 대상 |
 |------|----------|----------|

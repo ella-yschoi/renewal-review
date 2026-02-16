@@ -47,6 +47,8 @@ def dashboard(
     quoted: str = Query("", description="Filter by quote status"),
     reviewed: str = Query("", description="Filter by reviewed status"),
     llm: str = Query("", description="Filter by LLM analysis status"),
+    sort: str = Query("", description="Sort column"),
+    order: str = Query("asc", description="Sort order"),
     store: InMemoryReviewStore = Depends(get_review_store),
 ):
     all_pairs = load_pairs()
@@ -105,6 +107,12 @@ def dashboard(
     else:
         all_results = unreviewed_rows + reviewed_rows
 
+    if sort == "account":
+        all_results.sort(
+            key=lambda r: (r.pair.renewal.insured_name if r.pair else "").lower(),
+            reverse=(order == "desc"),
+        )
+
     total = len(all_results)
     total_pages = max(1, (total + PAGE_SIZE - 1) // PAGE_SIZE)
     page = min(page, total_pages)
@@ -128,6 +136,8 @@ def dashboard(
             "filter_quoted": quoted,
             "filter_reviewed": reviewed,
             "filter_llm": llm,
+            "sort": sort,
+            "order": order,
             "broker": broker,
             "data_total": data_total,
         },
@@ -191,6 +201,8 @@ def _build_account_lookup() -> dict[str, tuple[str, str]]:
 def portfolio_page(
     request: Request,
     page: int = Query(1, ge=1),
+    sort: str = Query("", description="Sort column"),
+    order: str = Query("asc", description="Sort order"),
     store: InMemoryReviewStore = Depends(get_review_store),
 ):
     all_results = list(store.values())
@@ -243,7 +255,13 @@ def portfolio_page(
             }
         )
 
-    accounts.sort(key=lambda a: _RISK_SEVERITY[a["highest_risk"]], reverse=True)
+    if sort == "account":
+        accounts.sort(
+            key=lambda a: a["insured_name"].lower(),
+            reverse=(order == "desc"),
+        )
+    else:
+        accounts.sort(key=lambda a: _RISK_SEVERITY[a["highest_risk"]], reverse=True)
 
     total = len(accounts)
     total_pages = max(1, (total + PAGE_SIZE - 1) // PAGE_SIZE)
@@ -260,6 +278,8 @@ def portfolio_page(
             "page": page,
             "total_pages": total_pages,
             "total_results": total,
+            "sort": sort,
+            "order": order,
         },
     )
 

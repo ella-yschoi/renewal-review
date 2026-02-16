@@ -9,6 +9,18 @@
 
 ---
 
+### 2026-02-16 14:15 | `main` | uncommitted
+
+**feat: dashboard progress bar, account column split, account sorting, portfolio info banner**
+
+_7 files changed, 185 insertions(+), 27 deletions(-)_
+
+> **Context**: Dashboard에서 배치 리뷰 실행 시 스피너만 표시되어 브로커가 진행 상황을 알 수 없었고, 8,000건 정책 탐색에 Account 기준 정렬이 없었으며, Portfolio 페이지에 역할 설명이 부재. DB에도 `insured_name`/`account_id`가 JSON blob 안에만 있어 쿼리 불가.
+> **Result**: Dashboard에 파란색 프로그레스 바(진행률 %/정책 수/ETA) 추가, Policy #와 Account 컬럼 분리, Dashboard·Portfolio 양쪽에 Account 정렬(▲/▼ 클릭), Portfolio에 보라색 안내 배너 추가. DB `raw_renewals`에 `insured_name`/`account_id` 탑레벨 컬럼 추가 및 re-seed.
+> **Insight**: 프로그레스 바의 가치는 "완료까지 기다리게 하는 것"이 아니라 "기다릴 수 있다는 확신을 주는 것"이다 — ETA와 정책 수를 보여주면 브로커가 다른 작업과 멀티태스킹할 수 있다.
+
+---
+
 ### 2026-02-16 13:11 | `main` | uncommitted
 
 **refactor: generalize self-correcting-loop skill to be project-agnostic**

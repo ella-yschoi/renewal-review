@@ -63,6 +63,15 @@
   <h1 style="font-size:20px;">Portfolio Risk Aggregator</h1>
 </div>
 
+<div class="card" style="margin-bottom:16px; background:#faf5ff; border-left:4px solid #805ad5;">
+  <p style="font-size:13px; color:#553c9a; margin-bottom:6px; font-weight:600;">Account-level risk analysis for bundled policies</p>
+  <p style="font-size:12px; color:#718096; line-height:1.6;">
+    Groups policies by client account to detect <strong>cross-policy risks</strong> — coverage overlaps,
+    bundle discount eligibility, and gaps that single-policy review cannot catch.
+    Accounts with 2+ policies can be analyzed together via the <strong>Analyze</strong> button.
+  </p>
+</div>
+
 {% if not accounts %}
 <div class="card">
   <p style="color:#718096; text-align:center; padding:24px;">No reviewed policies found. Run a batch review from the Dashboard first.</p>
@@ -75,7 +84,7 @@
   <table style="width:100%; table-layout:fixed;">
     <thead>
       <tr>
-        <th style="width:26%;">Policy #</th>
+        <th style="width:26%; cursor:pointer; user-select:none;" onclick="sortByAccount()">Account {% if sort == 'account' %}{% if order == 'asc' %}&#9650;{% else %}&#9660;{% endif %}{% else %}<span style="color:#cbd5e0;">&#9650;</span>{% endif %}</th>
         <th style="width:10%;">Policies</th>
         <th style="width:12%;">Type</th>
         <th style="width:18%;">Total Premium</th>
@@ -87,10 +96,10 @@
       {% for acct in accounts %}
       <tr>
         <td>
-          <div style="font-weight:500;">{{ acct.policy_numbers | join(", ") }}</div>
           {% if acct.insured_name and acct.insured_name != acct.policy_numbers[0] %}
-          <div style="font-size:11px; color:#718096;">{{ acct.insured_name }}</div>
+          <div style="font-weight:500;">{{ acct.insured_name }}</div>
           {% endif %}
+          <div style="font-size:11px; color:#718096;">{{ acct.policy_numbers | join(", ") }}</div>
         </td>
         <td>{{ acct.policy_count }}</td>
         <td><span class="type-badge type-{{ acct.type|lower }}">{{ acct.type }}</span></td>
@@ -110,11 +119,11 @@
   {% if total_pages > 1 %}
   <div style="display:flex; justify-content:center; align-items:center; gap:12px; margin-top:16px;">
     {% if page > 1 %}
-    <a href="/ui/portfolio?page={{ page - 1 }}" class="btn btn-secondary" style="padding:4px 12px; font-size:12px;">&larr; Prev</a>
+    <a href="/ui/portfolio?page={{ page - 1 }}&sort={{ sort }}&order={{ order }}" class="btn btn-secondary" style="padding:4px 12px; font-size:12px;">&larr; Prev</a>
     {% endif %}
     <span style="font-size:13px; color:#4a5568;">{{ page }} / {{ total_pages }}</span>
     {% if page < total_pages %}
-    <a href="/ui/portfolio?page={{ page + 1 }}" class="btn btn-secondary" style="padding:4px 12px; font-size:12px;">Next &rarr;</a>
+    <a href="/ui/portfolio?page={{ page + 1 }}&sort={{ sort }}&order={{ order }}" class="btn btn-secondary" style="padding:4px 12px; font-size:12px;">Next &rarr;</a>
     {% endif %}
   </div>
   {% endif %}
@@ -154,6 +163,20 @@
 
 {% block scripts %}
 <script>
+function sortByAccount() {
+  var params = new URLSearchParams(window.location.search);
+  var curSort = params.get('sort');
+  var curOrder = params.get('order') || 'asc';
+  if (curSort === 'account' && curOrder === 'asc') {
+    params.set('order', 'desc');
+  } else {
+    params.set('order', 'asc');
+  }
+  params.set('sort', 'account');
+  params.set('page', '1');
+  window.location.href = '/ui/portfolio?' + params.toString();
+}
+
 function closeModal(e) {
   if (e && e.target !== document.getElementById('modal-overlay')) return;
   document.getElementById('modal-overlay').classList.remove('open');

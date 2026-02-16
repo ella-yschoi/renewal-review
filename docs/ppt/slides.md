@@ -141,7 +141,7 @@ glowSeed: 20
     <div>🤖 LLM Insights — Review Recommended 100 sample</div>
   </div>
   <div class="mt-4 pt-3 border-t border-gray-700 text-xs text-gray-400">
-    117 tests · 17+ endpoints · 6 pages · 8,000 policies &lt; 1s
+    116 tests · 17+ endpoints · 6 pages · 8,000 policies &lt; 1s
   </div>
 </div>
 </v-click>
@@ -236,7 +236,7 @@ glowSeed: 10
 <div class="border border-purple-500/30 bg-purple-950/20 rounded-lg p-4">
   <div class="text-purple-400 font-bold mb-2">Quality Gates</div>
   <div class="space-y-1.5 text-sm">
-    <div><span class="text-green-400">✅</span> pytest (100) — iterate until pass</div>
+    <div><span class="text-green-400">✅</span> pytest (116) — iterate until pass</div>
     <div><span class="text-green-400">✅</span> Ruff — lint + format</div>
     <div><span class="text-green-400">✅</span> Gitleaks — block secrets</div>
     <div><span class="text-green-400">✅</span> Semgrep — SAST scanning</div>
@@ -1113,7 +1113,7 @@ glowSeed: 14
 
 **AI Tools**: Claude Code · MCP Toolbox · Custom Skills & Hooks
 
-**Metrics**: 117 tests · 17+ endpoints · 8,000 policies < 1s · ~2,500 lines · 2 days
+**Metrics**: 116 tests · 17+ endpoints · 8,000 policies < 1s · ~2,500 lines · 2 days
 
 </div>
 
