@@ -48,10 +48,18 @@
 ### 프로젝트 설정 (이 프로젝트)
 
 ```bash
-cd Workspace/renewal-review
+cd ~/Workspace/renewal-review
 uv sync --extra dev          # 의존성 설치
 uv run pytest -q             # 기존 테스트 통과 확인
 ruff check app/ tests/       # 린트 클린 확인
+```
+
+### `.gitignore` 설정
+
+루프 아티팩트가 실수로 커밋되지 않도록 `.gitignore`에 추가한다:
+
+```
+.self-correcting-loop/
 ```
 
 ---
@@ -100,9 +108,9 @@ PROMPT.md + requirements.md
 | `PROMPT_FILE` | **(필수)** | PROMPT.md 경로 |
 | `REQUIREMENTS_FILE` | **(필수)** | 요구사항 문서 경로 |
 | `OUTPUT_DIR` | `.self-correcting-loop/` | 아티팩트 출력 디렉토리 |
-| `LINT_CMD` | (auto-detect) | 린트 명령 |
-| `TEST_CMD` | (auto-detect) | 테스트 명령 |
-| `SECURITY_CMD` | (auto-detect) | 보안 스캔 명령 (빈 문자열=skip) |
+| `LINT_CMD` | (auto-detect) | 린트 명령 (`"true"`로 설정하면 skip) |
+| `TEST_CMD` | (auto-detect) | 테스트 명령 (`"true"`로 설정하면 skip) |
+| `SECURITY_CMD` | (auto-detect) | 보안 스캔 명령 (`""`로 설정하면 skip) |
 | `SRC_DIRS` | (auto-detect) | 소스 디렉토리 |
 | `BASE_BRANCH` | `main` | git diff 기준 브랜치 |
 | `MAX_ITERATIONS` | `5` | 최대 반복 횟수 |
@@ -139,7 +147,7 @@ PROMPT.md + requirements.md
 Claude Code 세션 밖에서 실행한다. 스크립트가 `claude --print`를 nested 호출하므로 터미널에서 직접 실행해야 한다.
 
 ```bash
-cd Workspace/renewal-review
+cd ~/Workspace/renewal-review
 
 PROMPT_FILE="docs/experiments/4-PROMPT-portfolio-aggregator.md" \
 REQUIREMENTS_FILE="docs/experiments/4-requirements-portfolio-aggregator.md" \
@@ -184,6 +192,7 @@ Requirements: docs/experiments/<번호>-requirements-<기능명>.md
 | 파일 | 내용 |
 |------|------|
 | `loop-execution.log` | 전체 실행 로그 (반복 횟수, 시간, 각 phase 결과) |
+| `feedback.txt` | 마지막 반복의 피드백 (성공 시 삭제됨, 실패 시 디버깅용) |
 | `blind-review.md` | Agent B의 blind code review |
 | `discrepancy-report.md` | Agent C의 requirements vs code 비교 |
 
@@ -261,7 +270,10 @@ Claude Code 세션 안에서 셸 스크립트를 실행하면 `CLAUDECODE` 환�
 ### Phase 2에서 품질 게이트 실패가 반복됨
 
 - 기존 테스트가 통과하는 상태에서 시작했는지 확인
-- 감지된 명령이 예상과 맞는지 확인: `source detect-project.sh && print_detected_config`
+- 감지된 명령이 예상과 맞는지 확인:
+  ```bash
+  source ~/.agents/skills/self-correcting-loop/detect-project.sh && print_detected_config
+  ```
 - 환경변수 오버라이드로 명확히 지정: `LINT_CMD="..."`, `TEST_CMD="..."`
 
 ### Phase 3에서 TRIANGULAR_PASS가 안 나옴

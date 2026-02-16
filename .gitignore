@@ -9,3 +9,4 @@ data/renewals.json
 *.egg-info/
 dist/
 toolbox
+.self-correcting-loop/
