@@ -49,11 +49,7 @@
     </div>
     <div class="stat-card">
       <div class="value" style="color:#805ad5" id="llm-analyzed"></div>
-      <div class="label">AI Analyzed</div>
-    </div>
-    <div class="stat-card">
-      <div class="value" style="color:#d69e2e" id="new-insights"></div>
-      <div class="label">New Insights</div>
+      <div class="label">Policies with Insights</div>
     </div>
   </div>
 
@@ -85,7 +81,6 @@
     <h2>Comparison</h2>
     <table>
       <tr><td>Risk reassessments</td><td id="delta-risk"></td></tr>
-      <tr><td>New AI findings</td><td id="delta-insights"></td></tr>
       <tr><td>Additional time</td><td id="delta-latency"></td></tr>
     </table>
   </div>
@@ -140,7 +135,6 @@ function renderResult(d) {
   document.getElementById('sample-size').textContent = sizeText;
   document.getElementById('risk-changes').textContent = d.delta.risk_level_changes;
   document.getElementById('llm-analyzed').textContent = d.llm.llm_analyzed;
-  document.getElementById('new-insights').textContent = d.delta.new_llm_insights;
 
   document.getElementById('basic-time').textContent = (d.basic.processing_time_ms / 1000).toFixed(1) + 's';
   document.getElementById('basic-no-action-needed').textContent = d.basic.distribution.no_action_needed;
@@ -156,7 +150,6 @@ function renderResult(d) {
   document.getElementById('llm-pct').textContent = d.llm.llm_analyzed_pct + '% policies analyzed by AI';
 
   document.getElementById('delta-risk').textContent = d.delta.risk_level_changes;
-  document.getElementById('delta-insights').textContent = d.delta.new_llm_insights;
   document.getElementById('delta-latency').textContent = (d.delta.latency_overhead_ms / 1000).toFixed(1) + 's';
 
   allCompared = d.all_compared || d.examples || [];
