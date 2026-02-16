@@ -16,7 +16,7 @@
 
 ## Agent-Native Rules
 
-- **Always reference this file** (`convention.md`) when making style or process decisions.
+- **Always reference this file** (`.claude/rules/conventions.md`) when making style or process decisions.
 - **Update plans frequently.** After every significant step, update the current plan or task list.
 - **Token-aware workflow:** Keep context lean. Summarize long outputs. Avoid reading entire large files when a targeted grep/glob suffices.
 - **No speculative changes.** Only modify code you have read and understood.
