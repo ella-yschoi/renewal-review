@@ -19,7 +19,7 @@ def _lazy_enrich(result: ReviewResult) -> None:
     if not result.diff.flags:
         return
 
-    from app.llm.client import LLMClient
+    from app.adaptor.llm.client import LLMClient
 
     enrich_with_llm(result, LLMClient())
 

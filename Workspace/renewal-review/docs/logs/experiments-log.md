@@ -5,6 +5,46 @@
 
 ---
 
+## 2026-02-15 14:51 | `main`
+
+### 무엇을 했는가
+ACORD 표준 기반 보험 도메인 지식을 LLM 프롬프트, mock 응답, 샘플 데이터, design-doc에 반영. 2단계(P0: 프롬프트+mock, P1: 샘플+문서)로 나눠 실행.
+
+**P0 — LLM 프롬프트 ACORD 정렬 (4개 프롬프트)**:
+- `ENDORSEMENT_COMPARISON`: HO 04 xx / PP 03 xx form 참조, ACORD change type (A/C/D), liability 우선 materiality 규칙 추가
+- `RISK_SIGNAL_EXTRACTOR`: signal type에 `regulatory` 추가 (총 6개), ACORD Prior Loss 섹션 참조하는 카테고리별 설명 강화
+- `REVIEW_SUMMARY`: liability limit(BI, PD, Coverage E) 변경 우선순위, 브로커 액션 지향 지시문 추가
+- `QUOTE_PERSONALIZATION`: 보호 필드(BI, PD, UM, Coverage A, Coverage E) 감소 금지 명시, 위반 시 브로커 확인 요구
+
+**P0 — mock 응답 수정 (2건)**:
+- `signal_type: "property_condition"` → `"property_risk"` (프롬프트 enum에 없던 값 — 실제 LLM이 반환하면 validation 실패할 수 있는 버그)
+- endorsement reasoning: 제네릭("Coverage scope narrowed") → 구체적("HO 04 95 removed — sewer/drain coverage dropped")
+
+**P1 — 샘플 데이터 ACORD form number 정렬**:
+- `WB01` → `HO 04 95` (Water Backup/Sump Overflow 표준 form)
+- `HO-61` → `HO 04 61` (Scheduled Personal Property 표준 form)
+- 영향 범위: `home_pair.json`, `golden_eval.json`, `generate.py`, `implementation-plan.md`, `test_differ.py`
+
+**P1 — design-doc 실제 코드 동기화**:
+- `app/llm/` 디렉토리 제거 (client.py가 `adaptor/llm/`으로 이동 완료)
+- `client.py`, `quote_advisor.py` 경로 `adaptor/llm/`으로 수정
+- DB models 경로 `app/infra/db_models.py`로 수정
+- 프롬프트 테이블에 ACORD 정렬 컬럼 추가
+
+검증: ruff 0 errors, pytest 100/100 passed.
+
+### 왜 했는가
+이전 세션에서 ACORD 표준 기반 갭 분석을 수행하고 CLAUDE.md + Custom Skill로 도메인 지식 인프라를 구축했지만, 실제 코드에는 아직 반영되지 않은 상태였다. 데모에서 "보험 도메인 지식이 코드에 스며든 상태"를 보여주려면, LLM이 사용하는 프롬프트와 샘플 데이터가 업계 표준 용어를 사용해야 한다.
+
+핵심 문제: mock의 `property_condition`은 프롬프트 enum에 없는 값이었고, endorsement code `WB01`은 업계에서 인식되지 않는 임의 코드였다. 데모에서 이 데이터가 보이면 "도메인 전문가가 검토하지 않은 코드"로 보인다.
+
+### 어떻게 했는가
+이전 세션에서 만든 `.claude/skills/insurance-domain/SKILL.md`의 ACORD 매핑 테이블을 참조하여 수정. 다만, 이번 세션에서는 skill이 session-start 시 자동 로드된 것이 아니라 이전 세션 continuation의 system-reminder로 컨텍스트에 포함되어 있었다. Skill → 코드 반영 파이프라인이 설계 의도대로 작동한 것은 아님 — fresh session에서 검증 필요.
+
+ruff E501(line-length 99) 위반이 프롬프트 문자열에서 5건 발생 → triple-quoted string 내 줄바꿈으로 해결. golden_eval.json 코드 변경 후 test_differ.py의 `"WB01" in prior_value` 하드코딩도 함께 수정.
+
+---
+
 ## 2026-02-15 12:37 | `experiment/portfolio-aggregator`
 
 ### 무엇을 했는가
@@ -20,13 +60,15 @@
 
 **포트 & 어댑터**: `domain/ports/`에 Protocol 3개(LLMPort, ReviewStore, DataSourcePort). `adaptor/llm/`에 OpenAI/Anthropic 클라이언트 분리, `adaptor/persistence/`에 JSON/DB 로더 분리, `adaptor/storage/memory.py`에 인메모리 구현체 3종.
 
+**LLM 응답 Pydantic 스키마**: `adaptor/llm/schemas.py`에 4개 응답 검증 모델(`RiskSignalExtractorResponse`, `EndorsementComparisonResponse`, `ReviewSummaryResponse`, `QuotePersonalizationResponse`) 신규 생성. 기존 `dict[str, Any]` 반환 → `model_validate()` 후 타입 안전 접근으로 전환. `llm_analysis.py`의 3개 함수(`_analyze_notes`, `_analyze_endorsement`, `generate_summary`)와 `quote_advisor.py`의 `personalize_quotes`에서 `.get()` 수동 파싱 제거, `ValidationError` catch → 기존 fallback과 동일한 경로로 처리. malformed 응답 테스트 4건 추가(notes/endorsement/summary/quote).
+
 검증: ruff 0 errors, pytest 100/100 passed, semgrep 0 findings (305 rules). `domain/` → 외부 import 0건 (헥사고날 경계 검증 통과).
 
 ### 왜 했는가
 BMS(Broker Management System) 교체 시나리오 대비. 현재 flat 구조에서는 데이터 포맷 변경 시 도메인 로직, 라우트, LLM 코드가 모두 영향을 받음. 헥사고날 아키텍처로 의존성 방향을 `api/ → application/ → domain/ ← adaptor/`로 잡으면, 외부 시스템 변경이 `adaptor/`에서 흡수되고 도메인 로직은 무변경. 프레젠테이션에서 "코드를 빠르게 만드는 것"을 넘어 "유지보수 가능한 구조를 자동화하는 것"을 보여주기 위한 작업.
 
 ### 어떻게 했는가
-8단계 순차 실행, 각 단계마다 `ruff check` + `pytest` 통과 확인. Step 1(파일 이동)에서 linter 훅이 import 편집을 되돌리는 문제 발생 → Python bulk replacement 스크립트로 해결. Step 4(immutability)에서 `_flag_changes` → `_detect_flag` + `_flag_changes` 2단 분리로 깔끔한 functional 패턴 구현. Step 6(DI)에서 ruff B008 규칙(Depends() in defaults)과 충돌 → `pyproject.toml`에 `extend-immutable-calls` 추가. convention.md에 헥사고날 레이어 규칙 + 디자인 패턴 4개 규칙 추가.
+8단계 순차 실행, 각 단계마다 `ruff check` + `pytest` 통과 확인. Step 1(파일 이동)에서 linter 훅이 import 편집을 되돌리는 문제 발생 → Python bulk replacement 스크립트로 해결. Step 4(immutability)에서 `_flag_changes` → `_detect_flag` + `_flag_changes` 2단 분리로 깔끔한 functional 패턴 구현. Step 6(DI)에서 ruff B008 규칙(Depends() in defaults)과 충돌 → `pyproject.toml`에 `extend-immutable-calls` 추가. LLM 스키마 도입은 기존 `client.complete() → dict[str, Any]` 반환 구조는 유지하면서, 소비자 레이어(`application/llm_analysis.py`, `adaptor/llm/quote_advisor.py`)에서만 `model_validate()`로 검증 — 클라이언트/mock은 변경 없이 동일한 validation 경로를 테스트. convention.md에 헥사고날 레이어 규칙 + 디자인 패턴 4개 규칙 추가.
 
 ---
 

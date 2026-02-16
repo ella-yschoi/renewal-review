@@ -25,8 +25,8 @@ def generate(raw_pair: dict) -> list[QuoteRecommendation]:
     quotes = generate_quotes(pair, result.diff)
 
     if settings.llm_enabled and quotes:
+        from app.adaptor.llm.client import LLMClient
         from app.adaptor.llm.quote_advisor import personalize_quotes
-        from app.llm.client import LLMClient
 
         client = LLMClient()
         quotes = personalize_quotes(client, quotes, pair)

@@ -97,10 +97,11 @@ app/
 │
 ├── adaptor/                   # 아웃바운드 어댑터 — 외부 시스템 구현체
 │   ├── llm/
+│   │   ├── client.py          # create_llm_client() 팩토리
 │   │   ├── openai.py          # OpenAIClient (LLMPort 구현)
 │   │   ├── anthropic.py       # AnthropicClient (LLMPort 구현)
 │   │   ├── mock.py            # MockLLMClient
-│   │   ├── prompts.py         # 4개 프롬프트 템플릿
+│   │   ├── prompts.py         # 4개 프롬프트 템플릿 (ACORD 정렬)
 │   │   ├── schemas.py         # LLM 응답 Pydantic 검증 스키마
 │   │   └── quote_advisor.py   # personalize_quotes
 │   ├── storage/
@@ -113,9 +114,6 @@ app/
 │   ├── db.py                  # SQLAlchemy async engine
 │   ├── db_models.py           # ORM — RenewalPairRow, BatchResultRow
 │   └── deps.py                # FastAPI Depends 와이어링 (싱글턴 스토어)
-│
-├── llm/
-│   └── client.py              # LLMClient 팩토리 (→ adaptor/llm/ 위임)
 │
 └── templates/
     ├── base.html, dashboard.html, review.html, analytics.html
@@ -230,7 +228,7 @@ JSON/DB → load_pairs → [RenewalPair]
 | `BundleAnalysis` | 번들 분석 결과 | has_auto, has_home, is_bundle, bundle_discount_eligible, carrier_mismatch, unbundle_risk |
 | `PortfolioSummary` | 포트폴리오 전체 요약 | client_policies, total_premium, total_prior_premium, premium_change_pct, risk_breakdown, bundle_analysis, cross_policy_flags |
 
-### DB 도메인 (`app/domain/models/db_models.py`)
+### DB 모델 (`app/infra/db_models.py`)
 
 | 모델 | 테이블명 | 설명 |
 |------|---------|------|
@@ -422,7 +420,7 @@ should_analyze(diff, pair) ──▶ True?
 - key_changes: flag가 있는 변경을 우선으로 최대 5개 선택
 - 실패 시 기존 mechanical summary 유지 (None 반환)
 
-### Quote 개인화 (`app/llm/quote_advisor.py:personalize_quotes`)
+### Quote 개인화 (`app/adaptor/llm/quote_advisor.py:personalize_quotes`)
 
 Quote의 hardcoded trade_off를 고객 맥락 기반 개인화 텍스트로 대체하고, broker_tip 추가.
 전략 선택과 savings 계산은 rule-based 유지.
@@ -443,12 +441,12 @@ Quote의 hardcoded trade_off를 고객 맥락 기반 개인화 텍스트로 대�
 
 ### 4개 프롬프트 (`app/adaptor/llm/prompts.py`)
 
-| 프롬프트 | 역할 | 입력 | 출력 (JSON) |
-|---------|------|------|------------|
-| `RISK_SIGNAL_EXTRACTOR` | 갱신 notes에서 risk signal 추출 | notes 텍스트 | signals[], confidence, summary |
-| `ENDORSEMENT_COMPARISON` | 특약 설명 변경의 material change 판단 | prior/renewal description | material_change, change_type, confidence, reasoning |
-| `REVIEW_SUMMARY` | 리뷰 결과를 자연어 요약으로 변환 | policy 메타 + flags + changes + insights | summary |
-| `QUOTE_PERSONALIZATION` | Quote trade_off/broker_tip 개인화 | policy context + quotes 배열 | quotes[{quote_id, trade_off, broker_tip}] |
+| 프롬프트 | 역할 | ACORD 정렬 | 출력 (JSON) |
+|---------|------|-----------|------------|
+| `RISK_SIGNAL_EXTRACTOR` | 갱신 notes에서 risk signal 추출 | 6개 signal type (claims_history, property_risk, driver_risk, coverage_gap, regulatory, other) | signals[], confidence, summary |
+| `ENDORSEMENT_COMPARISON` | 특약 설명 변경의 material change 판단 | HO 04 xx / PP 03 xx form 참조, ACORD change type (A/C/D) | material_change, change_type, confidence, reasoning |
+| `REVIEW_SUMMARY` | 리뷰 결과를 자연어 요약으로 변환 | liability limit (BI/PD/Coverage E) 우선, 브로커 액션 지향 | summary |
+| `QUOTE_PERSONALIZATION` | Quote trade_off/broker_tip 개인화 | 보호 필드(BI, PD, UM, Cov A, Cov E) 감소 금지 명시 | quotes[{quote_id, trade_off, broker_tip}] |
 
 ### LLM 응답 검증 스키마 (`app/adaptor/llm/schemas.py`)
 
@@ -465,7 +463,7 @@ Quote의 hardcoded trade_off를 고객 맥락 기반 개인화 텍스트로 대�
 
 - **OpenAI** (`openai.py`): `OpenAIClient` — gpt-4o-mini (settings.llm.openai_model, temperature, json_object mode)
 - **Anthropic** (`anthropic.py`): `AnthropicClient` — claude-sonnet-4-5-20250929 (settings.llm.anthropic_model, max_tokens)
-- **Factory** (`app/llm/client.py`): `create_llm_client()` — provider 설정에 따라 적절한 구현체 반환
+- **Factory** (`app/adaptor/llm/client.py`): `create_llm_client()` — provider 설정에 따라 적절한 구현체 반환
 - **MockLLMClient** (`app/adaptor/llm/mock.py`): 테스트·migration 비교용 하드코딩 응답
 - **Langfuse tracing**: 각 provider에 내장. `LANGFUSE_PUBLIC_KEY` 환경변수 존재 시 자동 활성화
 

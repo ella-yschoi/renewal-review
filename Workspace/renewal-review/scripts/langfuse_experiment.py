@@ -24,7 +24,6 @@ from dotenv import load_dotenv
 from langfuse import Evaluation, Langfuse
 
 from app.adaptor.llm.prompts import (
-    COVERAGE_SIMILARITY,
     ENDORSEMENT_COMPARISON,
     RISK_SIGNAL_EXTRACTOR,
 )
@@ -45,7 +44,6 @@ def _check_env():
 PROMPTS = {
     "risk-signal-benchmark": RISK_SIGNAL_EXTRACTOR,
     "endorsement-benchmark": ENDORSEMENT_COMPARISON,
-    "coverage-benchmark": COVERAGE_SIMILARITY,
 }
 
 # ---------------------------------------------------------------------------
@@ -150,9 +148,6 @@ def _calc_key_match(output, expected_output, dataset_name) -> float:
         matches = sum(1 for k in keys if output.get(k) == expected_output.get(k))
         return matches / len(keys)
 
-    if dataset_name == "coverage-benchmark":
-        return 1.0 if output.get("equivalent") == expected_output.get("equivalent") else 0.0
-
     return 0.0
 
 
@@ -241,7 +236,6 @@ def run_experiment(langfuse: Langfuse, dataset_name: str, provider: str):
 DATASET_ALIASES = {
     "risk": "risk-signal-benchmark",
     "endorsement": "endorsement-benchmark",
-    "coverage": "coverage-benchmark",
 }
 
 
@@ -251,7 +245,7 @@ def main():
     parser = argparse.ArgumentParser(description="Run Langfuse experiments")
     parser.add_argument(
         "--dataset",
-        choices=["risk", "endorsement", "coverage"],
+        choices=["risk", "endorsement"],
         help="Run only this dataset (default: all)",
     )
     parser.add_argument(

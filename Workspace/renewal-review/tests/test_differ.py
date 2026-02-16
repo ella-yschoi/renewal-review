@@ -68,7 +68,7 @@ def test_home_endorsement_removed(home_pair: RenewalPair):
     diff = compute_diff(home_pair)
     removed = [c for c in diff.changes if c.field == "endorsement_removed"]
     assert len(removed) == 1
-    assert "WB01" in removed[0].prior_value
+    assert "HO 04 95" in removed[0].prior_value
 
 
 def test_water_backup_dropped(home_pair: RenewalPair):

@@ -20,9 +20,6 @@ class InMemoryReviewStore:
     def values(self) -> list[ReviewResult]:
         return list(self._store.values())
 
-    def items(self) -> list[tuple[str, ReviewResult]]:
-        return list(self._store.items())
-
     def __len__(self) -> int:
         return len(self._store)
 

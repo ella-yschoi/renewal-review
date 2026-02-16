@@ -41,9 +41,17 @@ class MockLLMClient:
                         "severity": "high",
                     },
                     {
-                        "signal_type": "property_condition",
+                        "signal_type": "property_risk",
                         "description": "Aging roof mentioned — replacement overdue",
                         "severity": "medium",
+                    },
+                    {
+                        "signal_type": "regulatory",
+                        "description": (
+                            "SR-22 filing active — state-mandated proof "
+                            "of insurance required for continued compliance"
+                        ),
+                        "severity": "high",
                     },
                 ],
                 "confidence": 0.88,
@@ -55,7 +63,11 @@ class MockLLMClient:
                 "material_change": True,
                 "change_type": "restriction",
                 "confidence": 0.8,
-                "reasoning": "Coverage scope narrowed in renewal",
+                "reasoning": (
+                    "Water backup endorsement (HO 04 95) removed in renewal "
+                    "— sewer/drain coverage dropped, material for property "
+                    "with prior water damage claim"
+                ),
             }
 
         if trace_name == "review_summary":
