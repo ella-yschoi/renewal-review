@@ -5,6 +5,25 @@
 
 ---
 
+## 2026-02-15 17:03 | `main`
+
+### 무엇을 했는가
+`app/adaptor/llm/mock.py`의 `risk_signal_extractor` mock 응답에 `regulatory` 타입 signal 1개 추가. 기존 `claims_history`, `property_risk` 2개에서 3개로 확장.
+
+추가한 signal: `"SR-22 filing active — state-mandated proof of insurance required for continued compliance"` (severity: high).
+
+검증: ruff 0 errors, pytest 100/100 passed.
+
+### 왜 했는가
+프롬프트(`prompts.py`)에 `regulatory`가 signal type으로 정의되어 있지만 mock에서 테스트되지 않는 상태였다. mock이 프롬프트의 signal 카테고리를 커버하지 않으면, 실제 LLM 응답에서 regulatory signal이 반환됐을 때의 흐름을 검증할 수 없다.
+
+또한, CLAUDE.md의 Insurance Domain 섹션에 명시된 `adaptor/llm/` 변경 시 `/insurance-domain` 스킬 참조 파이프라인(L1→L2)이 실제로 작동하는지 검증하는 의도도 있었다.
+
+### 어떻게 했는가
+CLAUDE.md 109행의 트리거 조건(`adaptor/llm/` 변경 시 `/insurance-domain` 스킬 참조)에 따라 Skill tool로 insurance-domain 스킬을 호출. 스킬의 Core Terminology 테이블에서 SR-22 정의("고위험 운전자 증명서, 주가 요구하는 최소 보험 증빙")와 prompts.py의 regulatory 카테고리 정의("State filing requirements, SR-22 mandates, minimum limit compliance")를 교차 참조하여 signal 내용을 작성. ruff E501(line-length) 위반 → implicit string concatenation으로 해결.
+
+---
+
 ## 2026-02-15 14:51 | `main`
 
 ### 무엇을 했는가
