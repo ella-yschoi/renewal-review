@@ -141,7 +141,7 @@ glowSeed: 20
     <div>🤖 LLM Insights — Review Recommended 100 sample</div>
   </div>
   <div class="mt-4 pt-3 border-t border-gray-700 text-xs text-gray-400">
-    116 tests · 17+ endpoints · 6 pages · 8,000 policies &lt; 1s
+    116 tests · 21 endpoints · 4 pages · 8,000 policies &lt; 1s
   </div>
 </div>
 </v-click>
@@ -155,7 +155,7 @@ glowSeed: 20
 이 flag들을 종합해서 Risk Classifier가 4단계 위험 등급을 매깁니다 — No Action, Review Recommended, Action Required, Urgent Review.
 여기까지가 100% rule-based이고, 마지막에 텍스트가 변경된 정책만 — 메모, 특약 같은 비정형 텍스트요 — LLM에 선별 투입합니다.
 전체의 5~15%만 LLM을 호출하도록 제가 직접 설계한 부분이라, 비용 효율적입니다.
-오른쪽은 주요 기능입니다 — 대시보드, 개별 리뷰, 분석, 견적, 포트폴리오.
+오른쪽은 주요 기능입니다 — 대시보드, 리뷰 상세(인라인 견적 포함), LLM 인사이트, 포트폴리오.
 프레젠테이션을 마치면 데모 페이지로 자세히 보실 수 있습니다."
 -->
 
@@ -188,10 +188,11 @@ glowSeed: 3
 | Phase                   | AI     | Manual | Speedup |
 | ----------------------- | ------ | ------ | ------- |
 | Models + Parser (ACORD) | 30 min | 4h     | 8x      |
-| Diff Engine + 15 Rules  | 45 min | 6h     | 8x      |
+| Diff Engine + 23 Rules  | 45 min | 6h     | 8x      |
 | Mock Data (8,000)       | 20 min | 3h     | 9x      |
 | LLM Client + Prompts    | 30 min | 5h     | 10x     |
 | Batch + API + Frontend  | 75 min | 10h    | 8x      |
+| Domain Research + QA    | 20 min | 9h     | 27x     |
 
 </div>
 </v-click>
@@ -199,7 +200,7 @@ glowSeed: 3
 <!--
 "시니어 개발자 기준으로 산정하면 이 시스템은 순수 소프트웨어 개발로 약 37시간, 5일 걸리는 작업입니다.
 하지만, AI agent로 코어 시스템을 하루 만에 완성했습니다. 5배 빠릅니다.
-거기에 5가지 실험 — agent 오케스트레이션, 삼각검증, 자가수정 루프, LLM 벤치마크 — 까지 포함해서 총 2일에 완료했습니다.
+거기에 5가지 실험 — agent 오케스트레이션, 삼각검증, 자가수정 루프, 파이프라인 재사용성, LLM 벤치마크 — 까지 포함해서 총 2일에 완료했습니다.
 가장 큰 시간 절약 중 하나는 도메인 리서치 였습니다. 
 자세한 보험 도메인은 몰랐지만 ACORD 보험 표준을 Claude.md와 Skills에 주입하여, 별도 학습 없이 바로 모델링할 수 있었습니다."
 -->
@@ -292,7 +293,7 @@ glowSeed: 5
     <div>5-layer hexagonal arch</div>
     <div>8 Pydantic models</div>
     <div>23 DiffFlags, 4 risk levels</div>
-    <div>14+ API endpoints</div>
+    <div>21 API endpoints</div>
     <div class="text-yellow-400">Auto-updated via hooks</div>
   </div>
 </div>
@@ -1253,7 +1254,7 @@ glowSeed: 14
 
 **AI Tools**: Claude Code · MCP Toolbox · Custom Skills & Hooks
 
-**Metrics**: 116 tests · 17+ endpoints · 8,000 policies < 1s · ~2,500 lines · 2 days
+**Metrics**: 116 tests · 21 endpoints · 8,000 policies < 1s · ~4,000 lines · 2 days
 
 </div>
 
