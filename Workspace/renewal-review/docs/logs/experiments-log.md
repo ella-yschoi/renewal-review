@@ -5,6 +5,23 @@
 
 ---
 
+## 2026-02-15 18:06 | `main`
+
+### 무엇을 했는가
+Langfuse 벤치마크(실험 5) 결과를 반영하여 task별 모델 라우팅을 구현했다. 기존에는 `RR_LLM_PROVIDER` 단일 설정으로 4개 LLM 작업 모두 동일 모델을 사용했으나, 이제 `LLMClient`가 `trace_name` 기반으로 작업별 최적 모델을 자동 선택한다.
+
+라우팅 결과: `risk_signal_extractor` → Sonnet (정확도 0.90, 복합 추론), 나머지 3개(`endorsement_comparison`, `review_summary`, `quote_personalization`) → Haiku (Sonnet 동급 정확도 + 2배 빠르고 10배 저렴). `RR_LLM_PROVIDER` 환경변수 제거.
+
+검증: ruff 0 errors, pytest 100/100 passed. design-doc 3개 섹션 업데이트.
+
+### 왜 했는가
+실험 5에서 3개 모델(gpt-4o-mini, Sonnet, Haiku)을 3개 작업에 대해 정량 비교했으나, 그 결과가 프로덕션 코드에 반영되지 않은 상태였다. 모든 작업에 동일 모델을 사용하면 벤치마크를 실행한 의미가 없다. 벤치마크의 핵심 발견 — "작업 복잡도에 따라 모델 격차가 달라진다" — 을 코드로 실현해야 했다.
+
+### 어떻게 했는가
+4개 파일 변경. `LLMConfig`에 `sonnet_model`, `haiku_model`, `task_models` dict 추가. `OpenAIClient`와 `AnthropicClient`의 constructor에 `model` 파라미터를 추가하여 외부에서 모델 주입 가능하게 변경. `LLMClient`를 라우팅 클라이언트로 재작성 — `trace_name` → `task_models` dict → `(provider, model)` 해석 → 해당 클라이언트에 위임. 동일 (provider, model) 조합은 인스턴스를 캐싱하여 재사용. `LLMPort` 인터페이스(domain 레이어)는 변경 없음 — 헥사고날 아키텍처의 "외부 변경은 adaptor에서 흡수" 원칙을 따름.
+
+---
+
 ## 2026-02-15 17:03 | `main`
 
 ### 무엇을 했는가

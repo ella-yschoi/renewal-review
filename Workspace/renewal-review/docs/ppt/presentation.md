@@ -97,12 +97,12 @@ Agent에게 "뭘 만들어"가 아니라 **"이 순서로, 이 구조로, 이 �
 
 ### LLM 4개 적용 포인트
 
-| LLM 호출 | 대상 | 트리거 |
-|----------|------|--------|
-| Risk Signal Extraction | notes 분석 | notes 변경 시 |
-| Endorsement Comparison | 특약 비교 | endorsement 변경 시 |
-| Review Summary | 리뷰 요약 | flags 있는 정책 (lazy) |
-| Quote Personalization | 견적 개인화 | quotes 생성 시 |
+| LLM 호출 | 대상 | 트리거 | 모델 |
+|----------|------|--------|------|
+| Risk Signal Extraction | notes 분석 | notes 변경 시 | **Sonnet** (복합 추론) |
+| Endorsement Comparison | 특약 비교 | endorsement 변경 시 | Haiku |
+| Review Summary | 리뷰 요약 | flags 있는 정책 (lazy) | Haiku |
+| Quote Personalization | 견적 개인화 | quotes 생성 시 | Haiku |
 
 ### Frontend UI
 
@@ -197,7 +197,7 @@ renewal-review/
 | 2 | Triangular Verification | Agent끼리 서로 검증할 수 있는가? | 정보 격리로 기존 도구가 못 찾는 intent mismatch 9건 발견 (78% precision) |
 | 3 | Self-Correcting Loop | 검증→수정까지 자동화할 수 있는가? | 1회 반복, 사람 개입 0, 81/81 테스트 통과 |
 | 4 | Pipeline Reusability | 다른 기능에서도 재사용 가능한가? | 동일 파이프라인, 다른 도메인(Portfolio), 동일 결과. Claude Skill로 패키징 |
-| 5 | Langfuse LLM Benchmark | 어떤 LLM이 이 도메인에 최적인가? | Haiku = Sonnet의 90% 정확도 at 1/10 가격. 프롬프트 변경은 전 모델 회귀 테스트 필요 |
+| 5 | Langfuse LLM Benchmark | 어떤 LLM이 이 도메인에 최적인가? | 벤치마크 결과를 반영하여 **task별 모델 라우팅 구현**: risk_signal → Sonnet, 나머지 → Haiku |
 
 ---
 

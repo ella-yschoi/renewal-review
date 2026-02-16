@@ -56,7 +56,7 @@
 
 ```
 app/
-├── main.py                    # 컴포지션 루트 — 라우터 등록
+├── main.py                    # 컴포지션 루트 — lifespan(init_db) + 라우터 등록
 ├── config.py                  # Settings + 중첩 설정 (Rules, Quotes, Portfolio, LLM)
 ├── data_loader.py             # 데이터 소스 팩토리 (→ adaptor/ 위임)
 │
@@ -68,7 +68,8 @@ app/
 │   │   ├── review.py          # RiskLevel, LLMInsight, ReviewResult, BatchSummary
 │   │   ├── quote.py           # CoverageAdjustment, QuoteRecommendation
 │   │   ├── portfolio.py       # CrossPolicyFlag, BundleAnalysis, PortfolioSummary
-│   │   └── analytics.py       # BatchRunRecord, TrendPoint, AnalyticsSummary
+│   │   ├── analytics.py       # BatchRunRecord, TrendPoint, AnalyticsSummary
+│   │   └── llm_schemas.py     # LLM 응답 검증 Pydantic 스키마
 │   ├── services/
 │   │   ├── parser.py          # raw dict → RenewalPair
 │   │   ├── differ.py          # Prior ↔ Renewal diff
@@ -84,7 +85,8 @@ app/
 │
 ├── application/               # 유스케이스 — 도메인 + 포트 오케스트레이션
 │   ├── batch.py               # process_pair, process_batch, assign_risk_level
-│   └── llm_analysis.py        # should_analyze, analyze_pair, generate_summary
+│   ├── llm_analysis.py        # should_analyze, analyze_pair, generate_summary
+│   └── prompts.py             # 4개 LLM 프롬프트 템플릿 (ACORD 정렬)
 │
 ├── api/                       # 인바운드 어댑터 — FastAPI 라우트 + Depends()
 │   ├── reviews.py             # POST /reviews/compare, GET /reviews/{pn}
@@ -101,8 +103,6 @@ app/
 │   │   ├── openai.py          # OpenAIClient (LLMPort 구현)
 │   │   ├── anthropic.py       # AnthropicClient (LLMPort 구현)
 │   │   ├── mock.py            # MockLLMClient
-│   │   ├── prompts.py         # 4개 프롬프트 템플릿 (ACORD 정렬)
-│   │   ├── schemas.py         # LLM 응답 Pydantic 검증 스키마
 │   │   └── quote_advisor.py   # personalize_quotes
 │   ├── storage/
 │   │   └── memory.py          # InMemoryReviewStore, InMemoryHistoryStore, InMemoryJobStore
@@ -266,7 +266,7 @@ JSON/DB → load_pairs → [RenewalPair]
 | `no_action_needed` | flag 없음 | — |
 
 > 판정 우선순위: urgent_review > action_required > review_recommended > no_action_needed
-> (`app/domain/services/batch.py:18-26`)
+> (`app/application/batch.py:17-25`)
 
 ### LLM Risk Upgrade 조건 (`app/domain/services/aggregator.py`)
 
@@ -439,7 +439,7 @@ Quote의 hardcoded trade_off를 고객 맥락 기반 개인화 텍스트로 대�
 | LLM 부분 응답 | N/A | 매칭된 quote만 개인화, 나머지 원본 |
 | Flag 없는 policy | summary 생성 건너뜀 | quote 자체가 빈 리스트 |
 
-### 4개 프롬프트 (`app/adaptor/llm/prompts.py`)
+### 4개 프롬프트 (`app/application/prompts.py`)
 
 | 프롬프트 | 역할 | ACORD 정렬 | 출력 (JSON) |
 |---------|------|-----------|------------|
@@ -448,7 +448,7 @@ Quote의 hardcoded trade_off를 고객 맥락 기반 개인화 텍스트로 대�
 | `REVIEW_SUMMARY` | 리뷰 결과를 자연어 요약으로 변환 | liability limit (BI/PD/Coverage E) 우선, 브로커 액션 지향 | summary |
 | `QUOTE_PERSONALIZATION` | Quote trade_off/broker_tip 개인화 | 보호 필드(BI, PD, UM, Cov A, Cov E) 감소 금지 명시 | quotes[{quote_id, trade_off, broker_tip}] |
 
-### LLM 응답 검증 스키마 (`app/adaptor/llm/schemas.py`)
+### LLM 응답 검증 스키마 (`app/domain/models/llm_schemas.py`)
 
 모든 LLM 응답은 Pydantic 모델로 `model_validate()` 검증 후 타입 안전하게 접근. 필드 누락 시 `ValidationError` → 기존 fallback 경로로 처리.
 
@@ -461,9 +461,9 @@ Quote의 hardcoded trade_off를 고객 맥락 기반 개인화 텍스트로 대�
 
 ### Provider 구성 (`app/adaptor/llm/`)
 
-- **OpenAI** (`openai.py`): `OpenAIClient` — gpt-4o-mini (settings.llm.openai_model, temperature, json_object mode)
-- **Anthropic** (`anthropic.py`): `AnthropicClient` — claude-sonnet-4-5-20250929 (settings.llm.anthropic_model, max_tokens)
-- **Factory** (`app/adaptor/llm/client.py`): `create_llm_client()` — provider 설정에 따라 적절한 구현체 반환
+- **OpenAI** (`openai.py`): `OpenAIClient(model=)` — model 주입 가능, 기본값 gpt-4o-mini
+- **Anthropic** (`anthropic.py`): `AnthropicClient(model=)` — model 주입 가능, 기본값 claude-sonnet
+- **Routing** (`app/adaptor/llm/client.py`): `LLMClient` — `trace_name` 기반 task별 모델 라우팅. `settings.llm.task_models` 매핑에 따라 provider+model 자동 선택. 동일 (provider, model) 조합은 인스턴스 재사용
 - **MockLLMClient** (`app/adaptor/llm/mock.py`): 테스트·migration 비교용 하드코딩 응답
 - **Langfuse tracing**: 각 provider에 내장. `LANGFUSE_PUBLIC_KEY` 환경변수 존재 시 자동 활성화
 
@@ -491,9 +491,9 @@ Quote의 hardcoded trade_off를 고객 맥락 기반 개인화 텍스트로 대�
 | 상황 | Fallback | 코드 위치 |
 |------|----------|----------|
 | DB 로드 실패 | JSON 파일로 폴백 | `app/data_loader.py:42-44` |
-| LLM JSON 파싱 실패 | `{"error": ..., "raw_response": ...}` 반환 | `app/llm/client.py:57-58` |
+| LLM JSON 파싱 실패 | `{"error": ..., "raw_response": ...}` 반환 | `app/adaptor/llm/openai.py`, `anthropic.py` |
 | LLM 분석 에러 / 응답 스키마 불일치 | confidence=0.0인 에러 LLMInsight 생성 | `app/application/llm_analysis.py` |
-| LLM summary 실패 | 기존 mechanical summary 유지 | `app/domain/services/batch.py` |
+| LLM summary 실패 | 기존 mechanical summary 유지 | `app/application/batch.py` |
 | LLM quote 개인화 실패 | 원본 trade_off 유지, broker_tip="" | `app/adaptor/llm/quote_advisor.py` |
 
 ### Async Job 실패
@@ -510,7 +510,7 @@ Quote의 hardcoded trade_off를 고객 맥락 기반 개인화 텍스트로 대�
 ### Storage
 
 - **기본**: in-memory — `InMemoryReviewStore`, `InMemoryHistoryStore`, `InMemoryJobStore` (`app/adaptor/storage/memory.py`), `Depends()`로 주입 (`app/infra/deps.py`)
-- **Optional**: PostgreSQL — `RR_DB_URL` 환경변수 설정 시 활성화. SQLAlchemy async engine (asyncpg) + sync fallback (psycopg)
+- **Optional**: PostgreSQL — `RR_DB_URL` 환경변수 설정 시 활성화. SQLAlchemy async engine (asyncpg) + sync fallback (psycopg). FastAPI lifespan에서 `init_db()` 호출하여 앱 시작 시 테이블 자동 생성
 
 ### Caching
 
@@ -528,10 +528,19 @@ Quote의 hardcoded trade_off를 고객 맥락 기반 개인화 텍스트로 대�
 | 항목 | 제한 | 코드 위치 |
 |------|------|----------|
 | Analytics history | `deque(maxlen=100)` — FIFO 100건 | `app/api/analytics.py:10-11` |
-| Quote 최대 개수 | 3개 (`quotes[:3]`) | `app/domain/services/quote_generator.py:231` |
-| Quote 최소 조건 | flags 존재 시에만 생성 | `app/domain/services/quote_generator.py:214-215` |
+| Quote 최대 개수 | 3개 (`quotes[:3]`) | `app/domain/services/quote_generator.py` |
+| Quote 최소 조건 | flags 존재 시에만 생성 | `app/domain/services/quote_generator.py` |
 | UI 페이지네이션 | 50건/page (`PAGE_SIZE = 50`) | `app/api/ui.py:23` |
 | Migration 비교 샘플 | 기본 50, 최소 1 (`Query(50, ge=1)`) | `app/api/eval.py:85` |
+
+### Docker
+
+- `Dockerfile`: python:3.13-slim + uv, 의존성 레이어 캐싱 (`pyproject.toml` + `uv.lock` 먼저 복사)
+- `docker-compose.yml`: `db` (postgres:16-alpine, healthcheck) + `app` (소스 volume mount, `--reload`)
+- `app` 서비스는 `environment.RR_DB_URL`로 호스트를 `db`(서비스명)로 오버라이드
+- `depends_on: db: condition: service_healthy` — DB 준비 후 앱 시작
+- `Makefile`: `compose-up` (빌드+실행), `compose-down` (중지), `dev`/`test`/`lint` (로컬용)
+- `main.py` lifespan에서 `init_db()` 호출 → 앱 시작 시 테이블 자동 생성
 
 ### Timezone
 
@@ -552,9 +561,10 @@ Quote의 hardcoded trade_off를 고객 맥락 기반 개인화 텍스트로 대�
 | ORM | SQLAlchemy ≥ 2.0 (asyncio) |
 | 검증 | Pydantic ≥ 2.10 |
 | 템플릿 | Jinja2 ≥ 3.1 |
-| LLM | OpenAI ≥ 2.18 (기본), Anthropic ≥ 0.43 (선택) |
-| Observability | Langfuse ≥ 3.14 |
+| LLM (optional) | OpenAI ≥ 2.18, Anthropic ≥ 0.43, Langfuse ≥ 3.14 — `pip install .[llm]` |
 | DB 드라이버 | asyncpg ≥ 0.30, psycopg ≥ 3.1 |
+| 컨테이너 | Docker (python:3.13-slim + uv), Docker Compose |
+| DB | PostgreSQL 16 (alpine) |
 
 ### Dev Dependencies
 
@@ -570,7 +580,6 @@ Quote의 hardcoded trade_off를 고객 맥락 기반 개인화 텍스트로 대�
 | 변수 | 기본값 | 설명 |
 |------|--------|------|
 | `RR_LLM_ENABLED` | `false` | LLM 분석 활성화 |
-| `RR_LLM_PROVIDER` | `"openai"` | LLM provider (`openai` \| `anthropic`) |
 | `RR_DATA_PATH` | `"data/renewals.json"` | 데이터 파일 경로 |
 | `RR_DB_URL` | `""` | PostgreSQL URL (비어있으면 JSON 모드) |
 | `LANGFUSE_PUBLIC_KEY` | — | 설정 시 Langfuse tracing 자동 활성화 |
@@ -579,10 +588,10 @@ Quote의 hardcoded trade_off를 고객 맥락 기반 개인화 텍스트로 대�
 
 | 클래스 | 핵심 필드 | 참조 위치 |
 |--------|----------|----------|
-| `RuleThresholds` | premium_high_pct (10.0), premium_critical_pct (20.0) | `domain/services/rules.py` |
-| `QuoteConfig` | auto_collision/comprehensive_deductible, savings_* (12개) | `domain/services/quote_generator.py` |
-| `PortfolioThresholds` | high/low_liability, concentration_pct, portfolio_change_pct | `domain/services/portfolio_analyzer.py` |
-| `LLMConfig` | openai_model, anthropic_model, max_tokens, temperature | `adaptor/llm/openai.py`, `anthropic.py` |
+| `RuleThresholds` | premium_high_pct (10.0), premium_critical_pct (20.0) | `domain/services/rules.py` (파라미터 주입) |
+| `QuoteConfig` | auto_collision/comprehensive_deductible, savings_* (12개) | `domain/services/quote_generator.py` (파라미터 주입) |
+| `PortfolioThresholds` | high/low_liability, concentration_pct, portfolio_change_pct | `domain/services/portfolio_analyzer.py` (파라미터 주입) |
+| `LLMConfig` | openai_model, sonnet_model, haiku_model, max_tokens, temperature, task_models | `adaptor/llm/client.py` (라우팅), `openai.py`, `anthropic.py` |
 
 ### Ruff 설정 (`pyproject.toml`)
 
