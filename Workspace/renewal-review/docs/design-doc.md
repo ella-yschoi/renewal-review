@@ -249,6 +249,7 @@ JSON/DB → load_pairs → [RenewalPair]
 | `RenewalPairRow` | `raw_renewals` | 정책 쌍 영구 저장. prior_json, renewal_json으로 원본 보존 |
 | `RuleResultRow` | `rule_results` | 규칙 기반 리뷰 결과. policy_number, job_id, risk_level, flags_json, changes_json, summary_text, broker_contacted, quote_generated, reviewed_at |
 | `LLMResultRow` | `llm_results` | LLM 분석 결과. policy_number, job_id, risk_level, insights_json, summary_text |
+| `ComparisonRunRow` | `comparison_runs` | LLM 비교 집계 결과. job_id (unique), result_json (JSON blob), created_at |
 
 ### DB Persistence (Write-Through)
 
@@ -257,6 +258,7 @@ JSON/DB → load_pairs → [RenewalPair]
 - **DbResultWriter**: DB 설정 시 사용. 모든 메서드에 try/except — DB 실패 시 log warning, 앱 정상 동작
 - **NoopResultWriter**: DB 미설정 시 사용. 모든 메서드 pass
 - 앱 시작 시 `_restore_cache_from_db()` → DB에서 InMemoryReviewStore 복원. `raw_renewals`에서 `pair` 재연결, `rule_results.summary_text`에서 summary 복원, `llm_results`에서 insights/summary/risk_level 머지
+- 앱 시작 시 `_restore_comparison_from_db()` → DB에서 최신 LLM 비교 집계 결과 복원 (`comparison_runs` → `_last_comparison`)
 
 ---
 
@@ -368,8 +370,8 @@ LLM 분석 결과에 따라 rule_risk보다 높은 level로 상향. 하향은 �
 | GET | `/batch/total-count` | 데이터 소스 전체 정책 수 | `{"total"}` | 200 |
 | GET | `/batch/status/{job_id}` | 배치 진행 상태 | job 상세 (status, processed, total) | 200, 404 |
 | POST | `/eval/run` | Golden eval 실행 (개발/QA 전용) | accuracy + 시나리오별 결과 | 200, 404 |
-| POST | `/migration/comparison` | **reviewed** + Review Recommended 대상 Basic vs LLM 비교 (비동기). `reviewed_at is not None` 필수. 실제 LLM API 호출 (llm_enabled=true 시). 데모: 100건 샘플링 (`comparison_sample_size`). LLM 결과를 DB(`llm_results`)에도 저장. 기존 메타데이터(`reviewed_at`, `broker_contacted`, `quote_generated`) 보존 | `{"job_id", "status", "total"}` | 200, 404 |
-| GET | `/migration/latest` | 마지막 비교 결과 조회 (서버 persistence) | 비교 결과 dict 또는 `{"status":"none"}` | 200 |
+| POST | `/migration/comparison` | **reviewed** + Review Recommended 대상 Basic vs LLM 비교 (비동기). `reviewed_at is not None` 필수. 실제 LLM API 호출 (llm_enabled=true 시). 데모: 100건 샘플링 (`comparison_sample_size`). LLM 결과를 DB(`llm_results`), 집계 결과를 DB(`comparison_runs`)에도 저장. 기존 메타데이터 보존 | `{"job_id", "status", "total"}` | 200, 404 |
+| GET | `/migration/latest` | 마지막 비교 결과 조회. 메모리 캐시 → DB fallback (`comparison_runs`) | 비교 결과 dict 또는 `{"status":"none"}` | 200 |
 | GET | `/migration/status/{job_id}` | Migration 진행 상태 | job 상세 | 200, 404 |
 
 ### Analytics

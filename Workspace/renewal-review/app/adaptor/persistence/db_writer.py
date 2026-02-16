@@ -6,7 +6,7 @@ from sqlalchemy.orm import Session
 
 from app.config import settings
 from app.domain.models.review import ReviewResult
-from app.infra.db_models import LLMResultRow, RuleResultRow
+from app.infra.db_models import ComparisonRunRow, LLMResultRow, RuleResultRow
 
 logger = logging.getLogger(__name__)
 
@@ -151,6 +151,28 @@ class DbResultWriter:
         except Exception:
             logger.warning("Failed to load LLM results from DB")
             return []
+
+    def save_comparison_result(self, job_id: str, result: dict) -> None:
+        try:
+            row = ComparisonRunRow(job_id=job_id, result_json=result)
+            with Session(self._engine) as session:
+                session.add(row)
+                session.commit()
+        except Exception:
+            logger.warning("Failed to save comparison result for job %s", job_id)
+
+    def load_latest_comparison(self) -> dict | None:
+        try:
+            with Session(self._engine) as session:
+                row = session.execute(
+                    select(ComparisonRunRow).order_by(ComparisonRunRow.created_at.desc()).limit(1)
+                ).scalar_one_or_none()
+                if row is None:
+                    return None
+                return row.result_json
+        except Exception:
+            logger.warning("Failed to load comparison result from DB")
+            return None
 
     def dispose(self) -> None:
         self._engine.dispose()

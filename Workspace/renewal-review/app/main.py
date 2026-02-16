@@ -70,6 +70,17 @@ def _restore_cache_from_db() -> None:
     logger.info("Restored %d results from DB cache", len(rows))
 
 
+def _restore_comparison_from_db() -> None:
+    from app.api import eval as eval_module
+    from app.infra.deps import get_result_writer
+
+    writer = get_result_writer()
+    saved = writer.load_latest_comparison()
+    if saved is not None:
+        eval_module._last_comparison = saved
+        logger.info("Restored latest comparison result from DB")
+
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     await init_db()
@@ -77,6 +88,10 @@ async def lifespan(app: FastAPI):
         _restore_cache_from_db()
     except Exception:
         logger.warning("Could not restore cache from DB, starting fresh")
+    try:
+        _restore_comparison_from_db()
+    except Exception:
+        logger.warning("Could not restore comparison from DB")
     yield
 
 

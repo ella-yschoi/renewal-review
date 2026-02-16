@@ -78,7 +78,14 @@ def _risk_dist(results: list) -> dict[str, int]:
 
 
 @router.get("/migration/latest")
-def get_latest_comparison() -> dict:
+def get_latest_comparison(
+    writer: ResultWriter = Depends(get_result_writer),
+) -> dict:
+    global _last_comparison
+    if _last_comparison is None:
+        saved = writer.load_latest_comparison()
+        if saved is not None:
+            _last_comparison = saved
     if _last_comparison is None:
         return {"status": "none"}
     return _last_comparison
@@ -222,6 +229,7 @@ async def migration_comparison(
             _migration_jobs[job_id]["status"] = "completed"
             _migration_jobs[job_id]["result"] = result
             _last_comparison = result
+            writer.save_comparison_result(job_id, result)
         except Exception as e:
             _migration_jobs[job_id]["status"] = "failed"
             _migration_jobs[job_id]["error"] = str(e)
