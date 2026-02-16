@@ -23,8 +23,7 @@ Compares prior vs. renewal policy data, flags risk changes, generates broker-rea
 ### 1. Setup
 
 ```bash
-git clone https://github.com/ella-yschoi/renewal-review.git
-cd renewal-review
+git clone https://github.com/ella-yschoi/renewal-review.git && cd renewal-review
 
 # Install dependencies
 uv sync --dev
@@ -37,6 +36,9 @@ cp .env.example .env
 
 ```bash
 uv run python data/generate.py
+
+# Seed PostgreSQL (requires RR_DB_URL in .env)
+uv run python scripts/seed_db.py
 ```
 
 ### 3. Run (without DB)

@@ -258,7 +258,13 @@ glowSeed: 10
 "Agent-native의 핵심은 agent에게 코드를 맡기는 게 아니라, agent가 잘 일할 수 있는 환경을 먼저 만드는 것입니다.
 CLAUDE.md와 convention.md로 행동 규칙을 정의하고, 품질 게이트(테스트, 린터, 보안 스캐너)를 agent의 reward signal로 설정합니다.
 커밋할 때마다 자동으로 전부 실행되고, 통과하지 못하면 커밋 자체가 불가합니다.
-추가로 이 프로젝트를 위해서는 Claude Code Hook 3개를 만들어서 — 실험 로그 없이 커밋 불가, 코드 변경 시 design-doc 없이 커밋 불가 — 문서 업데이트를 자동으로 강제했습니다."
+추가로 이 프로젝트를 위해서는 Claude Code Hook 3개를 만들어서 — 실험 로그 없이 커밋 불가, 코드 변경 시 design-doc 없이 커밋 불가 — 문서 업데이트를 자동으로 강제했습니다.
+
+참고로 Heather가 공유해주신 아티클(Agent-Native Engineering, generalintelligencecompany.com)에서도 동일한 패턴을 강조합니다:
+- Ruleset Development = CLAUDE.md + conventions.md
+- Tests as Reward Signals = pre-commit 품질 게이트
+- Three-Level Task Framework = 실험 구조 (리서치 → 계획 → 실행)
+이 프로젝트에서 이미 반영되어 있던 개념들이고, 뒤에서 Parallel Work Streams도 추가로 적용해 보았습니다."
 -->
 
 ---
@@ -985,6 +991,139 @@ Pydantic — LLM 응답을 외부 API처럼 취급해서 스키마로 계약을 
 -->
 
 ---
+glowSeed: 13
+---
+
+# Parallel Work Streams
+
+<div class="text-sm text-gray-400 mb-3">Sync + Async — background agents run while you keep building</div>
+
+<div class="grid grid-cols-2 gap-5">
+<v-click>
+<div class="border border-blue-500/30 bg-blue-950/20 rounded-lg p-4">
+  <div class="text-blue-400 font-bold mb-2">Pattern</div>
+
+```
+Engineer (Sync)        Background (Async)
+  │ main task           ├─ Self Code Review
+  │ feature work        │   convention, bugs,
+  │ UI polish           │   security scan
+  │                     │
+  │                     ├─ Doc Verification
+  │                     │   code ↔ design-doc
+  │                     │   triangular-style
+  ▼                     ▼
+  Review results ← ── Complete
+```
+
+  <div class="text-sm text-gray-400 pt-1">No context switch — agents report back when done</div>
+</div>
+</v-click>
+<v-click>
+<div>
+<div class="border border-green-500/30 bg-green-950/20 rounded-lg p-4 mb-3">
+  <div class="text-green-400 font-bold mb-2">Applied Results</div>
+  <div class="text-sm space-y-1.5">
+    <div><b>Code Review Agent</b> — 5 warnings</div>
+    <div class="text-gray-400 text-xs pl-4">unvalidated params, polling timeout, error handling</div>
+    <div><b>Doc Verification Agent</b> — 6 mismatches</div>
+    <div class="text-gray-400 text-xs pl-4">stale endpoint, wrong test counts, missing field</div>
+  </div>
+</div>
+<div class="border border-yellow-500/30 bg-yellow-950/20 rounded-lg p-4">
+  <div class="text-yellow-400 font-bold mb-1">Insight</div>
+  <div class="text-sm">Background agents catch issues <b>while you keep building</b>.</div>
+  <div class="text-sm text-gray-400 pt-1">Quality assurance without blocking the main work stream.</div>
+</div>
+</div>
+</v-click>
+</div>
+
+<!--
+"Heather가 공유해주신 아티클의 Parallel Work Streams 패턴을 실제로 적용해 보았습니다.
+메인 작업을 하는 동안 두 개의 background agent를 동시에 돌렸습니다.
+하나는 최근 커밋에 대한 자동 코드 리뷰 — 컨벤션 준수, 버그 위험, 보안 검토를 수행했고,
+다른 하나는 design-doc과 실제 코드의 정합성을 삼각 검증 스타일로 확인했습니다.
+
+결과적으로 코드 리뷰 agent는 5개 경고를 발견했습니다 — sort/order 파라미터 미검증, 폴링 루프에 타임아웃 없음, 에러 핸들링 부재 등.
+Doc 검증 agent는 6개 불일치를 발견했습니다 — 삭제된 엔드포인트가 문서에 남아있거나, 테스트 수가 틀려있거나, 누락된 필드 등.
+이 모든 작업이 메인 작업을 블로킹하지 않았습니다. 컨텍스트 스위칭 비용 없이 품질을 올릴 수 있습니다.
+
+기존의 코드 리뷰가 사람이 PR을 하나하나 보는 방식이었다면,
+이 방식은 agent가 비동기적으로 검증하고 결과만 받아보는 것입니다.
+아티클에서 말한 Code Review Reform의 실제 적용 사례입니다."
+-->
+
+---
+glowSeed: 16
+---
+
+# Parallel Work Streams — How It Works
+
+<div class="text-sm text-gray-400 mb-3">Claude Code Task tool with <code>run_in_background: true</code></div>
+
+<div class="grid grid-cols-2 gap-5">
+<v-click>
+<div class="border border-blue-500/30 bg-blue-950/20 rounded-lg p-4">
+  <div class="text-blue-400 font-bold mb-2">Mechanics</div>
+
+```
+1. Launch ─ Task(run_in_background=true)
+   → Separate process, own context window
+   → Main conversation not blocked
+
+2. Execute ─ Agent works independently
+   → Read, Grep, Bash (19~37 tool calls)
+   → ~2 min per agent
+
+3. Notify ─ <task-notification>
+   → Auto-delivered to main session
+   → Results inline in conversation
+```
+
+  <div class="text-sm text-gray-400 pt-1">Multiple agents launch simultaneously in one message</div>
+</div>
+</v-click>
+<v-click>
+<div>
+<div class="border border-green-500/30 bg-green-950/20 rounded-lg p-4 mb-3">
+  <div class="text-green-400 font-bold mb-2">Measured Results</div>
+
+| Agent | Tools | Time | Findings |
+| ----- | ----- | ---- | -------- |
+| Code Review | 19 | 134s | 5 warn |
+| Doc Verify | 37 | 153s | 6 mismatch |
+
+  <div class="text-sm pt-2">Total: <b>~60K tokens</b> · Both ran while main task continued</div>
+</div>
+<div class="border border-yellow-500/30 bg-yellow-950/20 rounded-lg p-4">
+  <div class="text-yellow-400 font-bold mb-1">Best For</div>
+  <div class="text-sm space-y-1">
+    <div><span class="text-green-400">✅</span> Read-only: code review, doc verification, coverage analysis</div>
+    <div><span class="text-red-400">❌</span> Write tasks: feature impl, migrations (conflict risk)</div>
+  </div>
+</div>
+</div>
+</v-click>
+</div>
+
+<!--
+"구체적으로 어떻게 동작하는지 설명드리겠습니다.
+Claude Code의 Task 도구에 run_in_background 옵션을 켜면 별도 프로세스로 에이전트가 생성됩니다.
+각 에이전트는 독립적인 컨텍스트 윈도우를 가지고, Read, Grep, Bash 같은 도구를 자유롭게 사용합니다.
+메인 대화는 블로킹 없이 계속 진행되고, 에이전트가 끝나면 task-notification으로 결과가 자동 전달됩니다.
+
+이번 프로젝트에서 실제로 두 에이전트를 동시에 실행했습니다.
+코드 리뷰 에이전트는 19번 도구를 호출하면서 134초 만에 5개 경고를 찾았고,
+문서 검증 에이전트는 37번 도구를 호출하면서 153초 만에 6개 불일치를 찾았습니다.
+이 동안 저는 슬라이드 수정 등 메인 작업을 계속했습니다.
+
+주의할 점은 읽기 전용 작업에 적합하다는 것입니다.
+파일을 수정하는 작업은 메인 작업과 충돌할 수 있어서, 코드 리뷰나 문서 검증처럼 읽기만 하는 작업에 사용합니다.
+팀 가이드 문서도 함께 작성했습니다 — guide-background-agents.md에 사용법과 적합한 작업 기준을 정리했습니다."
+-->
+
+---
 glowSeed: 4
 ---
 
@@ -1009,8 +1148,9 @@ PROMPT.md → Implement → Gates → Triangular
     <div>Proven on 2 domain features</div>
   </div>
   <div class="border-t border-gray-700 mt-3 pt-2 text-sm">
-    <b>Guide: <code>guide-self-correcting-loop.md</code></b><br/>
-    Prerequisites, step-by-step, troubleshooting
+    <b>Guides:</b><br/>
+    <code>guide-self-correcting-loop.md</code><br/>
+    <code>guide-background-agents.md</code>
   </div>
 </div>
 </v-click>
