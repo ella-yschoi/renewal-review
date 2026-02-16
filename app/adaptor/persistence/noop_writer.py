@@ -24,3 +24,9 @@ class NoopResultWriter:
 
     def load_latest_llm_results(self) -> list[dict]:
         return []
+
+    def save_comparison_result(self, job_id: str, result: dict) -> None:
+        pass
+
+    def load_latest_comparison(self) -> dict | None:
+        return None
