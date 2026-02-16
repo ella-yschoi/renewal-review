@@ -86,6 +86,7 @@ app/
 ├── application/               # 유스케이스 — 도메인 + 포트 오케스트레이션
 │   ├── batch.py               # process_pair, process_batch, assign_risk_level
 │   ├── llm_analysis.py        # should_analyze, analyze_pair, generate_summary
+│   ├── quote_advisor.py       # personalize_quotes (LLM 개인화 오케스트레이션)
 │   └── prompts.py             # 4개 LLM 프롬프트 템플릿 (ACORD 정렬)
 │
 ├── api/                       # 인바운드 어댑터 — FastAPI 라우트 + Depends()
@@ -102,8 +103,7 @@ app/
 │   │   ├── client.py          # create_llm_client() 팩토리
 │   │   ├── openai.py          # OpenAIClient (LLMPort 구현)
 │   │   ├── anthropic.py       # AnthropicClient (LLMPort 구현)
-│   │   ├── mock.py            # MockLLMClient
-│   │   └── quote_advisor.py   # personalize_quotes
+│   │   └── mock.py            # MockLLMClient
 │   ├── storage/
 │   │   └── memory.py          # InMemoryReviewStore, InMemoryHistoryStore, InMemoryJobStore
 │   └── persistence/
@@ -153,7 +153,8 @@ JSON/DB → load_pairs → [RenewalPair]
 | `Severity` | info, warning, critical | CrossPolicyFlag.severity |
 | `UnbundleRisk` | low, medium, high | BundleAnalysis.unbundle_risk |
 | `QuoteStrategy` | raise_deductible, drop_optional, reduce_medical, drop_water_backup, reduce_personal_property | CoverageAdjustment.strategy |
-| `AnalysisType` | risk_signal_extractor, endorsement_comparison, coverage_similarity | LLMInsight.analysis_type |
+| `AnalysisType` | risk_signal_extractor, endorsement_comparison | LLMInsight.analysis_type |
+| `LLMTaskName` | risk_signal_extractor, endorsement_comparison, review_summary, quote_personalization | LLM 호출 trace_name, config.task_models 키 |
 | `FlagType` | duplicate_medical, duplicate_roadside, high/low_liability_exposure, premium_concentration, high_portfolio_increase | CrossPolicyFlag.flag_type |
 
 ### Policy 도메인 (`app/domain/models/policy.py`)
@@ -420,7 +421,7 @@ should_analyze(diff, pair) ──▶ True?
 - key_changes: flag가 있는 변경을 우선으로 최대 5개 선택
 - 실패 시 기존 mechanical summary 유지 (None 반환)
 
-### Quote 개인화 (`app/adaptor/llm/quote_advisor.py:personalize_quotes`)
+### Quote 개인화 (`app/application/quote_advisor.py:personalize_quotes`)
 
 Quote의 hardcoded trade_off를 고객 맥락 기반 개인화 텍스트로 대체하고, broker_tip 추가.
 전략 선택과 savings 계산은 rule-based 유지.
@@ -494,7 +495,7 @@ Quote의 hardcoded trade_off를 고객 맥락 기반 개인화 텍스트로 대�
 | LLM JSON 파싱 실패 | `{"error": ..., "raw_response": ...}` 반환 | `app/adaptor/llm/openai.py`, `anthropic.py` |
 | LLM 분석 에러 / 응답 스키마 불일치 | confidence=0.0인 에러 LLMInsight 생성 | `app/application/llm_analysis.py` |
 | LLM summary 실패 | 기존 mechanical summary 유지 | `app/application/batch.py` |
-| LLM quote 개인화 실패 | 원본 trade_off 유지, broker_tip="" | `app/adaptor/llm/quote_advisor.py` |
+| LLM quote 개인화 실패 | 원본 trade_off 유지, broker_tip="" | `app/application/quote_advisor.py` |
 
 ### Async Job 실패
 
@@ -591,7 +592,7 @@ Quote의 hardcoded trade_off를 고객 맥락 기반 개인화 텍스트로 대�
 | `RuleThresholds` | premium_high_pct (10.0), premium_critical_pct (20.0) | `domain/services/rules.py` (파라미터 주입) |
 | `QuoteConfig` | auto_collision/comprehensive_deductible, savings_* (12개) | `domain/services/quote_generator.py` (파라미터 주입) |
 | `PortfolioThresholds` | high/low_liability, concentration_pct, portfolio_change_pct | `domain/services/portfolio_analyzer.py` (파라미터 주입) |
-| `LLMConfig` | openai_model, sonnet_model, haiku_model, max_tokens, temperature, task_models | `adaptor/llm/client.py` (라우팅), `openai.py`, `anthropic.py` |
+| `LLMConfig` | sonnet_model, haiku_model, max_tokens, task_models (ModelKey 사용) | `adaptor/llm/client.py` (라우팅), `anthropic.py` |
 
 ### Ruff 설정 (`pyproject.toml`)
 

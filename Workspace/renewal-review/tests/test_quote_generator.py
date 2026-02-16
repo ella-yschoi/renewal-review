@@ -229,7 +229,7 @@ def test_quote_route_home():
 
 def test_personalize_quotes_with_mock():
     from app.adaptor.llm.mock import MockLLMClient
-    from app.adaptor.llm.quote_advisor import personalize_quotes
+    from app.application.quote_advisor import personalize_quotes
 
     pair = _make_home_pair()
     diff = _diff_with_flags(pair)
@@ -244,7 +244,7 @@ def test_personalize_quotes_with_mock():
 
 
 def test_personalize_quotes_llm_error():
-    from app.adaptor.llm.quote_advisor import personalize_quotes
+    from app.application.quote_advisor import personalize_quotes
 
     class ErrorClient:
         def complete(self, prompt: str, trace_name: str) -> dict:
@@ -262,7 +262,7 @@ def test_personalize_quotes_llm_error():
 
 def test_personalize_quotes_empty_list():
     from app.adaptor.llm.mock import MockLLMClient
-    from app.adaptor.llm.quote_advisor import personalize_quotes
+    from app.application.quote_advisor import personalize_quotes
 
     pair = _make_auto_pair()
     client_mock = MockLLMClient()
@@ -280,7 +280,7 @@ def test_broker_tip_default_empty():
 
 
 def test_personalize_quotes_malformed_response():
-    from app.adaptor.llm.quote_advisor import personalize_quotes
+    from app.application.quote_advisor import personalize_quotes
 
     class MalformedClient:
         def complete(self, prompt: str, trace_name: str) -> dict:

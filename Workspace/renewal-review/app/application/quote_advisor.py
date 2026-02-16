@@ -3,6 +3,7 @@ import json
 from pydantic import ValidationError
 
 from app.application.prompts import QUOTE_PERSONALIZATION
+from app.domain.models.enums import LLMTaskName
 from app.domain.models.llm_schemas import QuotePersonalizationResponse
 from app.domain.models.policy import RenewalPair
 from app.domain.models.quote import QuoteRecommendation
@@ -76,7 +77,7 @@ def personalize_quotes(
     )
 
     try:
-        response = client.complete(prompt, trace_name="quote_personalization")
+        response = client.complete(prompt, trace_name=LLMTaskName.QUOTE_PERSONALIZATION)
         if "error" in response:
             return quotes
     except Exception:

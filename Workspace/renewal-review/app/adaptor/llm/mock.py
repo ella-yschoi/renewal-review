@@ -1,6 +1,8 @@
 import os
 from typing import Any
 
+from app.domain.models.enums import LLMTaskName
+
 
 class MockLLMClient:
     def __init__(self):
@@ -32,7 +34,7 @@ class MockLLMClient:
         return result
 
     def _mock_response(self, trace_name: str) -> dict[str, Any]:
-        if trace_name == "risk_signal_extractor":
+        if trace_name == LLMTaskName.RISK_SIGNAL_EXTRACTOR:
             return {
                 "signals": [
                     {
@@ -58,7 +60,7 @@ class MockLLMClient:
                 "summary": "Multiple risk indicators found in policy notes",
             }
 
-        if trace_name == "endorsement_comparison":
+        if trace_name == LLMTaskName.ENDORSEMENT_COMPARISON:
             return {
                 "material_change": True,
                 "change_type": "restriction",
@@ -70,7 +72,7 @@ class MockLLMClient:
                 ),
             }
 
-        if trace_name == "review_summary":
+        if trace_name == LLMTaskName.REVIEW_SUMMARY:
             return {
                 "summary": (
                     "This renewal shows a 23% premium increase from $2,400 to $2,952 "
@@ -80,7 +82,7 @@ class MockLLMClient:
                 ),
             }
 
-        if trace_name == "quote_personalization":
+        if trace_name == LLMTaskName.QUOTE_PERSONALIZATION:
             return {
                 "quotes": [
                     {

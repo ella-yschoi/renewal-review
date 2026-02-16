@@ -1,8 +1,15 @@
+from enum import StrEnum
+
 from dotenv import load_dotenv
 from pydantic import BaseModel
 from pydantic_settings import BaseSettings
 
 load_dotenv()
+
+
+class ModelKey(StrEnum):
+    SONNET = "sonnet"
+    HAIKU = "haiku"
 
 
 class RuleThresholds(BaseModel):
@@ -36,10 +43,10 @@ class LLMConfig(BaseModel):
     haiku_model: str = "claude-haiku-4-5-20251001"
     max_tokens: int = 1024
     task_models: dict[str, str] = {
-        "risk_signal_extractor": "sonnet",
-        "endorsement_comparison": "haiku",
-        "review_summary": "haiku",
-        "quote_personalization": "haiku",
+        "risk_signal_extractor": ModelKey.SONNET,
+        "endorsement_comparison": ModelKey.HAIKU,
+        "review_summary": ModelKey.HAIKU,
+        "quote_personalization": ModelKey.HAIKU,
     }
 
 

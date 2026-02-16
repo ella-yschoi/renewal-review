@@ -1,6 +1,6 @@
 from typing import Any
 
-from app.config import settings
+from app.config import ModelKey, settings
 from app.domain.ports.llm import LLMPort
 
 
@@ -17,7 +17,10 @@ class LLMClient:
 
     def complete(self, prompt: str, trace_name: str) -> dict[str, Any]:
         cfg = settings.llm
-        model_key = cfg.task_models.get(trace_name, "haiku")
-        model_map = {"sonnet": cfg.sonnet_model, "haiku": cfg.haiku_model}
+        model_key = cfg.task_models.get(trace_name, ModelKey.HAIKU)
+        model_map = {
+            ModelKey.SONNET: cfg.sonnet_model,
+            ModelKey.HAIKU: cfg.haiku_model,
+        }
         model = model_map.get(model_key, cfg.haiku_model)
         return self._get_client(model).complete(prompt, trace_name)

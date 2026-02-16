@@ -6,7 +6,7 @@ from app.application.prompts import (
     RISK_SIGNAL_EXTRACTOR,
 )
 from app.domain.models.diff import DiffResult
-from app.domain.models.enums import AnalysisType
+from app.domain.models.enums import AnalysisType, LLMTaskName
 from app.domain.models.llm_schemas import (
     EndorsementComparisonResponse,
     ReviewSummaryResponse,
@@ -29,7 +29,7 @@ def should_analyze(diff: DiffResult, pair: RenewalPair) -> bool:
 
 def _analyze_notes(client: LLMPort, notes: str) -> list[LLMInsight]:
     prompt = RISK_SIGNAL_EXTRACTOR.format(notes=notes)
-    result = client.complete(prompt, trace_name="risk_signal_extractor")
+    result = client.complete(prompt, trace_name=LLMTaskName.RISK_SIGNAL_EXTRACTOR)
 
     if "error" in result:
         return [
@@ -68,7 +68,7 @@ def _analyze_endorsement(client: LLMPort, prior_desc: str, renewal_desc: str) ->
     prompt = ENDORSEMENT_COMPARISON.format(
         prior_endorsement=prior_desc, renewal_endorsement=renewal_desc
     )
-    result = client.complete(prompt, trace_name="endorsement_comparison")
+    result = client.complete(prompt, trace_name=LLMTaskName.ENDORSEMENT_COMPARISON)
 
     if "error" in result:
         return LLMInsight(
@@ -134,7 +134,7 @@ def generate_summary(client: LLMPort, result: ReviewResult) -> str | None:
         llm_insights_section=llm_insights_section,
     )
 
-    response = client.complete(prompt, trace_name="review_summary")
+    response = client.complete(prompt, trace_name=LLMTaskName.REVIEW_SUMMARY)
     if "error" in response:
         return None
 
