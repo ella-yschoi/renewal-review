@@ -24,7 +24,13 @@ class QuoteStrategy(StrEnum):
 class AnalysisType(StrEnum):
     RISK_SIGNAL_EXTRACTOR = "risk_signal_extractor"
     ENDORSEMENT_COMPARISON = "endorsement_comparison"
-    COVERAGE_SIMILARITY = "coverage_similarity"
+
+
+class LLMTaskName(StrEnum):
+    RISK_SIGNAL_EXTRACTOR = "risk_signal_extractor"
+    ENDORSEMENT_COMPARISON = "endorsement_comparison"
+    REVIEW_SUMMARY = "review_summary"
+    QUOTE_PERSONALIZATION = "quote_personalization"
 
 
 class FlagType(StrEnum):

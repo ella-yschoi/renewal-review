@@ -23,9 +23,9 @@ drawings:
 8,000 Policies · Rule + LLM Hybrid · 5x Faster
 </div>
 
-<div class="pt-6 text-left max-w-2xl mx-auto text-sm text-gray-400 leading-relaxed">
+<div class="pt-6 text-left max-w-2xl mx-auto text-sm text-gray-400 leading-snug">
 
-**My Goal**: Set up an agent-native environment, plan thoroughly, then let AI agents execute — compressing a full work week into a day. Along the way, run experiments to find what works and what doesn't, and package the results into reusable workflows for the team.
+**Goal**: Agent-native setup → plan thoroughly → AI executes — compress a work week into a day. Experiment & package reusable workflows for the team.
 
 </div>
 
@@ -49,28 +49,28 @@ class: text-center
 
 # The Problem
 
-<div class="text-2xl text-gray-400 py-4">
+<div class="text-xl text-gray-400 py-2">
 Brokers manually review 8,000 renewal policies every season
 </div>
 
-<div class="grid grid-cols-3 gap-8 pt-8">
+<div class="grid grid-cols-3 gap-8 pt-6">
 <div>
 <div class="text-4xl font-bold text-red-400">Days</div>
-<div class="text-gray-400 text-sm">of manual comparison</div>
+<div class="text-gray-400 text-xs">manual comparison</div>
 </div>
 <div>
 <div class="text-4xl font-bold text-red-400">15+</div>
-<div class="text-gray-400 text-sm">risk categories to check</div>
+<div class="text-gray-400 text-xs">risk categories</div>
 </div>
 <div>
 <div class="text-4xl font-bold text-red-400">Missed</div>
-<div class="text-gray-400 text-sm">text-based risk signals</div>
+<div class="text-gray-400 text-xs">text-based signals</div>
 </div>
 </div>
 
-<div class="pt-10 text-lg text-gray-300">
+<div class="pt-8 text-base text-gray-300">
 
-My Approach: &nbsp; **Setup** → **Plan** → **Build** → **Experiment** → **Iterate**
+**Setup** → **Plan** → **Build** → **Experiment** → **Iterate**
 
 </div>
 
@@ -89,35 +89,33 @@ My Approach: &nbsp; **Setup** → **Plan** → **Build** → **Experiment** → 
 <div class="grid grid-cols-2 gap-4">
 <div>
 
-```mermaid {scale: 0.75}
+```mermaid {scale: 0.55}
 flowchart TD
-    A["8,000 Policies<br/>(JSON / PostgreSQL)"] --> B["Parser<br/>ACORD field normalization"]
-    B --> C["Diff Engine<br/>Prior vs Renewal comparison"]
-    C --> D["Rule Flagger<br/>15 threshold rules → DiffFlags"]
-    D --> E["Risk Classifier<br/>4-level risk assignment"]
-    E --> F{"Text changed?<br/>5-15% of policies"}
-    F -->|Yes| G["LLM Analyzer<br/>Notes · Endorsements"]
-    F -->|No| H["Risk Aggregator"]
+    A["8,000 Policies<br/>(JSON / PostgreSQL)"] --> B["Parser<br/>ACORD normalization"]
+    B --> C["Diff Engine<br/>Prior vs Renewal"]
+    C --> D["Rule Flagger<br/>15 rules → DiffFlags"]
+    D --> E["Risk Classifier<br/>4 levels"]
+    E --> F{"Text changed?<br/>5-15%"}
+    F -->|Yes| G["LLM Analyzer"]
+    F -->|No| H["Aggregator"]
     G --> H
-    H --> I["Review Result<br/>+ Quotes + Portfolio"]
+    H --> I["Review + Quotes"]
 ```
 
 </div>
-<div class="pl-4">
+<div class="pl-4 text-sm">
 
 ### Features
 
-- **Dashboard** — batch processing, risk distribution, policy list
-- **Review Detail** — prior vs renewal side-by-side, flags, AI insights
-- **Analytics** — batch history, trend charts
-- **Quote Generator** — 5 cost-saving strategies per policy type
-- **Portfolio Analyzer** — cross-policy bundle analysis, duplication detection
-- **LLM Insights** — risk signals from notes, endorsement comparison, personalized broker tips
+- **Dashboard** — batch, risk overview
+- **Review Detail** — prior vs renewal diff
+- **Analytics** — history, trends
+- **Quote Generator** — 5 saving strategies
+- **Portfolio Analyzer** — bundles, duplicates
+- **LLM Insights** — risk signals, broker tips
 
-<div class="pt-4 text-sm text-gray-400">
-
-100 tests · 14+ API endpoints · 7 UI pages · 8,000 policies < 1 second
-
+<div class="pt-2 text-xs text-gray-400">
+100 tests · 14+ endpoints · 7 pages · 8,000 policies < 1s
 </div>
 </div>
 </div>
@@ -134,32 +132,32 @@ layout: center
 
 # The Speed Story
 
-<div class="grid grid-cols-3 gap-12 items-center pt-8">
+<div class="grid grid-cols-3 gap-12 items-center pt-4">
 <div class="text-center">
-<div class="text-6xl font-bold text-gray-500">5 days</div>
-<div class="text-gray-500 pt-2">Manual Development<br/>(~37 hours estimated)</div>
+<div class="text-5xl font-bold text-gray-500">5 days</div>
+<div class="text-gray-500 pt-1 text-sm">Manual (~37h estimated)</div>
 </div>
 <div class="text-center">
-<div class="text-5xl">→</div>
+<div class="text-4xl">→</div>
 </div>
 <div class="text-center">
-<div class="text-6xl font-bold text-green-400">1 day</div>
-<div class="text-green-400/70 pt-2">Core System with AI<br/>(~4 hours · 5x speedup)</div>
+<div class="text-5xl font-bold text-green-400">1 day</div>
+<div class="text-green-400/70 pt-1 text-sm">With AI (~4h · 5x)</div>
 </div>
 </div>
 
-<div class="pt-8 text-center text-sm text-gray-400">
-+ 5 experiments on top → total project completed in ~2 days
+<div class="pt-4 text-center text-xs text-gray-400">
++ 5 experiments → total ~2 days
 </div>
 
-<div class="pt-4 text-center">
+<div class="pt-2 text-center text-xs">
 
-| Phase | AI Agent | Manual Dev | Speedup |
-|-------|----------|------------|---------|
+| Phase | AI | Manual | Speedup |
+|-------|-----|--------|---------|
 | Models + Parser (ACORD) | 30 min | 4h | 8x |
 | Diff Engine + 15 Rules | 45 min | 6h | 8x |
-| Mock Data (8,000 policies) | 20 min | 3h | 9x |
-| LLM Client + 4 Prompts | 30 min | 5h | 10x |
+| Mock Data (8,000) | 20 min | 3h | 9x |
+| LLM Client + Prompts | 30 min | 5h | 10x |
 | Batch + API + Frontend | 75 min | 10h | 8x |
 
 </div>
@@ -175,26 +173,24 @@ AI agent로 코어 시스템을 하루 만에 완성했습니다. 5배 빠릅니
 
 # How: Agent-Native Setup
 
-<div class="grid grid-cols-2 gap-8">
+<div class="grid grid-cols-2 gap-6 text-xs">
 <div>
 
-### Rulesets — Agent Behavior Control
+### Rulesets — Agent Behavior
 
 ```yaml
-# CLAUDE.md (loaded every session)
-- No docstrings → clear naming + type hints
-- Read convention.md before every change
-- Minimal diffs only
-- Token-aware: grep/glob before full reads
+# CLAUDE.md (every session)
+- No docstrings → naming + types
+- Read convention.md first
+- Minimal diffs, token-aware
 - Pre-commit: Ruff + Gitleaks + Semgrep
 ```
 
 ```yaml
 # convention.md
-- Files < 300 lines (split when approaching)
-- Hexagonal layer rules (domain/ imports nothing)
-- StrEnum for finite values, Config for thresholds
-- Immutable models, DI via Depends()
+- Files < 300 lines
+- Hexagonal layers (domain/ imports nothing)
+- StrEnum, Config, Immutable models
 ```
 
 </div>
@@ -204,19 +200,19 @@ AI agent로 코어 시스템을 하루 만에 완성했습니다. 5배 빠릅니
 
 | Gate | Purpose |
 |------|---------|
-| **pytest** (100 tests) | Agent iterates until all pass |
-| **Ruff** | Lint + format — prevents code slop |
-| **Gitleaks** | Blocks secrets in commits |
-| **Semgrep** | SAST security scanning |
-| **Hypothesis** | Property-based edge case testing |
+| **pytest** (100) | Iterate until pass |
+| **Ruff** | Lint + format |
+| **Gitleaks** | Block secrets |
+| **Semgrep** | SAST scanning |
+| **Hypothesis** | Property-based tests |
 
 ### Claude Code Hooks
 
-| Hook | Type | Action |
-|------|------|--------|
-| `require-experiment-log` | PreToolUse | Blocks commit without experiment log |
-| `require-design-doc` | PreToolUse | Blocks commit if code changed without doc update |
-| `remind-design-doc` | PostToolUse | One-time reminder on code edit |
+| Hook | Action |
+|------|--------|
+| `require-experiment-log` | Block commit w/o log |
+| `require-design-doc` | Block commit w/o doc |
+| `remind-design-doc` | Remind on code edit |
 
 </div>
 </div>
@@ -232,40 +228,40 @@ CLAUDE.md와 convention.md로 행동 규칙을 정의하고, 품질 게이트(�
 
 # Documentation-Driven Planning
 
-<div class="grid grid-cols-3 gap-6">
+<div class="grid grid-cols-3 gap-6 text-sm">
 <div>
 
 ### requirements.md
-- FR-1 ~ FR-9 functional requirements
-- Success criteria with numbers
-- Golden eval scenarios (5 cases)
-- Non-functional: <10s for 8,000 policies
+- FR-1~9 functional specs
+- Success criteria w/ numbers
+- 5 golden eval scenarios
+- NFR: <10s for 8,000 policies
 
 </div>
 <div>
 
 ### design-doc.md
-- 5-layer hexagonal architecture
-- Data model (8 Pydantic models)
+- 5-layer hexagonal arch
+- 8 Pydantic models
 - 15 DiffFlags, 4 risk levels
-- API surface (14+ endpoints)
+- 14+ API endpoints
 - Auto-updated via hooks
 
 </div>
 <div>
 
 ### implementation-plan.md
-- Phase 0-2C execution roadmap
-- Per-phase: files, line estimates, commit message
-- V1 (rule) → V2 (LLM) progressive migration
+- Phase 0-2C roadmap
+- Per-phase: files, lines, commit msg
+- V1 (rule) → V2 (LLM) migration
 - Feature flag: `RR_LLM_ENABLED`
 
 </div>
 </div>
 
-<div class="pt-6 text-center text-gray-400">
+<div class="pt-6 text-center text-sm text-gray-400">
 
-*"I didn't ask the agent to 'build me an insurance system.' I gave it a phased plan with exact file names, function signatures, and verification criteria at each step."*
+*"Not 'build me an insurance system' — but a phased plan with exact files, signatures, and verification criteria."*
 
 </div>
 
@@ -284,11 +280,11 @@ class: text-center
 
 # Five Experiments
 
-<div class="text-gray-400 pb-6">
-Each experiment answered a specific question about AI-assisted development
+<div class="text-sm text-gray-400 pb-4">
+Each answered a specific question about AI-assisted development
 </div>
 
-```mermaid {scale: 0.8}
+```mermaid {scale: 0.7}
 flowchart LR
     E1["<b>Exp 1</b><br/>SubAgent vs<br/>Agent Teams"] --> E2["<b>Exp 2</b><br/>Triangular<br/>Verification"]
     E2 --> E3["<b>Exp 3</b><br/>Self-Correcting<br/>Loop"]
@@ -302,12 +298,12 @@ flowchart LR
     style E5 fill:#5a3a1e,stroke:#ffaa4a
 ```
 
-<div class="grid grid-cols-5 gap-4 pt-4 text-xs text-gray-400">
-<div class="text-center">"Can I run multiple agents?"</div>
-<div class="text-center">"Can agents verify each other?"</div>
-<div class="text-center">"Can verify→fix be automated?"</div>
-<div class="text-center">"Does the pipeline generalize?"</div>
-<div class="text-center">"Which LLM is best for this?"</div>
+<div class="grid grid-cols-5 gap-4 pt-2 text-xs text-gray-400">
+<div class="text-center">Multiple agents?</div>
+<div class="text-center">Agents verify each other?</div>
+<div class="text-center">Automate verify→fix?</div>
+<div class="text-center">Pipeline generalizes?</div>
+<div class="text-center">Which LLM is best?</div>
 </div>
 
 <!--
@@ -323,21 +319,21 @@ flowchart LR
 
 # Exp 1: SubAgent vs Agent Teams
 
-<div class="text-sm text-gray-400 pb-2">Same task (Analytics module, ~300 lines) · Two orchestration patterns</div>
+<div class="text-xs text-gray-400 pb-1">Same task (Analytics module, ~300 lines) · Two orchestration patterns</div>
 
-<div class="grid grid-cols-2 gap-8">
+<div class="grid grid-cols-2 gap-6 text-xs">
 <div>
 
 ### SubAgent Pattern
 ```
 Orchestrator
-  ├─ [1] Research subagent (Explore)
+  ├─ [1] Research (Explore)
   ├─ [2] Model + Service ─┐
   │                        ├─ parallel
   ├─ [3] Routes + Main ───┘
   └─ [4] Tests (after 2,3)
 ```
-**Key**: Orchestrator specifies interface specs in prompt → parallel dispatch possible
+**Key**: Interface specs in prompt → parallel dispatch
 
 </div>
 <div>
@@ -350,26 +346,25 @@ Team Lead
   ├─ [spawn] router   → task #2
   └─ [spawn] tester   → task #3
 ```
-**Key**: Explicit dependency (blockedBy) · Each member reads conventions independently
+**Key**: Explicit dependency (blockedBy)
 
 </div>
 </div>
 
-<div class="pt-4">
+<div class="pt-2 text-xs">
 
 | Metric | SubAgent | Agent Teams |
 |--------|----------|-------------|
 | Time | 354s (~6 min) | 318s (~5 min) |
-| Code generated | 334 lines, 8 files | 335 lines, 8 files |
+| Code | 334 lines, 8 files | 335 lines, 8 files |
 | Tests | 73 all pass | 73 all pass |
-| Lint fixes needed | 1 (ruff format) | 0 |
+| Lint fixes | 1 | 0 |
 
 </div>
 
-<div class="pt-2 text-sm">
+<div class="pt-2 text-xs text-gray-400">
 
-> **Insight**: Small tasks (~300 lines) → SubAgent is simpler. Agent Teams shines at scale with complex dependencies.
-> **Limitation**: Task was too small for Teams' advantages. A 1,000+ line multi-module task would differentiate better.
+> **Insight**: ~300 lines → SubAgent simpler. Agent Teams shines at scale with complex dependencies.
 
 </div>
 
@@ -387,39 +382,36 @@ Agent Teams는 TaskCreate로 태스크를 등록하고 의존성을 설정합니
 
 # Exp 2: Triangular Verification — Concept
 
-<div class="text-sm text-gray-400 pb-2">3-agent information isolation catches what linters and tests cannot</div>
+<div class="text-xs text-gray-400 pb-1">3-agent information isolation catches what linters and tests cannot</div>
 
-```mermaid {scale: 0.85}
+```mermaid {scale: 0.65}
 flowchart LR
     subgraph "Information Isolation"
         direction TB
-        R["📋 Requirements<br/>(original spec)"]
-        B["🔍 Agent B<br/>Reads: code + convention<br/><b>Cannot see: requirements</b>"]
-        C["⚖️ Agent C<br/>Reads: requirements + B's review<br/><b>Cannot see: code</b>"]
+        R["📋 Requirements"]
+        B["🔍 Agent B<br/>Reads: code only<br/>Cannot see: requirements"]
+        C["⚖️ Agent C<br/>Reads: requirements + B's review<br/>Cannot see: code"]
     end
 
-    Code["💻 Code<br/>(Agent A output)"] --> B
-    B -->|"blind-review.md<br/>describes what code does"| C
+    Code["💻 Code"] --> B
+    B -->|"blind-review.md"| C
     R --> C
-    C -->|"discrepancy-report.md<br/>requirement vs actual gaps"| Result{"PASS / FAIL"}
+    C -->|"discrepancy-report.md"| Result{"PASS / FAIL"}
 ```
 
-<div class="pt-4">
-
-### Why This Works
+<div class="pt-1 text-xs">
 
 | Tool | Catches | Misses |
 |------|---------|--------|
-| **Ruff** | Syntax, formatting, imports | Intent mismatch |
+| **Ruff / Semgrep** | Syntax, security | Intent mismatch |
 | **Pytest** | Logic bugs (if test exists) | Missing features |
-| **Semgrep** | Security patterns | Business logic gaps |
-| **Triangular** | **Intent mismatch**, missing features, extra features | UI-level issues |
+| **Triangular** | **Intent mismatch, missing/extra features** | UI-level |
 
 </div>
 
-<div class="pt-2 text-sm text-gray-400">
+<div class="pt-1 text-xs text-gray-400">
 
-*"The key insight: Agent B doesn't know what the code should do. It describes what the code actually does. Agent C compares that description against requirements — without code bias."*
+*Agent B describes what code does (without knowing intent). Agent C compares against requirements (without seeing code).*
 
 </div>
 
@@ -436,52 +428,45 @@ Agent C는 요구사항과 B의 설명만 보고 '불일치가 있는가' 판단
 
 # Exp 2: Triangular Verification — Results
 
-<div class="text-sm text-gray-400 pb-2">Applied to Analytics module (already passing all linters + tests)</div>
+<div class="text-xs text-gray-400 pb-1">Applied to code already passing all linters + tests</div>
 
-<div class="grid grid-cols-2 gap-8">
+<div class="grid grid-cols-2 gap-6 text-xs">
 <div>
 
 ### Issues Found
 
-| Category | Count | Example |
-|----------|-------|---------|
-| Intent Mismatch | 2 | FIFO 100-entry limit not implemented |
-| Missing Feature | 2 | History endpoint behavior gap |
-| Extra Feature | 3 | Undocumented features in code |
-| Convention Violation | 2 | Timezone hardcoding mismatch |
-| False Positive | 2 | — |
-
-<div class="pt-4">
+| Category | Count |
+|----------|-------|
+| Intent Mismatch | 2 |
+| Missing Feature | 2 |
+| Extra Feature | 3 |
+| Convention Violation | 2 |
+| False Positive | 2 |
 
 | Metric | Value |
 |--------|-------|
-| **Precision** | **78%** (7/9 true positives) |
-| **Standard tools found** | 0 issues |
-| **Triangular found** | 9 issues |
-| **Time cost** | ~19 min |
+| **Precision** | **78%** (7/9 true) |
+| Standard tools | 0 issues |
+| Triangular | **9 issues** |
+| Time | ~19 min |
 
-</div>
 </div>
 <div>
 
-### Critical Finding: FIFO 100-Entry Limit
+### Critical: FIFO 100-Entry Limit
 
-Requirements said: *"Maximum 100 entries, FIFO"*
+Requirement: *"Maximum 100 entries, FIFO"*
 
 Code: unlimited `append()` — no cap
 
-ruff: ✅ &nbsp; pytest: ✅ &nbsp; semgrep: ✅
+ruff ✅ &nbsp; pytest ✅ &nbsp; semgrep ✅ &nbsp; **Triangular ❌ FOUND**
 
-**Triangular: ❌ FOUND IT**
+<div class="pt-4">
 
-<div class="pt-6 text-sm">
-
-### Limitations & Improvements
-
-- Agent B can only analyze Python code — **UI/template verification is blind**
-- 78% precision means ~22% false positives — could improve with more specific requirements
-- ~19 min overhead per run — **worth it for critical features, not every commit**
-- **Next step**: Add template/frontend analysis skill to Agent B
+### Limitations
+- Agent B: Python only — **UI blind**
+- 78% precision — ~22% false positives
+- ~19 min — worth it for critical features, not every commit
 
 </div>
 </div>
@@ -500,28 +485,28 @@ ruff는 구문만, pytest는 테스트 케이스에 없으면 모르고, semgrep
 
 ---
 
-# Exp 3: Self-Correcting Loop — The Automation Pipeline
+# Exp 3: Self-Correcting Loop
 
-<div class="text-sm text-gray-400 pb-2">Combining quality gates + triangular verification into one automated loop</div>
+<div class="text-xs text-gray-400 pb-1">Quality gates + triangular verification in one automated loop</div>
 
-```mermaid {scale: 0.8}
+```mermaid {scale: 0.65}
 flowchart TD
     P["📝 PROMPT.md + requirements.md"] --> L
 
     subgraph L["Loop (max N iterations)"]
         direction TB
-        P1["<b>Phase 1: Implement</b><br/>Agent A writes code<br/>(or applies feedback)"]
-        P2{"<b>Phase 2: Quality Gates</b><br/>ruff → pytest → semgrep<br/>(fast-fail order)"}
-        P3{"<b>Phase 3: Triangular Verify</b><br/>Agent B (blind review)<br/>Agent C (discrepancy)"}
-        P4["<b>Phase 4: Complete</b><br/>LOOP_COMPLETE"]
+        P1["Phase 1: Implement"]
+        P2{"Phase 2: Quality Gates<br/>ruff → pytest → semgrep"}
+        P3{"Phase 3: Triangular Verify"}
+        P4["Phase 4: Complete ✅"]
 
         P1 --> P2
-        P2 -->|"❌ fail"| FB1["Error output → feedback"]
+        P2 -->|"❌"| FB1["error → feedback"]
         FB1 --> P1
-        P2 -->|"✅ pass"| P3
-        P3 -->|"❌ discrepancy"| FB2["Report → feedback"]
+        P2 -->|"✅"| P3
+        P3 -->|"❌"| FB2["report → feedback"]
         FB2 --> P1
-        P3 -->|"✅ TRIANGULAR_PASS"| P4
+        P3 -->|"✅"| P4
     end
 
     style P4 fill:#2d5a1e,stroke:#4aff4a
@@ -529,9 +514,9 @@ flowchart TD
     style FB2 fill:#5a1e1e,stroke:#ff4a4a
 ```
 
-<div class="text-center pt-2 text-sm text-gray-400">
+<div class="text-center pt-1 text-xs text-gray-400">
 
-**Core Principle**: Failure = Data — failure output becomes the next iteration's input
+**Failure = Data** — failure output becomes next iteration's input
 
 </div>
 
@@ -547,38 +532,41 @@ PROMPT.md 하나로 기능을 정의하면 — 구현 → 품질 게이트 → �
 
 # Exp 3: Results — Automated vs Manual
 
-<div class="text-sm text-gray-400 pb-2">Task: Smart Quote Generator (5 strategies, models + engine + API + tests)</div>
+<div class="text-xs text-gray-400 pb-1">Task: Quote Generator (5 strategies, models + engine + API + tests)</div>
 
-<div class="grid grid-cols-2 gap-8">
-<div>
+<div class="grid grid-cols-2 gap-6">
+<div class="text-xs">
 
-### Quantitative Comparison
+### Comparison
 
-| Metric | Automated Loop | Manual Baseline |
-|--------|---------------|-----------------|
+| Metric | Automated | Manual |
+|--------|-----------|--------|
 | Time | 641s | 549s |
 | Iterations | 1 | 1 (+retry) |
-| Phase 2 failures | 0 | 0 |
-| Phase 3 failures | 0 | 1 |
-| **Human interventions** | **0** | **1** |
-| Tests passing | 81/81 | 82/82 |
-| Triangular result | PASS | PASS (2nd try) |
+| Phase 2 fails | 0 | 0 |
+| Phase 3 fails | 0 | 1 |
+| **Human intervention** | **0** | **1** |
+| Tests | 81/81 ✅ | 82/82 ✅ |
+| Triangular | PASS | PASS (2nd) |
 
 </div>
-<div>
+<div class="text-xs">
 
-### What Happened in Manual
+### What Happened
 
-Agent B reviewed the **wrong module** in the first triangular verification attempt.
+Manual: Agent B reviewed the **wrong module** in first triangular run.
 
-The automated script avoids this by using `git diff` to **automatically extract the file list** — a structural fix, not a prompt fix.
+Automated: `git diff` **auto-extracts file list** — structural fix, not prompt fix.
 
-### Key Insight
+<div class="pt-4">
 
-> **Automation value ≠ speed.** The automated loop was 92s slower, but completed with zero human intervention. The manual run needed me to catch and fix an agent prompt error.
+### Insight
 
-> **If improved**: Streaming output instead of `claude --print` buffering would close the speed gap. The reliability advantage remains.
+> **Value ≠ speed.** Automated was 92s slower but **zero human intervention**. Manual needed me to catch an agent error.
 
+> Streaming output (vs `claude --print` buffering) would close the speed gap.
+
+</div>
 </div>
 </div>
 
@@ -594,31 +582,26 @@ The automated script avoids this by using `git diff` to **automatically extract 
 
 # Exp 4: Pipeline Reusability
 
-<div class="text-sm text-gray-400 pb-2">Same pipeline, completely different domain feature — Portfolio Risk Aggregator</div>
+<div class="text-xs text-gray-400 pb-1">Same pipeline, different feature — Portfolio Risk Aggregator</div>
 
-<div class="grid grid-cols-2 gap-8">
-<div>
+<div class="grid grid-cols-2 gap-6">
+<div class="text-xs">
 
-### Experiment Design
+### Design
 
 **Same pipeline:**
 ```
-PROMPT.md → Implement → Quality Gates → Triangular Verify
+PROMPT.md → Implement → Gates → Triangular
 ```
 
 **Different feature:**
 - Cross-policy bundle analysis
 - Carrier mismatch detection
-- Premium concentration check
-- Duplicate coverage detection
-
-**Different scope:**
-- 5 new files, 182 lines engine code
-- 8 test cases
-- 3 Pydantic models
+- Duplicate coverage check
+- 5 files, 182 lines, 8 tests
 
 </div>
-<div>
+<div class="text-xs">
 
 ### Results
 
@@ -628,21 +611,13 @@ PROMPT.md → Implement → Quality Gates → Triangular Verify
 | Human intervention | 0 | 0 |
 | Quality gates | All pass | All pass |
 | Triangular | PASS | PASS |
-| New tests | 8 | 8 |
 
-<div class="pt-4 text-green-400 font-bold">
-
+<div class="pt-3 text-green-400 font-bold text-sm">
 Pipeline reusability: PROVEN
-
 </div>
 
-<div class="pt-2 text-sm">
+> Swap `PROMPT.md` → pipeline handles any feature. Packaged as **Claude Skill**.
 
-> Just swap `PROMPT.md` — the pipeline handles any feature. Packaged as a **Claude Skill** (`self-correcting-loop`) for team reuse.
-
-> **Next step**: Test with cross-module features (e.g., features spanning 3+ layers) to stress-test the pipeline.
-
-</div>
 </div>
 </div>
 
@@ -659,9 +634,9 @@ PROMPT.md만 바꾸면 어떤 기능이든 자동 구현됩니다.
 
 # Exp 5: Langfuse LLM Benchmark
 
-<div class="text-sm text-gray-400 pb-2">Data-driven model selection: 3 models × 3 tasks × 5 cases = 45 evaluations</div>
+<div class="text-xs text-gray-400 pb-1">3 models × 3 tasks × 5 cases = 45 evaluations</div>
 
-<div class="grid grid-cols-2 gap-6">
+<div class="grid grid-cols-2 gap-4 text-xs">
 <div>
 
 ### Accuracy (key_match avg)
@@ -673,42 +648,35 @@ PROMPT.md만 바꾸면 어떤 기능이든 자동 구현됩니다.
 | Coverage | 1.00 | 1.00 | 1.00 |
 | **Overall** | **0.80** | **0.97** | **0.93** |
 
-### Speed (avg latency)
-
-| | gpt-4o-mini | Sonnet | Haiku |
-|--|-------------|--------|-------|
-| Avg | **1.7s** | 3.3s | **1.7s** |
-
-### Cost (per 1M tokens in/out)
-
-| | gpt-4o-mini | Sonnet | Haiku |
-|--|-------------|--------|-------|
-| Price | $0.15/$0.60 | $3/$15 | $0.25/$1.25 |
+**Speed**: mini 1.7s · Sonnet 3.3s · Haiku 1.7s
+**Cost**: Haiku ≈ Sonnet 90% accuracy at 1/10 price
 
 </div>
 <div>
 
-### Key Findings
-
-1. **Task complexity reveals model gaps** — simple boolean (coverage) = all equal; complex reasoning (risk signal) = Sonnet wins
-2. **gpt-4o-mini under-detects** — conservative tendency misses risk signals. In insurance, under-detection > over-detection in danger
-3. **Haiku = 90% of Sonnet at 1/10 price** — best cost-performance ratio
-4. **Prompt v2 pitfall**: fixing one model broke another. Prompt changes need regression testing across all target models
-
-### Applied: Per-Task Model Routing
+### Per-Task Model Routing (Implemented)
 
 | Task | Model | Why |
 |------|-------|-----|
-| **risk_signal_extractor** | **Sonnet** | Complex reasoning, 0.90 accuracy. Under-detection is dangerous |
-| endorsement_comparison | Haiku | Same 1.00 accuracy as Sonnet, 2x faster, 10x cheaper |
-| review_summary | Haiku | Text summarization, no complex reasoning needed |
-| quote_personalization | Haiku | Context-aware generation, Haiku sufficient |
+| **risk_signal** | **Sonnet 4.5** | Under-detection dangerous |
+| endorsement | Haiku 4.5 | Same accuracy, 10x cheaper |
+| review_summary | Haiku 4.5 | No complex reasoning |
+| quote_personalization | Haiku 4.5 | Haiku sufficient |
 
-<div class="pt-2 text-sm text-green-400">
+<div class="pt-1 text-[10px] text-gray-500">
 
-**Implemented** — `LLMClient` routes per `trace_name` via `config.task_models`
+| | Sonnet 4.5 | Haiku 4.5 |
+|--|-----------|-----------|
+| **ID** | `claude-sonnet-4-5-20250929` | `claude-haiku-4-5-20251001` |
+| **Cost** | $3 / $15 per MTok | $1 / $5 per MTok |
+| **Context** | 200K (1M beta) | 200K |
 
 </div>
+
+### Key Findings
+- Simple tasks → all equal; complex → Sonnet wins
+- gpt-4o-mini under-detects risk signals
+- Prompt v2: fixing one model broke another
 
 </div>
 </div>
@@ -728,51 +696,51 @@ risk_signal만 Sonnet, 나머지 3개는 Haiku — LLMClient가 trace_name으로
 
 # Architecture: Iterate, Don't Overthink
 
-<div class="text-sm text-gray-400 pb-2">Started fast with flat structure → refactored to hexagonal when boundaries became clear</div>
+<div class="text-xs text-gray-400 pb-1">Fast flat structure → hexagonal when boundaries became clear</div>
 
-<div class="grid grid-cols-2 gap-8">
+<div class="grid grid-cols-2 gap-6 text-xs">
 <div>
 
-### Before (Day 1)
+### Day 1 — Flat
 ```
 app/
-├── models/        # Pydantic models
+├── models/        # Pydantic
 ├── engine/        # Business logic
 ├── llm/           # LLM integration
-├── routes/        # FastAPI endpoints
-└── templates/     # Jinja2 UI
+├── routes/        # FastAPI
+└── templates/     # Jinja2
 ```
-<div class="text-sm text-gray-400 pt-2">
-Flat structure — fast to build, but domain logic mixed with external dependencies
+<div class="text-gray-400 pt-1">
+Fast to build, but domain mixed with externals
 </div>
 
 </div>
 <div>
 
-### After (Day 2)
+### Day 2 — Hexagonal
 ```
 app/
-├── domain/        # Pure business logic
-│   ├── models/    #   (imports nothing external)
-│   ├── services/  #
+├── domain/        # Pure logic
+│   ├── models/    #   (imports nothing)
+│   ├── services/
 │   └── ports/     #   Protocol interfaces
 ├── application/   # Use case orchestration
-├── api/           # Inbound adapters (FastAPI)
-├── adaptor/       # Outbound (LLM, storage, DB)
+├── api/           # Inbound (FastAPI)
+├── adaptor/       # Outbound (LLM, DB)
 └── infra/         # DI wiring
 ```
-<div class="text-sm text-gray-400 pt-2">
-Hexagonal — BMS changes stay in adaptor/, domain logic untouched
+<div class="text-gray-400 pt-1">
+BMS changes → adaptor/ only, domain untouched
 </div>
 
 </div>
 </div>
 
-<div class="pt-4 text-sm">
+<div class="pt-3 text-xs">
 
-**AI refactored 44 files** (740 added, 578 deleted) **maintaining 100/100 tests** throughout. Applied 4 design patterns: StrEnum, Config centralization, Immutability (frozen models), DI (Depends()). Convention.md updated so Agent B auto-checks pattern compliance in triangular verification.
+AI refactored **44 files** (740+, 578-) maintaining **100/100 tests**. StrEnum, Config, Immutability, DI patterns applied.
 
-> *"Architecture is iteration — build fast, learn the boundaries, then restructure. AI makes the restructuring cost near-zero."*
+> *"Build fast, learn boundaries, restructure. AI makes restructuring cost near-zero."*
 
 </div>
 
@@ -787,32 +755,32 @@ BMS가 바뀌어도 adaptor/ 레이어만 수정하면 됩니다.
 
 ---
 
-# How I Think About Rule-based vs LLM
+# Rule-based vs LLM
 
-<div class="text-sm text-gray-400 pb-2">LLM is not the default — it earns its place through a clear decision framework</div>
+<div class="text-xs text-gray-400 pb-1">LLM earns its place through a clear decision framework</div>
 
-<div class="grid grid-cols-2 gap-8">
+<div class="grid grid-cols-2 gap-6 text-xs">
 <div>
 
 ### Decision Framework
 
 | Question | → Rule | → LLM |
 |----------|--------|-------|
-| Is input structured? | ✅ boolean, numeric | free text, notes |
-| Is the answer deterministic? | ✅ threshold check | context-dependent |
-| Can a simple rule solve it? | ✅ 1-line if | no simple logic |
-| Does LLM output feel different? | same quality | ✅ clearly richer |
+| Structured input? | ✅ boolean, numeric | free text |
+| Deterministic? | ✅ threshold | context-dependent |
+| Simple rule? | ✅ 1-line if | no simple logic |
+| LLM output richer? | same quality | ✅ clearly richer |
 
-**If 3+ answers point to Rule → don't use LLM.**
+**3+ answers → Rule: don't use LLM.**
 
 ### Where LLM Earned Its Place
 
-| LLM Point | Why It Can't Be Rule-based |
-|-----------|---------------------------|
-| **Risk Signal Extractor** | Free-text notes → multi-signal reasoning |
-| **Endorsement Comparison** | Natural language → material change type |
-| **Review Summary** | Multiple flags → coherent 2-3 sentence story |
-| **Quote Personalization** | Policy context → tailored broker advice |
+| Point | Why Not Rule |
+|-------|-------------|
+| **Risk Signal** | Free-text → multi-signal reasoning |
+| **Endorsement** | NL → material change type |
+| **Summary** | Flags → coherent story |
+| **Quote** | Context → tailored advice |
 
 </div>
 <div>
@@ -820,30 +788,23 @@ BMS가 바뀌어도 adaptor/ 레이어만 수정하면 됩니다.
 ### The Principle
 
 ```
-Core pipeline:    100% rule-based (always runs)
-LLM layer:        opt-in (RR_LLM_ENABLED flag)
-Failure strategy:  graceful fallback to rule-based
-User-facing LLM:   4/12 outputs (33%)
-Code ratio:         Rule 42% · LLM 19% · Hybrid 25%
+Core pipeline:   100% rule-based (always runs)
+LLM layer:       opt-in (RR_LLM_ENABLED)
+Failure:         graceful fallback to rules
+User-facing LLM: 4/12 outputs (33%)
+Code ratio:      Rule 42% · LLM 19% · Hybrid 25%
 ```
 
-<div class="pt-4">
+<div class="pt-3">
 
-**The core engine works without any LLM.** LLM is an additive layer — if every LLM call fails, the system still functions on rule-based results. Users see no difference.
+**Core works without any LLM.** LLM is additive — if all LLM calls fail, system functions on rules alone.
 
-This matters because:
-- LLM costs money per call (only 5-15% of policies trigger it)
-- LLM latency adds up at batch scale
-- Deterministic outputs are easier to test and trust
+- Only 5-15% of policies trigger LLM
+- Deterministic = easier to test & trust
+- Cost scales with text changes, not policy count
 
 </div>
 </div>
-</div>
-
-<div class="pt-2 text-sm text-center text-gray-400">
-
-*"LLM for unstructured text interpretation and multi-context synthesis only. Structured input with deterministic answers → rule-based is more accurate, testable, and cost-effective."*
-
 </div>
 
 <!--
@@ -857,9 +818,9 @@ LLM이 전부 실패해도 시스템은 정상 동작합니다.
 
 ---
 
-# Backend, Domain & Engineering Practices
+# Backend, Domain & Engineering
 
-<div class="grid grid-cols-3 gap-6">
+<div class="grid grid-cols-3 gap-4 text-xs">
 <div>
 
 ### DB Integration
@@ -870,26 +831,24 @@ JSON → Docker Postgres
   └ fail → JSON fallback
 ```
 
-- AI agent solved 4 backend issues in sequence (port conflict, async/sync, ORM, serialization)
-- **MCP Toolbox**: Agent queries DB directly via SQL — no scripts needed
-- Production: 3 changes (upsert, ingestion API, cache) — pipeline stays the same
+- AI solved 4 backend issues in sequence
+- **MCP Toolbox**: Agent queries DB via SQL
+- Production: 3 changes (upsert, API, cache)
 
 </div>
 <div>
 
 ### Pydantic + LLM Trust
 
-LLM responses = **untrusted external API**:
-- 4 Pydantic schemas enforce response format
-- Validation failure → rule-based fallback
-- Users see no difference on failure
+LLM response = **untrusted external API**
+- 4 schemas enforce format
+- Fail → rule-based fallback
+- Users see no difference
 
 ### Domain Knowledge
 
-**Hybrid** (context window is finite):
-- `CLAUDE.md`: core terms + pointer
-- Custom Skill: full ACORD mapping, gap analysis
-- *Like a cache hierarchy — always-needed in L1, rest on demand*
+- `CLAUDE.md`: core terms (L1 cache)
+- Custom Skill: full ACORD mapping (L2)
 
 </div>
 <div>
@@ -898,15 +857,14 @@ LLM responses = **untrusted external API**:
 
 | Name | Action |
 |------|--------|
-| `require-design-doc` | Blocks commit without doc sync |
-| `require-experiment-log` | Blocks commit without log |
-| `remind-design-doc` | One-time reminder on edit |
-| Skill: `insurance-domain` | ACORD field mapping |
+| `require-design-doc` | Block commit w/o doc |
+| `require-experiment-log` | Block commit w/o log |
+| Skill: `insurance-domain` | ACORD mapping |
 | Skill: `self-correcting-loop` | Automated pipeline |
 
-### Architecture (flat → hexagonal)
+### Architecture
 
-AI refactored **44 files** maintaining 100/100 tests. Applied StrEnum, Config, Immutability, DI. Domain layer imports zero external modules.
+Flat → Hexagonal: **44 files** refactored, 100/100 tests. Domain imports zero externals.
 
 </div>
 </div>
@@ -924,46 +882,42 @@ Pydantic — LLM 응답을 외부 API처럼 취급해서 스키마로 계약을 
 
 # Skills for the Team
 
-<div class="text-sm text-gray-400 pb-2">Packaging experiments into reusable workflows anyone can adopt</div>
+<div class="text-xs text-gray-400 pb-1">Packaging experiments into reusable workflows</div>
 
-<div class="grid grid-cols-2 gap-8">
+<div class="grid grid-cols-2 gap-6 text-sm">
 <div>
 
 ### What I Packaged
 
 **Claude Skill: `self-correcting-loop`**
 ```
-PROMPT.md → Implement → Quality Gates → Triangular Verify
-                 ↑___________ feedback ___________↓
+PROMPT.md → Implement → Gates → Triangular
+                 ↑_______ feedback _______↓
 ```
-- Any engineer runs it with one command
+- One command to run
 - Swap `PROMPT.md` for any feature
-- Proven on 2 different domain features (Exp 3 & 4)
+- Proven on 2 domain features
 
-**Team Guide: `guide-self-correcting-loop.md`**
-- Prerequisites, step-by-step usage
-- Troubleshooting section
-- Shell script + Skill invocation methods
+**Guide: `guide-self-correcting-loop.md`**
+- Prerequisites, step-by-step, troubleshooting
 
 </div>
 <div>
 
 ### Why This Matters
 
-Skills are **organizational knowledge**, not personal tools.
+Skills = **organizational knowledge**, not personal tools.
 
-At Quandri, I've heard that engineers use their own individual skills — but good patterns aren't shared across the engineering org yet.
-
-What if the best workflows from one team could be installed by another with a single file?
+Engineers use individual skills — but good patterns aren't shared across the org yet.
 
 ```
 ~/.claude/skills/self-correcting-loop/
-└── SKILL.md   ← install this, get the whole pipeline
+└── SKILL.md  ← install this, get the pipeline
 ```
 
-**One engineer experiments → packages it → whole team benefits.**
+**One engineer experiments → packages → whole team benefits.**
 
-This is what I want to bring: not just building fast, but making the team faster.
+Not just building fast — **making the team faster**.
 
 </div>
 </div>
@@ -984,35 +938,33 @@ layout: center
 
 # What I'd Improve
 
-<div class="grid grid-cols-2 gap-8 pt-4">
+<div class="grid grid-cols-2 gap-6 pt-2 text-sm">
 <div>
 
-### Limitations Identified
-
-- **Triangular verification blind to UI** — Agent B only reads Python; templates unchecked
-- **5 test cases insufficient** for statistically significant LLM benchmark — need 20+
-- **Prompt v2 cross-model regression** — improving one model can degrade another
-- **Self-correcting loop speed** — `claude --print` buffering adds ~90s overhead
-- **Hexagonal was added late** — should have been in convention.md from day 1
+### Limitations
+- Triangular **blind to UI** — Python only
+- 5 test cases insufficient — need 20+
+- Prompt v2 cross-model regression
+- Loop speed — `--print` buffering +90s
+- Hexagonal added late — should be day 1
 
 </div>
 <div>
 
-### If I Had More Time
-
-- Add **frontend analysis skill** to Agent B for template/JS verification
-- Expand Langfuse test cases to **30+** for production model selection
-- Build **model-specific prompt variants** instead of one-size-fits-all
-- Add **streaming output** to self-correcting loop for real-time feedback
-- Create **architecture-aware skill** that enforces layer boundaries from the start
-- Implement **batch ingestion API** (`POST /ingest/batch`) for production BMS integration
+### With More Time
+- Frontend analysis skill for Agent B
+- 30+ Langfuse cases for production
+- Model-specific prompt variants
+- Streaming output for loop
+- Architecture-aware skill from start
+- Batch ingestion API for BMS
 
 </div>
 </div>
 
-<div class="pt-8 text-center text-xl">
+<div class="pt-6 text-center text-base">
 
-> *"Agent-native isn't about delegating code to AI. It's about building an environment where AI can do its best work — rulesets, quality gates, clear plans. Then a week of work becomes two days."*
+> *"Agent-native isn't delegating code to AI. It's building an environment where AI does its best work — rulesets, quality gates, clear plans. Then a week becomes two days."*
 
 </div>
 
@@ -1032,17 +984,19 @@ class: text-center
 
 # Q & A
 
-<div class="pt-8 text-gray-400">
+<div class="pt-6 text-sm text-gray-400">
 
 **Tech Stack**: Python 3.13 · FastAPI · Pydantic v2 · SQLAlchemy · Docker · PostgreSQL
 
-**AI Tools**: Claude Code · Langfuse · MCP Toolbox · Custom Skills & Hooks
+**LLM**: Claude Sonnet 4.5 (risk signals) · Claude Haiku 4.5 (3 tasks) · Langfuse tracing
+
+**AI Tools**: Claude Code · MCP Toolbox · Custom Skills & Hooks
 
 **Metrics**: 100 tests · 14+ endpoints · 8,000 policies < 1s · ~2,500 lines · 2 days
 
 </div>
 
-<div class="pt-12 text-sm text-gray-500">
+<div class="pt-10 text-sm text-gray-500">
 
 github.com/[repo] · Yeonsu Choi
 
