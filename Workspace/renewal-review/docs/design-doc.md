@@ -353,12 +353,10 @@ LLM 분석 결과에 따라 rule_risk보다 높은 level로 상향. 하향은 �
 | Method | Path | Description | Response | Status Codes |
 |--------|------|-------------|----------|-------------|
 | GET | `/health` | 헬스체크 | `{"status": "ok"}` | 200 |
-| POST | `/reviews/compare` | 단건 정책 비교 | `ReviewResult` | 200, 422 |
-| GET | `/reviews/{policy_number}` | 리뷰 결과 조회 | `ReviewResult` | 200, 404 |
+| GET | `/reviews/{policy_number}` | 리뷰 결과 조회 (lazy LLM enrichment 트리거) | `ReviewResult` | 200, 404 |
 | PATCH | `/reviews/{pn}/broker-contacted` | 연락 여부 토글 | `{broker_contacted}` | 200, 404 |
 | PATCH | `/reviews/{pn}/quote-generated` | 견적 생성 여부 토글 | `{quote_generated}` | 200, 404 |
-| PATCH | `/reviews/{pn}/reviewed-at` | 리뷰 시점 기록 | `{reviewed_at}` | 200, 404 |
-| POST | `/quotes/generate` | 대안 견적 생성 | `list[QuoteRecommendation]` | 200, 422 |
+| POST | `/quotes/generate` | 대안 견적 생성 | `{quotes, reasons}` | 200, 422 |
 | POST | `/portfolio/analyze` | 포트폴리오 교차 분석 | `PortfolioSummary` | 200, 422 |
 
 ### Batch / Async
@@ -369,8 +367,7 @@ LLM 분석 결과에 따라 rule_risk보다 높은 level로 상향. 하향은 �
 | POST | `/batch/review-selected` | 선택 정책만 배치 실행 (store 유지) | `{"job_id", "status", "total"}` | 200, 404 |
 | GET | `/batch/total-count` | 데이터 소스 전체 정책 수 | `{"total"}` | 200 |
 | GET | `/batch/status/{job_id}` | 배치 진행 상태 | job 상세 (status, processed, total) | 200, 404 |
-| GET | `/batch/summary` | 마지막 배치 요약 | `BatchSummary \| null` | 200 |
-| POST | `/eval/run` | Golden eval 실행 | accuracy + 시나리오별 결과 | 200, 404 |
+| POST | `/eval/run` | Golden eval 실행 (개발/QA 전용) | accuracy + 시나리오별 결과 | 200, 404 |
 | POST | `/migration/comparison` | **reviewed** + Review Recommended 대상 Basic vs LLM 비교 (비동기). `reviewed_at is not None` 필수. 실제 LLM API 호출 (llm_enabled=true 시). 데모: 100건 샘플링 (`comparison_sample_size`). LLM 결과를 DB(`llm_results`)에도 저장. 기존 메타데이터(`reviewed_at`, `broker_contacted`, `quote_generated`) 보존 | `{"job_id", "status", "total"}` | 200, 404 |
 | GET | `/migration/latest` | 마지막 비교 결과 조회 (서버 persistence) | 비교 결과 dict 또는 `{"status":"none"}` | 200 |
 | GET | `/migration/status/{job_id}` | Migration 진행 상태 | job 상세 | 200, 404 |
