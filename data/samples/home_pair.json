@@ -8,6 +8,8 @@
     "premium": 2400.00,
     "state": "TX",
     "notes": "",
+    "insured_name": "Jane Doe",
+    "account_id": "ACCT-0002",
     "home_coverages": {
       "coverage_a_dwelling": 350000,
       "coverage_b_other_structures": 35000,
@@ -42,6 +44,8 @@
     "premium": 2952.00,
     "state": "TX",
     "notes": "Inflation guard applied. Roof age approaching replacement threshold.",
+    "insured_name": "Jane Doe",
+    "account_id": "ACCT-0002",
     "home_coverages": {
       "coverage_a_dwelling": 371000,
       "coverage_b_other_structures": 37100,

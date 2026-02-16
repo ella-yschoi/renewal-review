@@ -1004,7 +1004,8 @@ PROMPT.md → Implement → Gates → Triangular
 ```
 
   <div class="text-sm space-y-1 pt-2">
-    <div>One command to run any feature</div>
+    <div>Project-agnostic — Python, Node, Rust, Go</div>
+    <div>Auto-detects lint, test, security tools</div>
     <div>Proven on 2 domain features</div>
   </div>
   <div class="border-t border-gray-700 mt-3 pt-2 text-sm">
@@ -1020,8 +1021,10 @@ PROMPT.md → Implement → Gates → Triangular
   <div class="text-sm text-gray-400 pt-2">Engineers use individual skills — but good patterns aren't shared across the org yet.</div>
 
 ```
-~/.claude/skills/self-correcting-loop/
-└── SKILL.md  ← install, get the pipeline
+~/.agents/skills/self-correcting-loop/
+├── detect-project.sh  ← auto-detect
+├── SKILL.md           ← install, get pipeline
+└── PROMPT-TEMPLATE.md ← copy & fill
 ```
 
   <div class="text-sm pt-2"><b>One engineer experiments → packages → team benefits.</b></div>
@@ -1033,6 +1036,8 @@ PROMPT.md → Implement → Gates → Triangular
 <!--
 "실험 결과를 Skill과 가이드로 패키징했습니다.
 self-correcting-loop Skill — PROMPT.md만 바꾸면 어떤 기능이든 자동 구현+검증 파이프라인을 돌릴 수 있습니다.
+그리고 이 스킬을 범용화해서 Python뿐 아니라 Node, Rust, Go 프로젝트에서도 바로 사용 가능하게 만들었습니다.
+detect-project.sh가 프로젝트 루트의 pyproject.toml, package.json, Cargo.toml, go.mod 같은 파일을 보고 린트, 테스트, 보안 스캐너를 자동으로 결정합니다.
 가이드 문서도 만들어서 팀원 누구나 따라할 수 있게 했습니다.
 Quandri에서 Chloe와 이야기했을 때, 지금은 각 엔지니어가 자기만의 Skill을 쓰고 있고
 좋은 패턴이 엔지니어링 조직 전체에 공유되지 않는다고 들었습니다.

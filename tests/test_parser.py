@@ -52,3 +52,27 @@ def test_normalize_dates(auto_pair_raw: dict):
 def test_parse_notes(auto_pair_raw: dict):
     snap = parse_snapshot(auto_pair_raw["renewal"])
     assert "regional rate adjustment" in snap.notes
+
+
+def test_parse_insured_name(auto_pair_raw: dict):
+    snap = parse_snapshot(auto_pair_raw["prior"])
+    assert snap.insured_name == "John Smith"
+
+
+def test_parse_account_id(auto_pair_raw: dict):
+    snap = parse_snapshot(auto_pair_raw["prior"])
+    assert snap.account_id == "ACCT-0001"
+
+
+def test_parse_missing_insured_name():
+    raw = {
+        "policy_number": "TEST-001",
+        "policy_type": "auto",
+        "carrier": "TestCo",
+        "effective_date": "2024-01-01",
+        "expiration_date": "2025-01-01",
+        "premium": 1000.0,
+    }
+    snap = parse_snapshot(raw)
+    assert snap.insured_name == ""
+    assert snap.account_id == ""

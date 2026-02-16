@@ -98,6 +98,8 @@ def parse_snapshot(raw: dict[str, Any]) -> PolicySnapshot:
         premium=float(raw["premium"]),
         state=raw.get("state", "CA").strip().upper(),
         notes=raw.get("notes", "").strip(),
+        insured_name=raw.get("insured_name", "").strip(),
+        account_id=raw.get("account_id", "").strip(),
         auto_coverages=auto_coverages,
         home_coverages=home_coverages,
         vehicles=_parse_vehicles(raw.get("vehicles", [])),

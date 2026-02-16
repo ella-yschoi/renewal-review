@@ -64,6 +64,8 @@ class PolicySnapshot(BaseModel):
     premium: float
     state: str = "CA"
     notes: str = ""
+    insured_name: str = ""
+    account_id: str = ""
 
     auto_coverages: AutoCoverages | None = None
     home_coverages: HomeCoverages | None = None

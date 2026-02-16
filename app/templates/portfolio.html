@@ -3,12 +3,6 @@
 
 {% block content %}
 <style>
-  .policy-select-row { cursor: pointer; }
-  .policy-select-row.selected { background: #ebf8ff; }
-  .policy-select-row input[type="checkbox"] { cursor: pointer; }
-  .action-bar { display: flex; align-items: center; gap: 12px; margin-bottom: 12px; }
-  .selected-count { font-size: 13px; color: #718096; }
-  .btn:disabled { opacity: 0.4; cursor: not-allowed; }
   .modal-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 100; }
   .modal-overlay.open { display: flex; align-items: center; justify-content: center; }
   .modal { background: #f5f7fa; border-radius: 12px; max-width: 860px; width: 94%; max-height: 88vh; overflow-y: auto; padding: 28px; position: relative; box-shadow: 0 20px 60px rgba(0,0,0,0.3); }
@@ -59,45 +53,56 @@
   .action-items-list li.priority-warning::before { background: #d69e2e; color: white; }
   .action-items-list li.priority-info { background: #bee3f8; border-left: 3px solid #3182ce; }
   .action-items-list li.priority-info::before { background: #3182ce; color: white; }
+  .type-badge { display: inline-block; padding: 2px 8px; border-radius: 4px; font-size: 11px; font-weight: 600; }
+  .type-badge.type-bundle { background: #e9d8fd; color: #553c9a; }
+  .type-badge.type-auto { background: #bee3f8; color: #2a4365; }
+  .type-badge.type-home { background: #c6f6d5; color: #22543d; }
 </style>
 
 <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px;">
   <h1 style="font-size:20px;">Portfolio Risk Aggregator</h1>
 </div>
 
-{% if not results %}
+{% if not accounts %}
 <div class="card">
   <p style="color:#718096; text-align:center; padding:24px;">No reviewed policies found. Run a batch review from the Dashboard first.</p>
 </div>
 {% else %}
 <div class="card">
   <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
-    <h2 style="margin:0;">Select Policies <span style="font-weight:400; font-size:12px; color:#718096;">{{ total_results }} total — page {{ page }}/{{ total_pages }}</span></h2>
-    <div style="display:flex; align-items:center; gap:12px;">
-      <span class="selected-count" id="selected-count">0 selected (min 2)</span>
-      <button class="btn btn-primary" id="analyze-btn" disabled onclick="analyzePortfolio()">Analyze Portfolio</button>
-    </div>
+    <h2 style="margin:0;">Client Accounts <span style="font-weight:400; font-size:12px; color:#718096;">{{ total_results }} accounts — page {{ page }}/{{ total_pages }}</span></h2>
   </div>
   <table style="width:100%; table-layout:fixed;">
     <thead>
       <tr>
-        <th style="width:4%;"><input type="checkbox" id="select-all" onclick="toggleAll(this)"></th>
-        <th style="width:28%;">Policy #</th>
+        <th style="width:26%;">Policy #</th>
+        <th style="width:10%;">Policies</th>
         <th style="width:12%;">Type</th>
-        <th style="width:20%;">Carrier</th>
-        <th style="width:18%;">Premium</th>
+        <th style="width:18%;">Total Premium</th>
         <th style="width:18%;">Risk</th>
+        <th style="width:16%;">Action</th>
       </tr>
     </thead>
     <tbody>
-      {% for r in results %}
-      <tr class="policy-select-row" onclick="toggleRow(this, event)">
-        <td><input type="checkbox" class="policy-cb" value="{{ r.policy_number }}" onclick="event.stopPropagation(); this.closest('tr').classList.toggle('selected', this.checked); updateCount()"></td>
-        <td><a href="/ui/review/{{ r.policy_number }}?ref=portfolio" onclick="event.stopPropagation()">{{ r.policy_number }}</a></td>
-        <td>{{ r.pair.prior.policy_type.value if r.pair else "—" }}</td>
-        <td>{{ r.pair.renewal.carrier if r.pair else "—" }}</td>
-        <td>${{ "%.2f"|format(r.pair.renewal.premium) if r.pair else "—" }}</td>
-        <td><span class="badge badge-{{ r.risk_level.value }}">{{ r.risk_level.value|label }}</span></td>
+      {% for acct in accounts %}
+      <tr>
+        <td>
+          <div style="font-weight:500;">{{ acct.policy_numbers | join(", ") }}</div>
+          {% if acct.insured_name and acct.insured_name != acct.policy_numbers[0] %}
+          <div style="font-size:11px; color:#718096;">{{ acct.insured_name }}</div>
+          {% endif %}
+        </td>
+        <td>{{ acct.policy_count }}</td>
+        <td><span class="type-badge type-{{ acct.type|lower }}">{{ acct.type }}</span></td>
+        <td>${{ "%.2f"|format(acct.total_premium) }}</td>
+        <td><span class="badge badge-{{ acct.highest_risk.value }}">{{ acct.highest_risk.value|label }}</span></td>
+        <td>
+          {% if acct.policy_count >= 2 %}
+          <button class="btn btn-primary" style="padding:4px 12px; font-size:12px;" onclick='analyzeAccount({{ acct.policy_numbers|tojson }})'>Analyze</button>
+          {% else %}
+          <a href="/ui/review/{{ acct.policy_numbers[0] }}?ref=portfolio" class="btn btn-secondary" style="padding:4px 12px; font-size:12px;">View</a>
+          {% endif %}
+        </td>
       </tr>
       {% endfor %}
     </tbody>
@@ -105,11 +110,11 @@
   {% if total_pages > 1 %}
   <div style="display:flex; justify-content:center; align-items:center; gap:12px; margin-top:16px;">
     {% if page > 1 %}
-    <a href="/ui/portfolio?page={{ page - 1 }}" class="btn btn-secondary" style="padding:4px 12px; font-size:12px;" onclick="sessionStorage.setItem('portfolio-navigating','1')">&larr; Prev</a>
+    <a href="/ui/portfolio?page={{ page - 1 }}" class="btn btn-secondary" style="padding:4px 12px; font-size:12px;">&larr; Prev</a>
     {% endif %}
     <span style="font-size:13px; color:#4a5568;">{{ page }} / {{ total_pages }}</span>
     {% if page < total_pages %}
-    <a href="/ui/portfolio?page={{ page + 1 }}" class="btn btn-secondary" style="padding:4px 12px; font-size:12px;" onclick="sessionStorage.setItem('portfolio-navigating','1')">Next &rarr;</a>
+    <a href="/ui/portfolio?page={{ page + 1 }}" class="btn btn-secondary" style="padding:4px 12px; font-size:12px;">Next &rarr;</a>
     {% endif %}
   </div>
   {% endif %}
@@ -149,48 +154,6 @@
 
 {% block scripts %}
 <script>
-function getStoredSelections() {
-  try { return JSON.parse(sessionStorage.getItem('portfolio-selected') || '[]'); }
-  catch (e) { return []; }
-}
-
-function setStoredSelections(arr) {
-  sessionStorage.setItem('portfolio-selected', JSON.stringify(arr));
-}
-
-function toggleRow(tr, e) {
-  var cb = tr.querySelector('.policy-cb');
-  cb.checked = !cb.checked;
-  tr.classList.toggle('selected', cb.checked);
-  updateCount();
-}
-
-function toggleAll(masterCb) {
-  var cbs = document.querySelectorAll('.policy-cb');
-  cbs.forEach(function(cb) {
-    cb.checked = masterCb.checked;
-    cb.closest('tr').classList.toggle('selected', masterCb.checked);
-  });
-  updateCount();
-}
-
-function updateCount() {
-  var stored = getStoredSelections();
-  var allCbs = document.querySelectorAll('.policy-cb');
-  allCbs.forEach(function(cb) {
-    var idx = stored.indexOf(cb.value);
-    if (cb.checked && idx === -1) stored.push(cb.value);
-    else if (!cb.checked && idx !== -1) stored.splice(idx, 1);
-  });
-  setStoredSelections(stored);
-  var count = stored.length;
-  document.getElementById('selected-count').textContent = count + ' selected' + (count < 2 ? ' (min 2)' : '');
-  document.getElementById('analyze-btn').disabled = count < 2;
-  var checkedOnPage = document.querySelectorAll('.policy-cb:checked').length;
-  var masterCb = document.getElementById('select-all');
-  masterCb.checked = checkedOnPage === allCbs.length && allCbs.length > 0;
-}
-
 function closeModal(e) {
   if (e && e.target !== document.getElementById('modal-overlay')) return;
   document.getElementById('modal-overlay').classList.remove('open');
@@ -200,9 +163,7 @@ document.addEventListener('keydown', function(e) {
   if (e.key === 'Escape') closeModal();
 });
 
-async function analyzePortfolio() {
-  var policyNumbers = getStoredSelections();
-
+async function analyzeAccount(policyNumbers) {
   var overlay = document.getElementById('modal-overlay');
   var loading = document.getElementById('modal-loading');
   var content = document.getElementById('modal-content');
@@ -289,7 +250,6 @@ function renderRiskBar(breakdown) {
 }
 
 function renderBundle(bundle, data) {
-  var bundleH2 = document.querySelector('#bundle-card h2');
   var recHtml = '';
   if (bundle.is_bundle && !bundle.carrier_mismatch) {
     recHtml = '<div class="bundle-recommendation rec-green">Bundle discount applied — verify discount on renewal</div>';
@@ -443,21 +403,5 @@ function renderActionItems(data) {
   html += '</ol>';
   document.getElementById('action-items-list').innerHTML = html;
 }
-
-document.addEventListener('DOMContentLoaded', function() {
-  if (sessionStorage.getItem('portfolio-navigating')) {
-    sessionStorage.removeItem('portfolio-navigating');
-  } else {
-    sessionStorage.removeItem('portfolio-selected');
-  }
-  var stored = getStoredSelections();
-  document.querySelectorAll('.policy-cb').forEach(function(cb) {
-    if (stored.indexOf(cb.value) !== -1) {
-      cb.checked = true;
-      cb.closest('tr').classList.add('selected');
-    }
-  });
-  updateCount();
-});
 </script>
 {% endblock %}

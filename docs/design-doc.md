@@ -166,7 +166,7 @@ JSON/DB → load_pairs → [RenewalPair]
 | 모델 | 설명 | 핵심 필드 |
 |------|------|-----------|
 | `PolicyType` | StrEnum — `auto`, `home` | — |
-| `PolicySnapshot` | 정책 1건의 스냅샷 | policy_number, policy_type, carrier, effective_date, expiration_date, premium, state, notes, auto_coverages, home_coverages, vehicles, drivers, endorsements |
+| `PolicySnapshot` | 정책 1건의 스냅샷 | policy_number, policy_type, carrier, effective_date, expiration_date, premium, state, notes, insured_name, account_id, auto_coverages, home_coverages, vehicles, drivers, endorsements |
 | `RenewalPair` | Prior + Renewal 한 쌍 | prior: PolicySnapshot, renewal: PolicySnapshot |
 | `AutoCoverages` | 자동차 보장 항목 | bodily_injury_limit, property_damage_limit, collision_deductible, comprehensive_deductible, uninsured_motorist, medical_payments, rental_reimbursement, roadside_assistance |
 | `HomeCoverages` | 주택 보장 항목 | coverage_a~f, deductible, wind_hail_deductible, water_backup, replacement_cost |
@@ -412,7 +412,7 @@ POST /batch/run  →  {"job_id": "abc12345", "status": "running"}
 | 1 | Dashboard | `GET /` | 초기 진입 시 미리뷰 정책을 "Pending" 상태로 표시. **Risk Distribution은 `reviewed_at is not None`인 정책만 카운트** — Pending = `total - actually_reviewed`. Broker Workflow 지표 5종 (pending도 `reviewed_at` 기반 계산). 선택 체크박스 sessionStorage 기반 페이지/필터 간 유지 + Review(N) 버튼 (전역 선택 카운트), Review All(N). 필터 6종: 리뷰 여부(Reviewed/Pending), Risk Level, Contacted, Quote, LLM 분석 여부 (필터 상태 sessionStorage 저장, 상세→대시보드 복귀 시 유지). Contacted 체크박스 (사용자 토글), Quote 체크박스 (read-only), Reviewed At 표시, 페이지네이션 (50건/page) |
 | 2 | Review Detail | `GET /ui/review/{pn}` | 레이아웃: Summary → Quote Recommendations (trade_off + broker_tip) → LLM Insights → Policy Overview → Flags → Changes. AI summary는 모든 flagged 정책 대상 (lazy enrichment), LLM insights는 Review Recommended만. Quote trade_off: 3-4문장 구체적 시나리오/금액, broker_tip: 2-3문장 actionable 대화 가이드. 뒤로가기 시 Dashboard 필터 상태 복원 (sessionStorage). `?ref=insight`로 진입 시 "Back to LLM Insights" 표시 |
 | 3 | LLM Insights | `GET /ui/insight` | **reviewed + Review Recommended** 대상 (`reviewed_at is not None` 필수). 실제 LLM API 호출 (llm_enabled=false 시 MockLLMClient fallback). 프로덕션: 전체 대상 분석. 데모: 100건 랜덤 샘플. LLM 결과 DB 저장 + 기존 메타데이터 보존. 비동기 실행 후 progress bar polling (phase/processed/total + 잔여 시간 추정). 결과: 상단 summary 카드 + 하단 전체 비교 테이블 (All Compared Policies, Risk Changed 필터, 페이지네이션 20건/page). 정책 링크에 `?ref=insight` 전달 |
-| 4 | Portfolio | `GET /ui/portfolio` | 정책 목록 표시, 복수 선택 → Analyze Portfolio. Rule-based verdict/recommendations/action items |
+| 4 | Portfolio | `GET /ui/portfolio` | 계정(account_id) 단위 그룹핑 목록 표시. 컬럼: Insured Name, Policies, Type (Auto/Home/Bundle), Total Premium, Highest Risk, Action. Bundle 계정(2+ policies)은 Analyze 버튼 → 기존 모달, 단일 정책 계정은 View 링크 → review 상세. Rule-based verdict/recommendations/action items |
 | 5 | Base Layout | — | 공통 nav (Dashboard, LLM Insights, Portfolio), 전역 `getLabel()` JS 함수 |
 
 ### Label Registry (`app/domain/labels.py`)
@@ -661,14 +661,14 @@ data/
 
 ### 테스트 현황
 
-13개 파일, 117개 테스트.
+13개 파일, 116개 테스트.
 
 | 파일 | 테스트 수 | 검증 대상 |
 |------|----------|----------|
 | `tests/test_rules.py` | 22 | premium 임계값, flag 부여, liability/deductible/coverage/endorsement, driver violations, SR-22, youthful operator, coverage gap |
 | `tests/test_differ.py` | 14 | 필드별 diff 계산, 동일 정책 no-change, vehicle/endorsement/coverage 변경 |
 | `tests/test_routes.py` | 9 | health, compare, get_review, batch run/status/summary |
-| `tests/test_parser.py` | 8 | snapshot/pair 파싱, vehicle/driver/endorsement, 날짜 정규화, notes |
+| `tests/test_parser.py` | 11 | snapshot/pair 파싱, vehicle/driver/endorsement, 날짜 정규화, notes, insured_name, account_id |
 | `tests/test_quote_generator.py` | 12 | Auto/Home 전략, 이미 최적화된 케이스, liability 보호, 라우트 통합, LLM 개인화, malformed 응답 |
 | `tests/test_batch.py` | 7 | process_pair, assign_risk_level 4단계, process_batch |
 | `tests/test_llm_analyzer.py` | 13 | should_analyze 조건, notes/endorsement 분석, MockLLM 통합, generate_summary, malformed 응답 fallback |

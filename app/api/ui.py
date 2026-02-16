@@ -164,24 +164,86 @@ def review_detail(
     )
 
 
+def _build_account_lookup() -> dict[str, tuple[str, str]]:
+    pairs = load_pairs()
+    lookup: dict[str, tuple[str, str]] = {}
+    for p in pairs:
+        pn = p.prior.policy_number
+        if p.renewal.account_id:
+            lookup[pn] = (p.renewal.account_id, p.renewal.insured_name)
+    return lookup
+
+
 @router.get("/ui/portfolio")
 def portfolio_page(
     request: Request,
     page: int = Query(1, ge=1),
     store: InMemoryReviewStore = Depends(get_review_store),
 ):
-    all_results = sorted(store.values(), key=lambda r: _RISK_SEVERITY[r.risk_level], reverse=True)
-    total = len(all_results)
+    all_results = list(store.values())
+
+    # Build lookup from current data source for account enrichment
+    acct_lookup = _build_account_lookup()
+
+    # Group by account_id (prefer stored pair, fallback to data source)
+    account_map: dict[str, list] = {}
+    account_names: dict[str, str] = {}
+    for r in all_results:
+        acct = r.pair.renewal.account_id if r.pair else ""
+        name = r.pair.renewal.insured_name if r.pair else ""
+
+        # Enrich from data source if stored pair lacks account_id
+        if not acct and r.policy_number in acct_lookup:
+            acct, name = acct_lookup[r.policy_number]
+
+        if not acct:
+            acct = r.policy_number
+        account_map.setdefault(acct, []).append(r)
+        if name and acct not in account_names:
+            account_names[acct] = name
+
+    accounts = []
+    for acct_id, results in account_map.items():
+        has_auto = any(r.pair and r.pair.renewal.policy_type.value == "auto" for r in results)
+        has_home = any(r.pair and r.pair.renewal.policy_type.value == "home" for r in results)
+        if has_auto and has_home:
+            acct_type = "Bundle"
+        elif has_auto:
+            acct_type = "Auto"
+        else:
+            acct_type = "Home"
+
+        total_premium = sum(r.pair.renewal.premium for r in results if r.pair)
+        highest_risk = max(results, key=lambda r: _RISK_SEVERITY[r.risk_level])
+        insured_name = account_names.get(acct_id, results[0].policy_number)
+        policy_numbers = [r.policy_number for r in results]
+
+        accounts.append(
+            {
+                "account_id": acct_id,
+                "insured_name": insured_name,
+                "policy_count": len(results),
+                "policy_numbers": policy_numbers,
+                "type": acct_type,
+                "total_premium": total_premium,
+                "highest_risk": highest_risk.risk_level,
+            }
+        )
+
+    accounts.sort(key=lambda a: _RISK_SEVERITY[a["highest_risk"]], reverse=True)
+
+    total = len(accounts)
     total_pages = max(1, (total + PAGE_SIZE - 1) // PAGE_SIZE)
     page = min(page, total_pages)
     start = (page - 1) * PAGE_SIZE
-    results = all_results[start : start + PAGE_SIZE]
+    page_accounts = accounts[start : start + PAGE_SIZE]
+
     return templates.TemplateResponse(
         "portfolio.html",
         {
             "request": request,
             "active": "portfolio",
-            "results": results,
+            "accounts": page_accounts,
             "page": page,
             "total_pages": total_pages,
             "total_results": total,

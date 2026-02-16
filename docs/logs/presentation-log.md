@@ -9,6 +9,18 @@
 
 ---
 
+### 2026-02-16 13:11 | `main` | uncommitted
+
+**refactor: generalize self-correcting-loop skill to be project-agnostic**
+
+_5 files created at ~/.agents/skills/, 3 files deleted from project, 1 guide rewritten_
+
+> **Context**: Self-correcting loop 스킬이 renewal-review 전용으로 하드코딩(ruff/pytest/semgrep, `app/`, `docs/experiments/`)되어 있어 다른 프로젝트에서 사용 불가능. 실험 4에서 "PROMPT.md만 바꾸면 어떤 기능이든"을 증명했지만, 스킬 자체가 특정 프로젝트에 종속되어 있었다. 이를 Python/Node/Rust/Go 어떤 프로젝트에서든 자동 감지 기반으로 동작하도록 범용화.
+> **Result**: `detect-project.sh`(9개 감지 함수)를 공유 라이브러리로 추출, 양 스크립트가 source하여 lint/test/security 명령을 자동 결정. ENV var 오버라이드 우선, Makefile/package.json/도구 존재 순서로 fallback. 출력 경로를 `$OUTPUT_DIR`로 통일하여 프로젝트 디렉토리 구조에 무의존. renewal-review에서 자동 감지 검증 완료(Python, make lint, make test, semgrep).
+> **Insight**: 도구의 범용성은 "하드코딩을 추상화하는 것"이 아니라 "감지 우선순위를 설계하는 것"이다 — ENV → Makefile → package.json → 도구 존재 확인 순서가 사용자의 명시적 의도를 존중하면서 자동화를 제공한다.
+
+---
+
 ### 2026-02-16 03:34 | `main` | uncommitted
 
 **refactor: major 8-phase overhaul — DB persistence, rule expansion, broker workflow, analytics**

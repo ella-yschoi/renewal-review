@@ -77,14 +77,6 @@
     </div>
   </div>
 
-  <div class="card">
-    <h2>Comparison</h2>
-    <table>
-      <tr><td>Risk reassessments</td><td id="delta-risk"></td></tr>
-      <tr><td>Additional time</td><td id="delta-latency"></td></tr>
-    </table>
-  </div>
-
   <div class="card" id="all-results-section" style="display:none;">
     <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
       <div>
@@ -153,9 +145,6 @@ function renderResult(d) {
   document.getElementById('llm-action-required').textContent = d.llm.distribution.action_required;
   document.getElementById('llm-urgent-review').textContent = d.llm.distribution.urgent_review;
   document.getElementById('llm-pct').textContent = d.llm.llm_analyzed_pct + '% policies analyzed by AI';
-
-  document.getElementById('delta-risk').textContent = d.delta.risk_level_changes;
-  document.getElementById('delta-latency').textContent = (d.delta.latency_overhead_ms / 1000).toFixed(1) + 's';
 
   allCompared = d.all_compared || d.examples || [];
   allCurrentPage = 1;

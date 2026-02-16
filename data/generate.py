@@ -67,6 +67,112 @@ NOTES_POOL = [
     "Garage kept vehicle — usage verified via telematics data",
 ]
 
+FIRST_NAMES = [
+    "James",
+    "Mary",
+    "Robert",
+    "Patricia",
+    "John",
+    "Jennifer",
+    "Michael",
+    "Linda",
+    "David",
+    "Elizabeth",
+    "William",
+    "Barbara",
+    "Richard",
+    "Susan",
+    "Joseph",
+    "Jessica",
+    "Thomas",
+    "Sarah",
+    "Christopher",
+    "Karen",
+    "Charles",
+    "Lisa",
+    "Daniel",
+    "Nancy",
+    "Matthew",
+    "Betty",
+    "Anthony",
+    "Margaret",
+    "Mark",
+    "Sandra",
+    "Donald",
+    "Ashley",
+    "Steven",
+    "Kimberly",
+    "Paul",
+    "Emily",
+    "Andrew",
+    "Donna",
+    "Joshua",
+    "Michelle",
+    "Kenneth",
+    "Carol",
+    "Kevin",
+    "Amanda",
+    "Brian",
+    "Dorothy",
+    "George",
+    "Melissa",
+    "Timothy",
+    "Deborah",
+]
+
+LAST_NAMES = [
+    "Smith",
+    "Johnson",
+    "Williams",
+    "Brown",
+    "Jones",
+    "Garcia",
+    "Miller",
+    "Davis",
+    "Rodriguez",
+    "Martinez",
+    "Hernandez",
+    "Lopez",
+    "Gonzalez",
+    "Wilson",
+    "Anderson",
+    "Thomas",
+    "Taylor",
+    "Moore",
+    "Jackson",
+    "Martin",
+    "Lee",
+    "Perez",
+    "Thompson",
+    "White",
+    "Harris",
+    "Sanchez",
+    "Clark",
+    "Ramirez",
+    "Lewis",
+    "Robinson",
+    "Walker",
+    "Young",
+    "Allen",
+    "King",
+    "Wright",
+    "Scott",
+    "Torres",
+    "Nguyen",
+    "Hill",
+    "Flores",
+    "Green",
+    "Adams",
+    "Nelson",
+    "Baker",
+    "Hall",
+    "Rivera",
+    "Campbell",
+    "Mitchell",
+    "Carter",
+    "Roberts",
+]
+
 
 def _random_vin() -> str:
     chars = "0123456789ABCDEFGHJKLMNPRSTUVWXYZ"
@@ -78,10 +184,21 @@ def _random_date_2024() -> date:
     return start + timedelta(days=random.randint(0, 364))
 
 
-def _make_auto_pair(idx: int) -> dict:
+def _random_name() -> str:
+    return f"{random.choice(FIRST_NAMES)} {random.choice(LAST_NAMES)}"
+
+
+def _make_auto_pair(
+    idx: int,
+    *,
+    account_id: str = "",
+    insured_name: str = "",
+    carrier: str = "",
+    state: str = "",
+) -> dict:
     policy_num = f"AUTO-2024-{idx:04d}"
-    state = random.choice(STATES)
-    carrier = random.choice(CARRIERS)
+    state = state or random.choice(STATES)
+    carrier = carrier or random.choice(CARRIERS)
     eff = _random_date_2024()
     exp = eff + timedelta(days=365)
 
@@ -138,6 +255,8 @@ def _make_auto_pair(idx: int) -> dict:
         "premium": base_premium,
         "state": state,
         "notes": "",
+        "insured_name": insured_name,
+        "account_id": account_id,
         "auto_coverages": {
             "bodily_injury_limit": bi,
             "property_damage_limit": pd,
@@ -212,10 +331,17 @@ def _make_auto_pair(idx: int) -> dict:
     return {"prior": prior, "renewal": renewal}
 
 
-def _make_home_pair(idx: int) -> dict:
+def _make_home_pair(
+    idx: int,
+    *,
+    account_id: str = "",
+    insured_name: str = "",
+    carrier: str = "",
+    state: str = "",
+) -> dict:
     policy_num = f"HOME-2024-{idx:04d}"
-    state = random.choice(STATES)
-    carrier = random.choice(CARRIERS)
+    state = state or random.choice(STATES)
+    carrier = carrier or random.choice(CARRIERS)
     eff = _random_date_2024()
     exp = eff + timedelta(days=365)
 
@@ -231,6 +357,8 @@ def _make_home_pair(idx: int) -> dict:
         "premium": base_premium,
         "state": state,
         "notes": "",
+        "insured_name": insured_name,
+        "account_id": account_id,
         "home_coverages": {
             "coverage_a_dwelling": dwelling,
             "coverage_b_other_structures": round(dwelling * 0.10),
@@ -315,11 +443,49 @@ def _make_home_pair(idx: int) -> dict:
 def main():
     random.seed(42)
     pairs = []
+    auto_idx = 0
+    home_idx = 0
 
-    for i in range(4800):
-        pairs.append(_make_auto_pair(i))
-    for i in range(3200):
-        pairs.append(_make_home_pair(i))
+    # 1600 bundle accounts (auto + home, same carrier/state)
+    for acct_i in range(1600):
+        account_id = f"ACCT-{acct_i:05d}"
+        name = _random_name()
+        carrier = random.choice(CARRIERS)
+        state = random.choice(STATES)
+        pairs.append(
+            _make_auto_pair(
+                auto_idx,
+                account_id=account_id,
+                insured_name=name,
+                carrier=carrier,
+                state=state,
+            )
+        )
+        auto_idx += 1
+        pairs.append(
+            _make_home_pair(
+                home_idx,
+                account_id=account_id,
+                insured_name=name,
+                carrier=carrier,
+                state=state,
+            )
+        )
+        home_idx += 1
+
+    # 3200 auto-only accounts
+    for acct_i in range(1600, 4800):
+        account_id = f"ACCT-{acct_i:05d}"
+        name = _random_name()
+        pairs.append(_make_auto_pair(auto_idx, account_id=account_id, insured_name=name))
+        auto_idx += 1
+
+    # 1600 home-only accounts
+    for acct_i in range(4800, 6400):
+        account_id = f"ACCT-{acct_i:05d}"
+        name = _random_name()
+        pairs.append(_make_home_pair(home_idx, account_id=account_id, insured_name=name))
+        home_idx += 1
 
     random.shuffle(pairs)
 
@@ -332,7 +498,17 @@ def main():
     auto_count = sum(1 for p in pairs if p["prior"]["policy_type"] == "auto")
     home_count = len(pairs) - auto_count
     notes_count = sum(1 for p in pairs if p["renewal"].get("notes"))
+    unique_accounts = len({p["prior"]["account_id"] for p in pairs})
+    home_accounts = {
+        p["prior"]["account_id"] for p in pairs if p["prior"]["policy_type"] == "home"
+    }
+    bundle_count = sum(
+        1
+        for p in pairs
+        if p["prior"]["policy_type"] == "auto" and p["prior"]["account_id"] in home_accounts
+    )
     print(f"  Auto: {auto_count}, Home: {home_count}, With notes: {notes_count}")
+    print(f"  Accounts: {unique_accounts}, Bundle accounts: {bundle_count}")
 
 
 if __name__ == "__main__":

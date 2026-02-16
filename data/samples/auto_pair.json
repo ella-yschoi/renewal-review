@@ -8,6 +8,8 @@
     "premium": 1200.00,
     "state": "CA",
     "notes": "",
+    "insured_name": "John Smith",
+    "account_id": "ACCT-0001",
     "auto_coverages": {
       "bodily_injury_limit": "100/300",
       "property_damage_limit": "100",
@@ -53,6 +55,8 @@
     "premium": 1356.00,
     "state": "CA",
     "notes": "Premium increase due to regional rate adjustment",
+    "insured_name": "John Smith",
+    "account_id": "ACCT-0001",
     "auto_coverages": {
       "bodily_injury_limit": "100/300",
       "property_damage_limit": "100",

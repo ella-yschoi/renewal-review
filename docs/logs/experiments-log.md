@@ -5,6 +5,32 @@
 
 ---
 
+## 2026-02-16 13:11 | `main`
+
+### 무엇을 했는가
+Self-Correcting Loop 스킬을 renewal-review 전용에서 **프로젝트 무관(project-agnostic) 글로벌 스킬**로 범용화. 5개 파일을 `~/.agents/skills/self-correcting-loop/`에 작성/이동하고, renewal-review의 프로젝트 로컬 파일 3개를 삭제. 가이드 문서를 글로벌 스킬 안내로 교체.
+
+**신규 파일 2개**:
+- `detect-project.sh`: 프로젝트 자동 감지 라이브러리 — `detect_project_type`, `detect_lint_cmd`, `detect_test_cmd`, `detect_security_cmd`, `detect_src_dirs`, `detect_instruction_files`, `detect_design_docs`, `detect_changed_files`, `print_detected_config` 9개 함수. Python/Node/Rust/Go 지원, ENV → Makefile → package.json → 도구 존재 확인 순서로 감지, `uv.lock` → `uv run`, `poetry.lock` → `poetry run` Python runner 자동 감지
+- `PROMPT-TEMPLATE.md`: 프로젝트 무관한 범용 PROMPT 템플릿 (copy-and-fill 형태)
+
+**재작성 3개**:
+- `self-correcting-loop.sh`: `PROMPT_FILE`/`REQUIREMENTS_FILE` 필수화, `$LINT_CMD`/`$TEST_CMD`/`$SECURITY_CMD` 자동 감지 사용, `$OUTPUT_DIR` 기반 아티팩트 경로
+- `triangular-verify.sh`: `detect_instruction_files`/`detect_design_docs`/`detect_changed_files` 동적 삽입
+- `SKILL.md`: 지원 프로젝트 타입 테이블, 환경변수 오버라이드 테이블, 다국어 예제
+
+**삭제 3개**: `.claude/skills/self-correcting-loop/SKILL.md`, `scripts/self-correcting-loop.sh`, `scripts/triangular-verify.sh`
+
+검증: ruff 0 errors, pytest 116/116 passed. renewal-review에서 자동 감지 정상 동작(Python, make lint, make test, semgrep, app/).
+
+### 왜 했는가
+기존 스킬이 renewal-review에 하드코딩되어 있어(ruff, pytest, semgrep, `app/`, `docs/experiments/` 등), 다른 프로젝트에서는 사용 불가능했다. 프레젠테이션에서 "팀 전체를 빠르게 만드는 것"을 주장하려면, 스킬이 실제로 어떤 프로젝트에서든 동작해야 한다. PROMPT.md만 바꾸면 어떤 기능이든 자동 구현할 수 있다는 실험 4의 결론을 프로젝트 레벨에서도 증명 — PROMPT.md만 바꾸는 것에서 나아가, 프로젝트 자체를 바꿔도 동작하도록 확장.
+
+### 어떻게 했는가
+`detect-project.sh`를 공유 라이브러리로 설계하여 양 스크립트가 `. "$(dirname "$0")/detect-project.sh"`로 source. 각 감지 함수는 idempotent(이미 설정된 ENV var가 있으면 skip) — 환경변수 오버라이드가 항상 자동 감지보다 우선. `_has_makefile_target`, `_has_npm_script`, `_python_runner` 헬퍼로 프로젝트별 분기. `PROMPT_FILE`/`REQUIREMENTS_FILE`은 `${VAR:?ERROR}` 패턴으로 필수 강제(기본값 제거). 출력 경로를 `$OUTPUT_DIR`(기본 `.self-correcting-loop/`)로 통일하여 프로젝트의 기존 디렉토리 구조에 의존하지 않음. INSTRUCTION_FILES 중복 제거를 위해 `seen` 패턴 적용.
+
+---
+
 ## 2026-02-16 03:34 | `main`
 
 ### 무엇을 했는가
