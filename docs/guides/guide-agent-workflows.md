@@ -105,8 +105,13 @@ bash scripts/decompose-task.sh --dispatch "Add CSV export to analytics"
 
 ## Agentic Dev Pipeline (스킬)
 
-이 프로젝트는 **글로벌 agentic-dev-pipeline 스킬**을 사용한다.
-스킬은 `~/.agents/skills/agentic-dev-pipeline/`에 설치되어 있으며, **Python/Node/Rust/Go 어떤 프로젝트에서든** 사용 가능하다.
+이 프로젝트는 **agentic-dev-pipeline 스킬**을 사용한다.
+스킬은 GitHub repo에서 관리되며, **Python/Node/Rust/Go 어떤 프로젝트에서든** 사용 가능하다.
+
+설치:
+```bash
+git clone https://github.com/ella-yschoi/agentic-dev-pipeline.git ~/.agents/skills/agentic-dev-pipeline
+```
 
 기능 요구사항을 task 파일 하나로 정의하면, AI가 구현 → 품질 검증 → 의도 검증 → 자가 수정까지 **사람 개입 없이** 반복 실행한다.
 
@@ -402,4 +407,5 @@ Claude Code 세션 안에서 셸 스크립트를 실행하면 `CLAUDECODE` 환�
 ## 상세 문서
 
 스킬의 전체 문서(지원 언어, 감지 우선순위, 트러블슈팅 등)는 다음을 참조:
-`~/.agents/skills/agentic-dev-pipeline/SKILL.md`
+- GitHub: https://github.com/ella-yschoi/agentic-dev-pipeline
+- 로컬 (설치 후): `~/.agents/skills/agentic-dev-pipeline/SKILL.md`
