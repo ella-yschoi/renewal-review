@@ -1,0 +1,34 @@
+name: "Tier: Manageable"
+description: "Background agent + engineer oversight — moderate complexity"
+labels: ["tier:manageable"]
+body:
+  - type: textarea
+    id: task-description
+    attributes:
+      label: Task Description
+      description: "High-level description of the feature or change."
+      placeholder: "Refactor the diff engine to support custom comparison strategies per coverage type."
+    validations:
+      required: true
+  - type: textarea
+    id: functional-requirements
+    attributes:
+      label: Functional Requirements
+      description: "List requirements as FR-N items."
+      placeholder: |
+        FR-1: Strategy interface with compare(prior, renewal) signature
+        FR-2: Default strategy for numeric fields (threshold-based)
+        FR-3: Custom strategy for text fields (semantic diff)
+    validations:
+      required: true
+  - type: textarea
+    id: constraints
+    attributes:
+      label: Constraints
+      description: "Non-functional requirements, architectural constraints, or things to avoid."
+      placeholder: |
+        - Must not break existing DiffResult consumers
+        - Files < 300 lines
+        - No new dependencies without approval
+    validations:
+      required: false
