@@ -113,4 +113,4 @@ app.include_router(portfolio_router)
 
 @app.get("/health")
 def health() -> dict[str, str]:
-    return {"status": "ok"}
+    return {"status": "ok", "version": app.version}
