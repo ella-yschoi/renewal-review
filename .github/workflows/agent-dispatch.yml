@@ -34,6 +34,7 @@ jobs:
         uses: anthropics/claude-code-action@v1
         with:
           anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
+          claude_args: '--allowedTools "Bash,Edit,Read,Write,Glob,Grep" --disallowedTools "Bash(rm -rf:*),Bash(sudo:*)"'
           prompt: |
             You are an autonomous agent implementing a feature from a GitHub issue.
 
@@ -61,9 +62,9 @@ jobs:
                - Agent C: Compare Agent B's description against the requirements file. Report discrepancies.
                - If discrepancies found, fix and retry from step 4.
             6. Once all gates and verification pass:
-               - Create a branch: `feat/{issue-slug}`
-               - Commit all changes with a descriptive message.
-               - Create a PR that closes #${{ github.event.issue.number }}.
+               - Stage all changed and new files with `git add`.
+               - Commit with a descriptive message.
+               - The action will automatically create a branch and PR.
 
             ## Rules
             - Follow conventions.md strictly (no docstrings, type hints, files < 300 lines).
