@@ -1,8 +1,10 @@
 from fastapi import APIRouter, Depends, HTTPException
+from pydantic import BaseModel
 
 from app.adaptor.storage.memory import InMemoryReviewStore
 from app.application.batch import enrich_with_llm
 from app.application.llm_analysis import generate_summary
+from app.domain.models.quote import QuoteRecommendation
 from app.domain.models.review import ReviewResult, RiskLevel
 from app.domain.ports.result_writer import ResultWriter
 from app.infra.deps import get_llm_client, get_result_writer, get_review_store
@@ -56,15 +58,25 @@ def toggle_broker_contacted(
     return {"broker_contacted": result.broker_contacted}
 
 
+class SaveQuotesRequest(BaseModel):
+    quotes: list[dict] = []
+
+
 @router.patch("/{policy_number}/quote-generated")
 def toggle_quote_generated(
     policy_number: str,
+    body: SaveQuotesRequest | None = None,
     store: InMemoryReviewStore = Depends(get_review_store),
     writer: ResultWriter = Depends(get_result_writer),
 ) -> dict:
     result = store.get(policy_number)
     if result is None:
         raise HTTPException(status_code=404, detail=f"No review found for {policy_number}")
-    result.quote_generated = not result.quote_generated
-    writer.update_quote_generated(policy_number, result.quote_generated)
+    if body and body.quotes:
+        result.quotes = [QuoteRecommendation(**q) for q in body.quotes]
+        result.quote_generated = True
+        writer.update_quotes(policy_number, body.quotes)
+    else:
+        result.quote_generated = not result.quote_generated
+        writer.update_quote_generated(policy_number, result.quote_generated)
     return {"quote_generated": result.quote_generated}

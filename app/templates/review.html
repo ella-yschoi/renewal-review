@@ -39,7 +39,7 @@
       Contacted
     </label>
     {% if result.diff.flags and result.pair %}
-    <button class="btn btn-primary" id="generate-quote-btn" onclick="generateQuotes()">Generate Quote</button>
+    <button class="btn btn-primary" id="generate-quote-btn" onclick="generateQuotes()">{% if result.quotes %}Regenerate Quote{% else %}Generate Quote{% endif %}</button>
     {% endif %}
   </div>
 </div>
@@ -57,7 +57,7 @@
   {% endif %}
 </div>
 
-<div id="quote-section" style="display:{% if result.quote_generated %}block{% else %}none{% endif %};">
+<div id="quote-section" style="display:{% if result.quotes or result.quote_generated %}block{% else %}none{% endif %};">
   <div class="card" style="border-left:4px solid #22543d;">
     <h2 style="color:#22543d;">Quote Recommendations</h2>
     <div id="quote-loading" style="display:none; align-items:center; gap:8px;">
@@ -65,7 +65,7 @@
       <span style="font-size:12px; color:#22543d;">Generating quotes...</span>
     </div>
     <div id="quote-content">
-      {% if result.quote_generated %}
+      {% if result.quote_generated and not result.quotes %}
       <p style="font-size:12px; color:#718096;">Quote previously generated. Click "Regenerate Quote" to refresh.</p>
       {% endif %}
     </div>
@@ -271,6 +271,35 @@ async function toggleBrokerContacted() {
   await fetch('/reviews/{{ result.policy_number }}/broker-contacted', {method: 'PATCH'});
 }
 
+function renderQuotes(quotes) {
+  var content = document.getElementById('quote-content');
+  var html = '';
+  quotes.forEach(function(q) {
+    html += '<div class="quote-card">';
+    html += '<div class="quote-header"><div><span class="quote-title">' + q.quote_id + '</span></div>';
+    html += '<div class="quote-savings-box"><div class="quote-savings-pct">-' + q.estimated_savings_pct + '%</div>';
+    html += '<div class="quote-savings-dollar">Save $' + q.estimated_savings_dollar.toFixed(2) + '/yr</div></div></div>';
+
+    q.adjustments.forEach(function(a) {
+      html += '<div class="adjustment-row"><div style="flex:1;"><div class="adj-label">' + getLabel(a.field) + '</div></div>';
+      html += '<div class="adj-values"><span class="adj-old">' + formatValue(a.field, a.original_value) + '</span>';
+      html += '<span class="adj-arrow">&rarr;</span><span class="adj-new">' + formatValue(a.field, a.proposed_value) + '</span></div></div>';
+    });
+
+    html += '<div class="quote-tradeoff"><strong>Trade-off</strong>' + q.trade_off + '</div>';
+    if (q.broker_tip) {
+      html += '<div class="quote-broker-tip"><strong>Broker Tip</strong>' + q.broker_tip + '</div>';
+    }
+    html += '</div>';
+  });
+  content.innerHTML = html;
+}
+
+var savedQuotes = {{ quotes_json|safe }};
+if (savedQuotes.length > 0) {
+  renderQuotes(savedQuotes);
+}
+
 async function generateQuotes() {
   var section = document.getElementById('quote-section');
   var loading = document.getElementById('quote-loading');
@@ -308,28 +337,13 @@ async function generateQuotes() {
       return;
     }
 
-    var html = '';
-    quotes.forEach(function(q) {
-      html += '<div class="quote-card">';
-      html += '<div class="quote-header"><div><span class="quote-title">' + q.quote_id + '</span></div>';
-      html += '<div class="quote-savings-box"><div class="quote-savings-pct">-' + q.estimated_savings_pct + '%</div>';
-      html += '<div class="quote-savings-dollar">Save $' + q.estimated_savings_dollar.toFixed(2) + '/yr</div></div></div>';
+    renderQuotes(quotes);
 
-      q.adjustments.forEach(function(a) {
-        html += '<div class="adjustment-row"><div style="flex:1;"><div class="adj-label">' + getLabel(a.field) + '</div></div>';
-        html += '<div class="adj-values"><span class="adj-old">' + formatValue(a.field, a.original_value) + '</span>';
-        html += '<span class="adj-arrow">&rarr;</span><span class="adj-new">' + formatValue(a.field, a.proposed_value) + '</span></div></div>';
-      });
-
-      html += '<div class="quote-tradeoff"><strong>Trade-off</strong>' + q.trade_off + '</div>';
-      if (q.broker_tip) {
-        html += '<div class="quote-broker-tip"><strong>Broker Tip</strong>' + q.broker_tip + '</div>';
-      }
-      html += '</div>';
+    await fetch('/reviews/{{ result.policy_number }}/quote-generated', {
+      method: 'PATCH',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({quotes: quotes})
     });
-    content.innerHTML = html;
-
-    await fetch('/reviews/{{ result.policy_number }}/quote-generated', {method: 'PATCH'});
     document.getElementById('generate-quote-btn').textContent = 'Regenerate Quote';
   } catch (e) {
     loading.style.display = 'none';

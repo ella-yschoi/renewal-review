@@ -162,6 +162,7 @@ def review_detail(
     if result is None:
         raise HTTPException(status_code=404, detail=f"No review found for {policy_number}")
     back_url, back_label = _BACK_LINKS.get(ref, _DEFAULT_BACK)
+    quotes_json = json.dumps([q.model_dump() for q in result.quotes])
     return templates.TemplateResponse(
         "review.html",
         {
@@ -170,6 +171,7 @@ def review_detail(
             "result": result,
             "back_url": back_url,
             "back_label": back_label,
+            "quotes_json": quotes_json,
         },
     )
 

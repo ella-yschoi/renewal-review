@@ -215,7 +215,7 @@ JSON/DB → load_pairs → [RenewalPair]
 |------|------|-----------|
 | `RiskLevel` | StrEnum — 4단계 | no_action_needed, review_recommended, action_required, urgent_review |
 | `LLMInsight` | LLM 분석 1건 | analysis_type, finding, confidence, reasoning |
-| `ReviewResult` | 최종 리뷰 결과 | policy_number, risk_level, diff, llm_insights, summary, pair, broker_contacted, quote_generated, reviewed_at |
+| `ReviewResult` | 최종 리뷰 결과 | policy_number, risk_level, diff, llm_insights, summary, pair, broker_contacted, quote_generated, quotes, reviewed_at |
 | `BatchSummary` | 배치 실행 요약 | total, risk level별 카운트, llm_analyzed, processing_time_ms |
 
 ### Analytics 도메인 (`app/domain/models/analytics.py`)
@@ -247,7 +247,7 @@ JSON/DB → load_pairs → [RenewalPair]
 | 모델 | 테이블명 | 설명 |
 |------|---------|------|
 | `RenewalPairRow` | `raw_renewals` | 정책 쌍 영구 저장. prior_json, renewal_json으로 원본 보존. insured_name, account_id 탑레벨 컬럼으로 별도 인덱싱 |
-| `RuleResultRow` | `rule_results` | 규칙 기반 리뷰 결과. policy_number, job_id, risk_level, flags_json, changes_json, summary_text, broker_contacted, quote_generated, reviewed_at |
+| `RuleResultRow` | `rule_results` | 규칙 기반 리뷰 결과. policy_number, job_id, risk_level, flags_json, changes_json, summary_text, broker_contacted, quote_generated, quotes_json, reviewed_at |
 | `LLMResultRow` | `llm_results` | LLM 분석 결과. policy_number, job_id, risk_level, insights_json, summary_text |
 | `ComparisonRunRow` | `comparison_runs` | LLM 비교 집계 결과. job_id (unique), result_json (JSON blob), created_at |
 
@@ -257,7 +257,8 @@ JSON/DB → load_pairs → [RenewalPair]
 
 - **DbResultWriter**: DB 설정 시 사용. 모든 메서드에 try/except — DB 실패 시 log warning, 앱 정상 동작
 - **NoopResultWriter**: DB 미설정 시 사용. 모든 메서드 pass
-- 앱 시작 시 `_restore_cache_from_db()` → DB에서 InMemoryReviewStore 복원. `raw_renewals`에서 `pair` 재연결, `rule_results.summary_text`에서 summary 복원, `llm_results`에서 insights/summary/risk_level 머지
+- **ResultWriter Protocol 메서드**: save_rule_result, save_llm_result, update_broker_contacted, update_quote_generated, update_quotes, update_reviewed_at, load_latest_results, load_latest_llm_results, save_comparison_result, load_latest_comparison
+- 앱 시작 시 `_restore_cache_from_db()` → DB에서 InMemoryReviewStore 복원. `raw_renewals`에서 `pair` 재연결, `rule_results.summary_text`에서 summary 복원, `rule_results.quotes_json`에서 quotes 복원, `llm_results`에서 insights/summary/risk_level 머지
 - 앱 시작 시 `_restore_comparison_from_db()` → DB에서 최신 LLM 비교 집계 결과 복원 (`comparison_runs` → `_last_comparison`)
 
 ---
@@ -357,7 +358,7 @@ LLM 분석 결과에 따라 rule_risk보다 높은 level로 상향. 하향은 �
 | GET | `/health` | 헬스체크 | `{"status": "ok"}` | 200 |
 | GET | `/reviews/{policy_number}` | 리뷰 결과 조회 (lazy LLM enrichment 트리거) | `ReviewResult` | 200, 404 |
 | PATCH | `/reviews/{pn}/broker-contacted` | 연락 여부 토글 | `{broker_contacted}` | 200, 404 |
-| PATCH | `/reviews/{pn}/quote-generated` | 견적 생성 여부 토글 | `{quote_generated}` | 200, 404 |
+| PATCH | `/reviews/{pn}/quote-generated` | 견적 저장 (body에 quotes 포함 시) 또는 토글 | `{quote_generated}` | 200, 404 |
 | POST | `/quotes/generate` | 대안 견적 생성 | `{quotes, reasons}` | 200, 422 |
 | POST | `/portfolio/analyze` | 포트폴리오 교차 분석 | `PortfolioSummary` | 200, 422 |
 

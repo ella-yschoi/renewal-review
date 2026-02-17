@@ -6,6 +6,7 @@ from pydantic import BaseModel
 from app.domain.models.diff import DiffResult
 from app.domain.models.enums import AnalysisType
 from app.domain.models.policy import RenewalPair
+from app.domain.models.quote import QuoteRecommendation
 
 
 class RiskLevel(StrEnum):
@@ -32,6 +33,7 @@ class ReviewResult(BaseModel):
     pair: RenewalPair | None = None
     broker_contacted: bool = False
     quote_generated: bool = False
+    quotes: list[QuoteRecommendation] = []
     reviewed_at: datetime | None = None
 
 

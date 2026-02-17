@@ -16,6 +16,9 @@ class NoopResultWriter:
     def update_quote_generated(self, policy_number: str, value: bool) -> None:
         pass
 
+    def update_quotes(self, policy_number: str, quotes: list[dict]) -> None:
+        pass
+
     def update_reviewed_at(self, policy_number: str, value: datetime) -> None:
         pass
 

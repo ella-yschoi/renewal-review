@@ -18,6 +18,7 @@ logger = logging.getLogger(__name__)
 def _restore_cache_from_db() -> None:
     from app.data_loader import load_pairs
     from app.domain.models.diff import DiffFlag, DiffResult, FieldChange
+    from app.domain.models.quote import QuoteRecommendation
     from app.domain.models.review import LLMInsight, ReviewResult, RiskLevel
     from app.infra.deps import get_result_writer, get_review_store
 
@@ -53,6 +54,7 @@ def _restore_cache_from_db() -> None:
             if llm_row.get("risk_level"):
                 risk_level = llm_row["risk_level"]
 
+        quotes = [QuoteRecommendation(**q) for q in (row.get("quotes_json") or [])]
         result = ReviewResult(
             policy_number=pn,
             risk_level=RiskLevel(risk_level),
@@ -63,6 +65,7 @@ def _restore_cache_from_db() -> None:
             pair=pairs_by_pn.get(pn),
             broker_contacted=row.get("broker_contacted", False),
             quote_generated=row.get("quote_generated", False),
+            quotes=quotes,
             reviewed_at=row.get("reviewed_at"),
         )
         store[result.policy_number] = result

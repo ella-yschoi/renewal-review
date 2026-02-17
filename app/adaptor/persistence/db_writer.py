@@ -27,6 +27,7 @@ class DbResultWriter:
                 summary_text=result.summary,
                 broker_contacted=result.broker_contacted,
                 quote_generated=result.quote_generated,
+                quotes_json=[q.model_dump() for q in result.quotes],
                 reviewed_at=result.reviewed_at,
             )
             with Session(self._engine) as session:
@@ -74,6 +75,9 @@ class DbResultWriter:
     def update_quote_generated(self, policy_number: str, value: bool) -> None:
         self._update_rule_field(policy_number, quote_generated=value)
 
+    def update_quotes(self, policy_number: str, quotes: list[dict]) -> None:
+        self._update_rule_field(policy_number, quotes_json=quotes, quote_generated=True)
+
     def update_reviewed_at(self, policy_number: str, value: datetime) -> None:
         self._update_rule_field(policy_number, reviewed_at=value)
 
@@ -109,6 +113,7 @@ class DbResultWriter:
                         "summary_text": r.summary_text,
                         "broker_contacted": r.broker_contacted,
                         "quote_generated": r.quote_generated,
+                        "quotes_json": r.quotes_json,
                         "reviewed_at": r.reviewed_at,
                     }
                     for r in rows
