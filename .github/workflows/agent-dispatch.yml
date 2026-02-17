@@ -36,7 +36,6 @@ jobs:
           anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
           track_progress: true
           additional_permissions: "Bash"
-          claude_args: '--disallowedTools "Bash(rm -rf:*),Bash(sudo:*)"'
           prompt: |
             You are an autonomous agent implementing a feature from a GitHub issue.
 
@@ -63,11 +62,14 @@ jobs:
                - Agent B: Identify ALL changed, staged, and new untracked files (use `git diff --name-only main...HEAD`, `git diff --name-only HEAD`, `git diff --name-only --cached`, and `git ls-files --others --exclude-standard`). Read those files and describe what they do WITHOUT reading requirements.
                - Agent C: Compare Agent B's description against the requirements file. Report discrepancies.
                - If discrepancies found, fix and retry from step 4.
-            6. Once all gates and verification pass, leave all files in the working tree.
-               The action will automatically commit, push, and create a PR.
+            6. Once all gates and verification pass:
+               - `git add` all changed files
+               - `git commit -m "feat: <descriptive message>"` with a clear commit message
+               - `git push origin HEAD` to push the branch
 
             ## Rules
             - Follow conventions.md strictly (no docstrings, type hints, files < 300 lines).
             - One logical change per commit.
             - Do NOT install new dependencies without explicit approval in the issue.
+            - Do NOT use rm -rf or sudo commands.
             - Write ALL output (commit messages, PR descriptions, comments, documents) in English.
