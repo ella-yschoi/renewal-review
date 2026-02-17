@@ -1,0 +1,31 @@
+name: "Tier: One-Shot"
+description: "AI agent handles autonomously — dispatch to agentic dev pipeline"
+labels: ["tier:one-shot"]
+body:
+  - type: textarea
+    id: task-description
+    attributes:
+      label: Task Description
+      description: "What should be implemented? Be specific about behavior and acceptance criteria."
+      placeholder: "Add CSV export to the analytics page. Clicking 'Export' downloads a CSV file with columns: policy_id, risk_level, premium_change, flags."
+    validations:
+      required: true
+  - type: textarea
+    id: context
+    attributes:
+      label: Context / References
+      description: "Any relevant files, docs, or prior decisions."
+      placeholder: "See docs/design-doc.md § Analytics. Existing route: GET /analytics/summary"
+    validations:
+      required: false
+  - type: textarea
+    id: acceptance-criteria
+    attributes:
+      label: Acceptance Criteria
+      description: "Optional — if omitted, the agent will derive criteria from the task description."
+      placeholder: |
+        - [ ] Endpoint returns valid CSV
+        - [ ] All existing tests pass
+        - [ ] ruff check passes
+    validations:
+      required: false

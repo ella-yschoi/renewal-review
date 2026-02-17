@@ -1,21 +1,126 @@
-# Self-Correcting Agent Loop — 팀 가이드
+# Agent Workflows — 팀 가이드
 
-이 프로젝트는 **글로벌 self-correcting-loop 스킬**을 사용한다.
-스킬은 `~/.agents/skills/self-correcting-loop/`에 설치되어 있으며, **Python/Node/Rust/Go 어떤 프로젝트에서든** 사용 가능하다.
+이 프로젝트는 **Agentic Dev Pipeline**, **Issue Dispatch**, **Code Review Bot** 3가지 에이전트 워크플로우를 사용한다.
 
-기능 요구사항을 PROMPT.md 하나로 정의하면, AI가 구현 → 품질 검증 → 의도 검증 → 자가 수정까지 **사람 개입 없이** 반복 실행한다.
+---
+
+## 전체 흐름 (End-to-End)
+
+```
+GitHub Issue (tier:one-shot label)
+  │
+  ▼ ① agent-dispatch.yml 트리거
+  Task Decomposition (claude-code-action)
+  → requirements + task 파일 생성
+  │
+  ▼ ② Agentic Dev Pipeline
+  구현 → 품질 게이트 → 삼각 검증 → 수정 반복
+  │
+  ▼ ③ PR 생성 (closes #issue)
+  │
+  ▼ ④ code-review.yml 자동 트리거
+  Code Review Bot → 코멘트
+```
+
+**로컬 진입점:**
+```bash
+# 로컬에서 직접 실행
+bash scripts/decompose-task.sh --run "feature description"
+
+# GitHub Issue로 디스패치 (CI/CD 트리거)
+bash scripts/decompose-task.sh --dispatch "feature description"
+```
+
+---
+
+## 3-Tier Task Taxonomy
+
+| Tier | Label | 처리 방식 | Issue Template |
+|------|-------|----------|----------------|
+| One-Shot | `tier:one-shot` | AI 자율 처리 (dispatch → pipeline → PR) | tier-one-shot.yml |
+| Manageable | `tier:manageable` | Background agent + 엔지니어 감독 | tier-manageable.yml |
+| Complex | `tier:complex` | 엔지니어 주도, 동기 작업 | tier-complex.yml |
+
+---
+
+## Issue Dispatch (GitHub Actions)
+
+`tier:one-shot` 라벨이 붙은 이슈가 생성되면 `.github/workflows/agent-dispatch.yml`이 자동 트리거된다.
+
+1. 이슈 내용을 읽고 requirements + task 파일 생성
+2. Agentic Dev Pipeline 실행 (구현 → 품질 게이트 → 삼각 검증)
+3. PR 생성 (closes #issue)
+
+**필수 Secret**: `ANTHROPIC_API_KEY` (GitHub Settings → Secrets → Actions)
+
+---
+
+## Code Review Bot (GitHub Actions)
+
+PR이 열리면 `.github/workflows/code-review.yml`이 자동 트리거된다.
+
+검토 기준:
+- **컨벤션**: conventions.md 준수 (no docstrings, type hints, < 300줄, StrEnum, hexagonal)
+- **버그**: off-by-one, null handling, 누락된 에러 처리
+- **보안**: OWASP Top 10, 하드코딩된 시크릿, 미검증 입력
+- **개선점**: 더 간단한 대안, 누락된 테스트 커버리지
+
+읽기 전용 — 코멘트만 작성하고 코드를 수정하지 않는다.
+
+---
+
+## Task Decomposition (로컬 스크립트)
+
+```bash
+# requirements + task 파일만 생성
+bash scripts/decompose-task.sh "Add CSV export to analytics"
+
+# 생성 후 파이프라인까지 자동 실행
+bash scripts/decompose-task.sh --run "Add CSV export to analytics"
+
+# 생성 → 커밋 → 푸시 → GitHub Issue 생성 → CI/CD 자동 트리거
+bash scripts/decompose-task.sh --dispatch "Add CSV export to analytics"
+```
+
+`docs/experiments/` 에 `{N}-requirements-{slug}.md`와 `{N}-task-{slug}.md`를 자동 생성한다.
+
+### 3가지 모드
+
+| 모드 | 명령 | 동작 |
+|------|------|------|
+| 생성만 | `decompose-task.sh "desc"` | requirements + task 파일 생성 |
+| 로컬 실행 | `--run "desc"` | 생성 → agentic-dev-pipeline 실행 |
+| 디스패치 | `--dispatch "desc"` | 생성 → git commit → push → GitHub Issue (`tier:one-shot`) → CI/CD 자동 트리거 |
+
+`--dispatch` 흐름:
+1. requirements + task 파일 생성
+2. `git add` + `git commit` (계획 파일만)
+3. `git push -u origin <현재 브랜치>`
+4. `gh issue create --label "tier:one-shot"` — 이슈 본문에 requirements 포함
+5. `agent-dispatch.yml` 워크플로우 자동 트리거
+
+**필수 도구**: `--dispatch`는 `gh` CLI (GitHub CLI)가 필요하다.
+
+---
+
+## Agentic Dev Pipeline (스킬)
+
+이 프로젝트는 **글로벌 agentic-dev-pipeline 스킬**을 사용한다.
+스킬은 `~/.agents/skills/agentic-dev-pipeline/`에 설치되어 있으며, **Python/Node/Rust/Go 어떤 프로젝트에서든** 사용 가능하다.
+
+기능 요구사항을 task 파일 하나로 정의하면, AI가 구현 → 품질 검증 → 의도 검증 → 자가 수정까지 **사람 개입 없이** 반복 실행한다.
 
 ---
 
 ## 스킬 위치
 
 ```
-~/.agents/skills/self-correcting-loop/
-├── SKILL.md                ← Skill 정의 (Claude Code가 읽음)
-├── detect-project.sh       ← 프로젝트 자동 감지 라이브러리
-├── self-correcting-loop.sh ← 메인 루프 스크립트
-├── triangular-verify.sh    ← 삼각 검증 스크립트
-└── PROMPT-TEMPLATE.md      ← 범용 PROMPT 템플릿
+~/.agents/skills/agentic-dev-pipeline/
+├── SKILL.md                  ← Skill 정의 (Claude Code가 읽음)
+├── detect-project.sh         ← 프로젝트 자동 감지 라이브러리
+├── agentic-dev-pipeline.sh   ← 메인 루프 스크립트
+├── triangular-verify.sh      ← 삼각 검증 스크립트
+└── PROMPT-TEMPLATE.md        ← 범용 PROMPT 템플릿
 ```
 
 ## 이 프로젝트에서 자동 감지되는 설정
@@ -59,7 +164,7 @@ ruff check app/ tests/       # 린트 클린 확인
 루프 아티팩트가 실수로 커밋되지 않도록 `.gitignore`에 추가한다:
 
 ```
-.self-correcting-loop/
+.agentic-dev-pipeline/
 ```
 
 ---
@@ -107,7 +212,7 @@ PROMPT.md + requirements.md
 |----------|---------|------|
 | `PROMPT_FILE` | **(필수)** | PROMPT.md 경로 |
 | `REQUIREMENTS_FILE` | **(필수)** | 요구사항 문서 경로 |
-| `OUTPUT_DIR` | `.self-correcting-loop/` | 아티팩트 출력 디렉토리 |
+| `OUTPUT_DIR` | `.agentic-dev-pipeline/` | 아티팩트 출력 디렉토리 |
 | `LINT_CMD` | (auto-detect) | 린트 명령 (`"true"`로 설정하면 skip) |
 | `TEST_CMD` | (auto-detect) | 테스트 명령 (`"true"`로 설정하면 skip) |
 | `SECURITY_CMD` | (auto-detect) | 보안 스캔 명령 (`""`로 설정하면 skip) |
@@ -138,7 +243,7 @@ PROMPT.md + requirements.md
 - 파일당 300줄 미만
 ```
 
-**PROMPT 파일** — 에이전트에게 전달하는 구현 지시서. `~/.agents/skills/self-correcting-loop/PROMPT-TEMPLATE.md`를 복사하여 작성.
+**task 파일** — 에이전트에게 전달하는 구현 지시서. `~/.agents/skills/agentic-dev-pipeline/PROMPT-TEMPLATE.md`를 복사하여 작성.
 
 ### 2단계: 실행
 
@@ -151,12 +256,12 @@ cd ~/Workspace/renewal-review
 
 PROMPT_FILE="docs/experiments/4-PROMPT-portfolio-aggregator.md" \
 REQUIREMENTS_FILE="docs/experiments/4-requirements-portfolio-aggregator.md" \
-bash ~/.agents/skills/self-correcting-loop/self-correcting-loop.sh 5
+bash ~/.agents/skills/agentic-dev-pipeline/agentic-dev-pipeline.sh 5
 ```
 
 - 첫 번째 인자: max iterations (기본 5)
 - `PROMPT_FILE`, `REQUIREMENTS_FILE`은 필수
-- 로그: `.self-correcting-loop/loop-execution.log`
+- 로그: `.agentic-dev-pipeline/loop-execution.log`
 
 환경변수 오버라이드 예시:
 
@@ -166,7 +271,7 @@ REQUIREMENTS_FILE="requirements.md" \
 LINT_CMD="ruff check app/ tests/" \
 TEST_CMD="uv run pytest -q" \
 OUTPUT_DIR="docs/experiments" \
-bash ~/.agents/skills/self-correcting-loop/self-correcting-loop.sh
+bash ~/.agents/skills/agentic-dev-pipeline/agentic-dev-pipeline.sh
 ```
 
 **방법 B: Skill 호출 (Claude Code 세션 안에서)**
@@ -174,7 +279,7 @@ bash ~/.agents/skills/self-correcting-loop/self-correcting-loop.sh
 Claude Code 세션 안에서 skill을 호출하면, 에이전트가 직접 루프를 오케스트레이션한다.
 
 ```
-self-correcting-loop Skill을 사용해서 <기능명>을 구현해줘.
+agentic-dev-pipeline Skill을 사용해서 <기능명>을 구현해줘.
 PROMPT: docs/experiments/<번호>-PROMPT-<기능명>.md
 Requirements: docs/experiments/<번호>-requirements-<기능명>.md
 ```
@@ -187,7 +292,7 @@ Requirements: docs/experiments/<번호>-requirements-<기능명>.md
 
 ### 3단계: 결과 확인
 
-루프 완료 후 `$OUTPUT_DIR/` (기본: `.self-correcting-loop/`)에 생성되는 파일:
+루프 완료 후 `$OUTPUT_DIR/` (기본: `.agentic-dev-pipeline/`)에 생성되는 파일:
 
 | 파일 | 내용 |
 |------|------|
@@ -225,7 +330,7 @@ Agent C (Requirements vs Blind Review) → Discrepancy Report
 
 ```bash
 REQUIREMENTS_FILE="docs/experiments/<번호>-requirements-<기능명>.md" \
-bash ~/.agents/skills/self-correcting-loop/triangular-verify.sh
+bash ~/.agents/skills/agentic-dev-pipeline/triangular-verify.sh
 ```
 
 ---
@@ -237,7 +342,7 @@ bash ~/.agents/skills/self-correcting-loop/triangular-verify.sh
 ```bash
 PROMPT_FILE="docs/experiments/3-PROMPT-quote-generator.md" \
 REQUIREMENTS_FILE="docs/experiments/3-requirements-quote-generator.md" \
-bash ~/.agents/skills/self-correcting-loop/self-correcting-loop.sh 5
+bash ~/.agents/skills/agentic-dev-pipeline/agentic-dev-pipeline.sh 5
 ```
 
 결과: 1회 반복, 641초, 사람 개입 0회, 81/81 테스트 통과
@@ -247,7 +352,7 @@ bash ~/.agents/skills/self-correcting-loop/self-correcting-loop.sh 5
 ```bash
 PROMPT_FILE="docs/experiments/4-PROMPT-portfolio-aggregator.md" \
 REQUIREMENTS_FILE="docs/experiments/4-requirements-portfolio-aggregator.md" \
-bash ~/.agents/skills/self-correcting-loop/self-correcting-loop.sh 5
+bash ~/.agents/skills/agentic-dev-pipeline/agentic-dev-pipeline.sh 5
 ```
 
 ---
@@ -272,7 +377,7 @@ Claude Code 세션 안에서 셸 스크립트를 실행하면 `CLAUDECODE` 환�
 - 기존 테스트가 통과하는 상태에서 시작했는지 확인
 - 감지된 명령이 예상과 맞는지 확인:
   ```bash
-  source ~/.agents/skills/self-correcting-loop/detect-project.sh && print_detected_config
+  source ~/.agents/skills/agentic-dev-pipeline/detect-project.sh && print_detected_config
   ```
 - 환경변수 오버라이드로 명확히 지정: `LINT_CMD="..."`, `TEST_CMD="..."`
 
@@ -297,4 +402,4 @@ Claude Code 세션 안에서 셸 스크립트를 실행하면 `CLAUDECODE` 환�
 ## 상세 문서
 
 스킬의 전체 문서(지원 언어, 감지 우선순위, 트러블슈팅 등)는 다음을 참조:
-`~/.agents/skills/self-correcting-loop/SKILL.md`
+`~/.agents/skills/agentic-dev-pipeline/SKILL.md`

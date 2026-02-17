@@ -10,3 +10,4 @@ data/renewals.json
 dist/
 toolbox
 .self-correcting-loop/
+.agentic-dev-pipeline/

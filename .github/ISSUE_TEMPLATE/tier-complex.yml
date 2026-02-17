@@ -1,0 +1,34 @@
+name: "Tier: Complex"
+description: "Engineer-managed, synchronous work — requires human judgment"
+labels: ["tier:complex"]
+body:
+  - type: textarea
+    id: task-description
+    attributes:
+      label: Task Description
+      description: "Describe the complex task requiring engineer oversight."
+      placeholder: "Migrate from SQLite to PostgreSQL with zero-downtime deployment strategy."
+    validations:
+      required: true
+  - type: textarea
+    id: requirements
+    attributes:
+      label: Requirements
+      description: "Detailed functional and non-functional requirements."
+      placeholder: |
+        FR-1: Schema migration scripts (forward + rollback)
+        FR-2: Data migration with validation checksums
+        NFR: Zero downtime, < 5min migration window
+    validations:
+      required: true
+  - type: textarea
+    id: design-notes
+    attributes:
+      label: Design Notes
+      description: "Architectural decisions, trade-offs, or design constraints."
+      placeholder: |
+        - Blue-green deployment strategy
+        - Dual-write period for validation
+        - Rollback trigger: error rate > 1%
+    validations:
+      required: false

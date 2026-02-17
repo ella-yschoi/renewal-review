@@ -17,20 +17,14 @@ glowSeed: 14
 
 # Agent-Native Engineering
 
-### Insurance Renewal Review Pipeline
-
-<div class="pt-6 text-gray-400 text-lg">
-8,000 Policies · Rule + LLM Hybrid · 5x Faster
+<div class="pt-3 text-gray-400 text-lg">
+Compress a work week into one day
 </div>
 
 <div class="pt-6 text-sm text-gray-400 max-w-xl mx-auto">
 
-**Goal**: Agent-native setup → thorough planning → AI execution — compress a work week into one day.
+Ella Choi · Feb 2026
 
-</div>
-
-<div class="abs-br m-6 text-sm text-gray-500">
-  Yeonsu Choi · Feb 2026
 </div>
 
 <!--
@@ -62,13 +56,13 @@ glowSeed: 7
 # The Problem
 
 <div class="text-lg text-gray-400 mb-6">
-Each policy takes ~20 min to review manually — the hours add up fast
+Brokers review each policy manually
 </div>
 
 <div class="grid grid-cols-3 gap-6 max-w-2xl mx-auto">
 <v-click>
 <div class="border border-red-500/30 bg-red-950/20 rounded-lg p-5 text-center">
-  <div class="text-4xl font-bold text-red-400">Days</div>
+  <div class="text-4xl font-bold text-red-400">20min+</div>
   <div class="text-sm text-gray-400 pt-1">manual comparison</div>
 </div>
 </v-click>
@@ -87,7 +81,7 @@ Each policy takes ~20 min to review manually — the hours add up fast
 </div>
 
 <v-click>
-<div class="pt-8 text-base text-gray-300">
+<div class="pt-8 text-3xl text-gray-300">
 
 **Setup** → **Plan** → **Build** → **Experiment** → **Iterate**
 
@@ -95,13 +89,19 @@ Each policy takes ~20 min to review manually — the hours add up fast
 </v-click>
 
 <!--
-Quandri blog의 <A day in the life: With vs. without Quandri> 글에 따르면,
+Quandri blog의 A day in the life: With vs. without Quandri 글에 따르면,
 브로커가 정책을 하나하나 검토하는데, 정책 1건당 평균 20분이 소요된다고 합니다.
-리스크 카테고리들을 눈으로 체크해야 하고, 메모나 특약 텍스트에 숨어있는 위험 신호는 놓치기 쉽습니다.
+15개 이상의 리스크 카테고리들을 눈으로 체크해야 하고, 메모나 특약 텍스트에 숨어있는 위험 신호는 놓치기 쉽습니다.
 
-저의 접근 방식은 Setup → Plan → Build → Experiment → Iterate 였습니다.
-Setup이란, AI agent가 잘 일할 수 있는 환경을 먼저 만드는 것입니다 — CLAUDE.md로 행동 규칙 정의, convention.md로 코드 컨벤션 통일, Git Hooks로 품질 게이트(테스트·린터·보안 스캐너) 자동 강제, 그리고 보험 도메인 지식을 Custom Skill로 주입하는 것까지 포함합니다.
-이 환경 위에서 계획을 세우고, 빠르게 만들고, 실험하고, 반복합니다.
+이러한 문제를 해결하기 위해 프로덕트 개발을 했습니다.
+개발 방식은 Setup → Plan → Build → Experiment → Iterate 였습니다.
+먼저 환경을 세팅하고, 계획을 세우고, 빠르게 만들고, 실험하고, 반복합니다.
+
+#### 여기서 Setup이란,
+
+AI agent가 일을 잘 할 수 있는 환경을 먼저 만드는 것입니다.
+예를 들면 CLAUDE.md로 행동 규칙 정의, convention.md로 코드 컨벤션 통일, Git Hooks로 품질 게이트(테스트·린터·보안 스캐너) 자동 강제, 그리고 보험 도메인 지식을 Custom Skill로 주입하는 것까지 포함합니다.
+
 이 흐름을 담아 발표를 진행하겠습니다.
 -->
 
@@ -111,18 +111,18 @@ glowSeed: 20
 
 # What I Built
 
-<div class="grid grid-cols-2 gap-5">
+<div class="grid grid-cols-2 gap-5 mt-6">
 <v-click>
-<div class="border border-cyan-500/30 bg-cyan-950/20 rounded-lg p-4">
-  <div class="text-cyan-400 font-bold mb-3">Processing Pipeline</div>
+<div class="border border-cyan-500/30 bg-cyan-950/20 rounded-lg p-6">
+  <div class="text-cyan-400 font-bold mb-5 text-2xl">Processing Pipeline</div>
   <div class="space-y-1.5 text-sm">
-    <div>📥 8,000 Policies <span class="text-gray-500">(JSON / PG)</span></div>
+    <div>📥 8,000 Policies <span class="text-gray-500">(JSON / PostgreSQL)</span></div>
     <div class="text-gray-600 pl-6 text-xs">↓</div>
     <div>⚙️ Parser · ACORD normalization</div>
     <div class="text-gray-600 pl-6 text-xs">↓</div>
     <div>🔍 Diff Engine · Prior vs Renewal</div>
     <div class="text-gray-600 pl-6 text-xs">↓</div>
-    <div>🚩 Rule Flagger · 23 rules → DiffFlags</div>
+    <div>🚩 Rule Flagger · 22 rules → DiffFlags</div>
     <div class="text-gray-600 pl-6 text-xs">↓</div>
     <div>⚠️ Risk Classifier · 4 levels</div>
     <div class="text-gray-600 pl-6 text-xs">↓</div>
@@ -131,32 +131,38 @@ glowSeed: 20
 </div>
 </v-click>
 <v-click>
-<div class="border border-green-500/30 bg-green-950/20 rounded-lg p-4">
-  <div class="text-green-400 font-bold mb-3">Features</div>
+<div class="border border-green-500/30 bg-green-950/20 rounded-lg p-6">
+  <div class="text-green-400 font-bold mb-5 text-2xl">Features</div>
   <div class="space-y-2 text-sm">
-    <div>📊 Dashboard — batch overview, broker workflow tracking</div>
+    <div>📊 Dashboard — broker workflow tracking, reviews table</div>
     <div>🔎 Review Detail — diff, flags, inline quote generation</div>
-    <div>📈 Analytics — broker metrics, risk trends</div>
-    <div>📦 Portfolio Analyzer — bundles, duplicates</div>
     <div>🤖 LLM Insights — Review Recommended 100 sample</div>
+    <div>📦 Portfolio Analyzer — bundles, duplicates</div>
   </div>
-  <div class="mt-4 pt-3 border-t border-gray-700 text-xs text-gray-400">
-    116 tests · 21 endpoints · 4 pages · 8,000 policies &lt; 1s
+  <div class="mt-4 py-6 border-t border-gray-700 text-m text-gray-400">
+    116 tests · 20 endpoints · 6 pages · 8,000+ policies <br/>
+    <div text-3xl mt-3>&lt; 1s</div>
   </div>
 </div>
 </v-click>
 </div>
 
 <!--
-"왼쪽이 전체 파이프라인입니다.
-8,000건의 정책 데이터는 JSON 파일 또는 Docker Postgres에서 입력받습니다.
-먼저 Parser가 ACORD 표준에 맞게 정규화하고, Diff Engine이 이전 계약과 갱신 계약을 필드별로 비교합니다.
-그 다음 Rule Flagger가 23개 규칙으로 위험 신호를 탐지합니다 — 보험료 급등, 보장 삭제, SR-22, 운전자 위반 이력 등이요.
-이 flag들을 종합해서 Risk Classifier가 4단계 위험 등급을 매깁니다 — No Action, Review Recommended, Action Required, Urgent Review.
-여기까지가 100% rule-based이고, 마지막에 텍스트가 변경된 정책만 — 메모, 특약 같은 비정형 텍스트요 — LLM에 선별 투입합니다.
-전체의 5~15%만 LLM을 호출하도록 제가 직접 설계한 부분이라, 비용 효율적입니다.
-오른쪽은 주요 기능입니다 — 대시보드, 리뷰 상세(인라인 견적 포함), LLM 인사이트, 포트폴리오.
-프레젠테이션을 마치면 데모 페이지로 자세히 보실 수 있습니다."
+#### 우선 프로세싱 파이프라인 소개하겠습니다.
+
+- 8천 건의 보험 정책 데이터가 JSON 또는 PostgreSQL로 들어오면, 먼저 Parser가 ACORD 표준에 맞게 정규화합니다.
+- 그 다음 Diff Engine이 기존 계약과 갱신 계약을 필드 단위로 비교하고, Rule Flagger가 23개 규칙으로 변경 사항에 플래그를 매깁니다. 예를 들면 보험료 급등, 보장 축소, 공제액 변경 같은 것들이요.
+- 이 flag들을 종합해서 Risk Classifier가 4단계 위험 등급을 매깁니다. No Action, Review Recommended, Action Required, Urgent Review. 네 가지로 나누어 브로커에게 보여줍니다.
+- 여기까지가 100% rule-based이고, 마지막에 텍스트가 변경된 정책만 예를 들면 메모, 특약 같은 비정형 텍스트만 LLM에 선별 투입합니다. 전체의 5~15%만 LLM을 호출하도록 설계해서 비용 측면을 고려했습니다.
+
+#### 다음은 주요 기능입니다.
+
+- Dashboard에서는 배치 단위로 정책들의 전체 현황을 한눈에 보고, 브로커가 고객 연락 여부나 견적 발행 여부와 같은 워크플로우를 추적할 수 있습니다. 여기서는 rule-based로 정책 간의 숫자 비교 등 비교적 간단한 분석을 진행합니다.
+- Review Detail에서는 각 정책의 변경 사항과 플래그를 확인하고, 바로 해당 페이지에서 견적을 생성할 수 있습니다.
+- LLM Insights는 Review Recommended 등급 중 100건을 샘플링해서 LLM이 분석한 인사이트를 보여줍니다. 아까 Dashboard에서는 단순 숫자만 분석했다면, 이 LLM insights 페이지에서는 자연어 같은 비정형 텍스트까지 분석합니다. (참고로 원래는 모든 Review Recommended 등급의 정책들을 LLM 분석하는 것이지만, 비용상 데모에서는 100개만 샘플링하는 방향으로 진행했습니다.)
+- 마지막으로 Portfolio Analyzer에서는 동일 고객의 Auto + Home 묶음 계약을 한 화면에서 관리하고, 정책 간 중복/갭 탐지를 할 수 있습니다.
+
+프레젠테이션을 마치면 데모 페이지의 UI를 통해 자세히 보여드리겠습니다.
 -->
 
 ---
@@ -166,7 +172,7 @@ glowSeed: 3
 
 # The Speed Story
 
-<div class="grid grid-cols-[1fr_auto_1fr] gap-6 items-center max-w-2xl mx-auto">
+<div class="mt-6 grid grid-cols-[1fr_auto_1fr] gap-6 items-center max-w-2xl mx-auto">
 <v-click>
 <div class="border border-red-500/30 bg-red-950/20 rounded-lg p-6 text-center">
   <div class="text-5xl font-bold text-gray-500">5 days</div>
@@ -177,7 +183,7 @@ glowSeed: 3
 <v-click>
 <div class="border border-green-500/30 bg-green-950/20 rounded-lg p-6 text-center">
   <div class="text-5xl font-bold text-green-400">1 day</div>
-  <div class="text-sm text-green-400/70 pt-2">With AI (~4h · 5x faster)</div>
+  <div class="text-sm text-green-400/70 pt-2">With AI (~4h · 9x faster)</div>
 </div>
 </v-click>
 </div>
@@ -188,21 +194,21 @@ glowSeed: 3
 | Phase                   | AI     | Manual | Speedup |
 | ----------------------- | ------ | ------ | ------- |
 | Models + Parser (ACORD) | 30 min | 4h     | 8x      |
-| Diff Engine + 23 Rules  | 45 min | 6h     | 8x      |
+| Diff Engine + 22 Rules  | 45 min | 6h     | 8x      |
 | Mock Data (8,000)       | 20 min | 3h     | 9x      |
 | LLM Client + Prompts    | 30 min | 5h     | 10x     |
 | Batch + API + Frontend  | 75 min | 10h    | 8x      |
-| Domain Research + QA    | 20 min | 9h     | 27x     |
 
 </div>
 </v-click>
 
 <!--
-"시니어 개발자 기준으로 산정하면 이 시스템은 순수 소프트웨어 개발로 약 37시간, 5일 걸리는 작업입니다.
-하지만, AI agent로 코어 시스템을 하루 만에 완성했습니다. 5배 빠릅니다.
-거기에 5가지 실험 — agent 오케스트레이션, 삼각검증, 자가수정 루프, 파이프라인 재사용성, LLM 벤치마크 — 까지 포함해서 총 2일에 완료했습니다.
-가장 큰 시간 절약 중 하나는 도메인 리서치 였습니다. 
-자세한 보험 도메인은 몰랐지만 ACORD 보험 표준을 Claude.md와 Skills에 주입하여, 별도 학습 없이 바로 모델링할 수 있었습니다."
+시니어 개발자 기준으로 산정하면 이 시스템은 순수 소프트웨어 개발로 약 37시간, 5일 걸리는 작업입니다.
+하지만, AI agent로 코어 시스템을 하루 만에 완성했습니다. 9배 빠른 결과를 냈습니다.
+거기에 뒤에서 소개해 드릴 5가지 실험까지 포함해서 총 2일에 완료했습니다.
+
+가장 크게 시간 절약을 했던 부분은 도메인 리서치 였습니다. 
+자세한 보험 도메인은 몰랐지만 ACORD 보험 표준을 Claude.md와 Skills에 주입하여, 별도 학습 없이 바로 모델링할 수 있었습니다.
 -->
 
 ---
@@ -211,7 +217,7 @@ glowSeed: 10
 
 # How: Agent-Native Setup
 
-<div class="grid grid-cols-2 gap-5">
+<div class="mt-6 grid grid-cols-2 gap-5">
 <v-click>
 <div class="border border-blue-500/30 bg-blue-950/20 rounded-lg p-4">
   <div class="text-blue-400 font-bold mb-2">Rulesets</div>
@@ -256,16 +262,11 @@ glowSeed: 10
 </div>
 
 <!--
-"Agent-native의 핵심은 agent에게 코드를 맡기는 게 아니라, agent가 잘 일할 수 있는 환경을 먼저 만드는 것입니다.
+"Agent-native의 핵심은 agent에게 코드를 맡기는 게 아니라, agent가 일할 수 있는 환경을 먼저 만드는 것입니다.
 CLAUDE.md와 convention.md로 행동 규칙을 정의하고, 품질 게이트(테스트, 린터, 보안 스캐너)를 agent의 reward signal로 설정합니다.
 커밋할 때마다 자동으로 전부 실행되고, 통과하지 못하면 커밋 자체가 불가합니다.
-추가로 이 프로젝트를 위해서는 Claude Code Hook 3개를 만들어서 — 실험 로그 없이 커밋 불가, 코드 변경 시 design-doc 없이 커밋 불가 — 문서 업데이트를 자동으로 강제했습니다.
 
-참고로 Heather가 공유해주신 아티클(Agent-Native Engineering, generalintelligencecompany.com)에서도 동일한 패턴을 강조합니다:
-- Ruleset Development = CLAUDE.md + conventions.md
-- Tests as Reward Signals = pre-commit 품질 게이트
-- Three-Level Task Framework = 실험 구조 (리서치 → 계획 → 실행)
-이 프로젝트에서 이미 반영되어 있던 개념들이고, 뒤에서 Parallel Work Streams도 추가로 적용해 보았습니다."
+추가로 이 프로젝트를 위해서는 Claude Code Hook 3개를 만들었습니다. — 실험 로그 없이 커밋 불가, 코드 변경 시 design-doc 없이 커밋 불가 — 문서 업데이트를 자동으로 강제했습니다."
 -->
 
 ---
@@ -292,8 +293,8 @@ glowSeed: 5
   <div class="space-y-1.5 text-sm">
     <div>5-layer hexagonal arch</div>
     <div>8 Pydantic models</div>
-    <div>23 DiffFlags, 4 risk levels</div>
-    <div>21 API endpoints</div>
+    <div>22 DiffFlags, 4 risk levels</div>
+    <div>20 API endpoints</div>
     <div class="text-yellow-400">Auto-updated via hooks</div>
   </div>
 </div>
@@ -320,11 +321,15 @@ _"Not 'build me an insurance system' — a phased plan with exact files, signatu
 </v-click>
 
 <!--
-"코드를 쓰기 전에 문서 3개를 먼저 작성했습니다.
-requirements.md에 기능 요구사항과 성공 기준, design-doc.md에 아키텍처와 데이터 모델,
-implementation-plan.md에 Phase별 실행 계획.
+"코드를 쓰기 전에 문서 3개를 Claude Code와 함께 작성했습니다.
+먼저 보험 도메인 지식을 Custom Skill로 주입했습니다 — ACORD 표준, 용어, 커버리지 매핑.
+그 다음 저는 핵심 결정만 했습니다 — '8,000건 처리', 'rule + LLM hybrid', '헥사고날 아키텍처'.
+Agent가 그 결정을 기반으로 상세 스펙을 생성했습니다 — 기능 요구사항 9개, 골든 시나리오 5개, 임계값까지.
+사람은 '무엇을, 왜'를 결정하고, Agent가 '어떻게'를 상세화하는 겁니다.
+
 Agent에게 '보험 시스템 만들어줘'가 아니라 '이 순서로, 이 구조로, 이 기준을 통과하게' 라고 지시합니다.
-그리고 앞서 말했듯, design-doc은 코드 변경 시 훅으로 자동 업데이트를 강제합니다."
+그리고 앞서 말했듯, design-doc은 코드 변경 시 훅으로 자동 업데이트를 강제합니다.
+이 requirements.md는 나중에 코드 검증의 기준이 되기도 합니다 — 이건 잠시 후에 설명드리겠습니다."
 -->
 
 ---
@@ -342,7 +347,7 @@ Each answered a specific question about AI-assisted development
 ```mermaid {scale: 0.55}
 flowchart LR
     E1["<b>Exp 1</b><br/>SubAgent vs<br/>Agent Teams"] --> E2["<b>Exp 2</b><br/>Triangular<br/>Verification"]
-    E2 --> E3["<b>Exp 3</b><br/>Self-Correcting<br/>Loop"]
+    E2 --> E3["<b>Exp 3</b><br/>Agentic Dev<br/>Pipeline"]
     E3 --> E4["<b>Exp 4</b><br/>Pipeline<br/>Reusability"]
     E4 --> E5["<b>Exp 5</b><br/>Langfuse LLM<br/>Benchmark"]
 
@@ -559,7 +564,7 @@ UI 부분은 개선한다면 Agent B에 프론트엔드 분석 skill을 추가�
 glowSeed: 15
 ---
 
-# Exp 3: Self-Correcting Loop
+# Exp 3: Agentic Dev Pipeline
 
 <div class="text-sm text-gray-400 mb-3">Quality gates + triangular verification in one automated loop</div>
 
@@ -971,7 +976,7 @@ JSON → Docker Postgres
     <div>🔒 require-design-doc</div>
     <div>🔒 require-exp-log</div>
     <div>🧠 insurance-domain skill</div>
-    <div>🔄 self-correcting skill</div>
+    <div>🔄 agentic-dev-pipeline skill</div>
   </div>
   <div class="border-t border-gray-700 mt-3 pt-2">
     <div class="text-green-400 font-bold mb-1">Architecture</div>
@@ -992,139 +997,6 @@ Pydantic — LLM 응답을 외부 API처럼 취급해서 스키마로 계약을 
 -->
 
 ---
-glowSeed: 13
----
-
-# Parallel Work Streams
-
-<div class="text-sm text-gray-400 mb-3">Sync + Async — background agents run while you keep building</div>
-
-<div class="grid grid-cols-2 gap-5">
-<v-click>
-<div class="border border-blue-500/30 bg-blue-950/20 rounded-lg p-4">
-  <div class="text-blue-400 font-bold mb-2">Pattern</div>
-
-```
-Engineer (Sync)        Background (Async)
-  │ main task           ├─ Self Code Review
-  │ feature work        │   convention, bugs,
-  │ UI polish           │   security scan
-  │                     │
-  │                     ├─ Doc Verification
-  │                     │   code ↔ design-doc
-  │                     │   triangular-style
-  ▼                     ▼
-  Review results ← ── Complete
-```
-
-  <div class="text-sm text-gray-400 pt-1">No context switch — agents report back when done</div>
-</div>
-</v-click>
-<v-click>
-<div>
-<div class="border border-green-500/30 bg-green-950/20 rounded-lg p-4 mb-3">
-  <div class="text-green-400 font-bold mb-2">Applied Results</div>
-  <div class="text-sm space-y-1.5">
-    <div><b>Code Review Agent</b> — 5 warnings</div>
-    <div class="text-gray-400 text-xs pl-4">unvalidated params, polling timeout, error handling</div>
-    <div><b>Doc Verification Agent</b> — 6 mismatches</div>
-    <div class="text-gray-400 text-xs pl-4">stale endpoint, wrong test counts, missing field</div>
-  </div>
-</div>
-<div class="border border-yellow-500/30 bg-yellow-950/20 rounded-lg p-4">
-  <div class="text-yellow-400 font-bold mb-1">Insight</div>
-  <div class="text-sm">Background agents catch issues <b>while you keep building</b>.</div>
-  <div class="text-sm text-gray-400 pt-1">Quality assurance without blocking the main work stream.</div>
-</div>
-</div>
-</v-click>
-</div>
-
-<!--
-"Heather가 공유해주신 아티클의 Parallel Work Streams 패턴을 실제로 적용해 보았습니다.
-메인 작업을 하는 동안 두 개의 background agent를 동시에 돌렸습니다.
-하나는 최근 커밋에 대한 자동 코드 리뷰 — 컨벤션 준수, 버그 위험, 보안 검토를 수행했고,
-다른 하나는 design-doc과 실제 코드의 정합성을 삼각 검증 스타일로 확인했습니다.
-
-결과적으로 코드 리뷰 agent는 5개 경고를 발견했습니다 — sort/order 파라미터 미검증, 폴링 루프에 타임아웃 없음, 에러 핸들링 부재 등.
-Doc 검증 agent는 6개 불일치를 발견했습니다 — 삭제된 엔드포인트가 문서에 남아있거나, 테스트 수가 틀려있거나, 누락된 필드 등.
-이 모든 작업이 메인 작업을 블로킹하지 않았습니다. 컨텍스트 스위칭 비용 없이 품질을 올릴 수 있습니다.
-
-기존의 코드 리뷰가 사람이 PR을 하나하나 보는 방식이었다면,
-이 방식은 agent가 비동기적으로 검증하고 결과만 받아보는 것입니다.
-아티클에서 말한 Code Review Reform의 실제 적용 사례입니다."
--->
-
----
-glowSeed: 16
----
-
-# Parallel Work Streams — How It Works
-
-<div class="text-sm text-gray-400 mb-3">Claude Code Task tool with <code>run_in_background: true</code></div>
-
-<div class="grid grid-cols-2 gap-5">
-<v-click>
-<div class="border border-blue-500/30 bg-blue-950/20 rounded-lg p-4">
-  <div class="text-blue-400 font-bold mb-2">Mechanics</div>
-
-```
-1. Launch ─ Task(run_in_background=true)
-   → Separate process, own context window
-   → Main conversation not blocked
-
-2. Execute ─ Agent works independently
-   → Read, Grep, Bash (19~37 tool calls)
-   → ~2 min per agent
-
-3. Notify ─ <task-notification>
-   → Auto-delivered to main session
-   → Results inline in conversation
-```
-
-  <div class="text-sm text-gray-400 pt-1">Multiple agents launch simultaneously in one message</div>
-</div>
-</v-click>
-<v-click>
-<div>
-<div class="border border-green-500/30 bg-green-950/20 rounded-lg p-4 mb-3">
-  <div class="text-green-400 font-bold mb-2">Measured Results</div>
-
-| Agent | Tools | Time | Findings |
-| ----- | ----- | ---- | -------- |
-| Code Review | 19 | 134s | 5 warn |
-| Doc Verify | 37 | 153s | 6 mismatch |
-
-  <div class="text-sm pt-2">Total: <b>~60K tokens</b> · Both ran while main task continued</div>
-</div>
-<div class="border border-yellow-500/30 bg-yellow-950/20 rounded-lg p-4">
-  <div class="text-yellow-400 font-bold mb-1">Best For</div>
-  <div class="text-sm space-y-1">
-    <div><span class="text-green-400">✅</span> Read-only: code review, doc verification, coverage analysis</div>
-    <div><span class="text-red-400">❌</span> Write tasks: feature impl, migrations (conflict risk)</div>
-  </div>
-</div>
-</div>
-</v-click>
-</div>
-
-<!--
-"구체적으로 어떻게 동작하는지 설명드리겠습니다.
-Claude Code의 Task 도구에 run_in_background 옵션을 켜면 별도 프로세스로 에이전트가 생성됩니다.
-각 에이전트는 독립적인 컨텍스트 윈도우를 가지고, Read, Grep, Bash 같은 도구를 자유롭게 사용합니다.
-메인 대화는 블로킹 없이 계속 진행되고, 에이전트가 끝나면 task-notification으로 결과가 자동 전달됩니다.
-
-이번 프로젝트에서 실제로 두 에이전트를 동시에 실행했습니다.
-코드 리뷰 에이전트는 19번 도구를 호출하면서 134초 만에 5개 경고를 찾았고,
-문서 검증 에이전트는 37번 도구를 호출하면서 153초 만에 6개 불일치를 찾았습니다.
-이 동안 저는 슬라이드 수정 등 메인 작업을 계속했습니다.
-
-주의할 점은 읽기 전용 작업에 적합하다는 것입니다.
-파일을 수정하는 작업은 메인 작업과 충돌할 수 있어서, 코드 리뷰나 문서 검증처럼 읽기만 하는 작업에 사용합니다.
-팀 가이드 문서도 함께 작성했습니다 — guide-background-agents.md에 사용법과 적합한 작업 기준을 정리했습니다."
--->
-
----
 glowSeed: 4
 ---
 
@@ -1136,7 +1008,7 @@ glowSeed: 4
 <v-click>
 <div class="border border-cyan-500/30 bg-cyan-950/20 rounded-lg p-4">
   <div class="text-cyan-400 font-bold mb-2">What I Packaged</div>
-  <div class="text-sm mb-3"><b>Skill: <code>self-correcting-loop</code></b></div>
+  <div class="text-sm mb-3"><b>Skill: <code>agentic-dev-pipeline</code></b></div>
 
 ```
 PROMPT.md → Implement → Gates → Triangular
@@ -1144,14 +1016,12 @@ PROMPT.md → Implement → Gates → Triangular
 ```
 
   <div class="text-sm space-y-1 pt-2">
-    <div>Project-agnostic — Python, Node, Rust, Go</div>
-    <div>Auto-detects lint, test, security tools</div>
+    <div>One command to run any feature</div>
     <div>Proven on 2 domain features</div>
   </div>
   <div class="border-t border-gray-700 mt-3 pt-2 text-sm">
-    <b>Guides:</b><br/>
-    <code>guide-self-correcting-loop.md</code><br/>
-    <code>guide-background-agents.md</code>
+    <b>Guide: <code>guide-agent-workflows.md</code></b><br/>
+    Prerequisites, step-by-step, troubleshooting
   </div>
 </div>
 </v-click>
@@ -1162,10 +1032,8 @@ PROMPT.md → Implement → Gates → Triangular
   <div class="text-sm text-gray-400 pt-2">Engineers use individual skills — but good patterns aren't shared across the org yet.</div>
 
 ```
-~/.agents/skills/self-correcting-loop/
-├── detect-project.sh  ← auto-detect
-├── SKILL.md           ← install, get pipeline
-└── PROMPT-TEMPLATE.md ← copy & fill
+~/.agents/skills/agentic-dev-pipeline/
+└── SKILL.md  ← install, get the pipeline
 ```
 
   <div class="text-sm pt-2"><b>One engineer experiments → packages → team benefits.</b></div>
@@ -1176,9 +1044,7 @@ PROMPT.md → Implement → Gates → Triangular
 
 <!--
 "실험 결과를 Skill과 가이드로 패키징했습니다.
-self-correcting-loop Skill — PROMPT.md만 바꾸면 어떤 기능이든 자동 구현+검증 파이프라인을 돌릴 수 있습니다.
-그리고 이 스킬을 범용화해서 Python뿐 아니라 Node, Rust, Go 프로젝트에서도 바로 사용 가능하게 만들었습니다.
-detect-project.sh가 프로젝트 루트의 pyproject.toml, package.json, Cargo.toml, go.mod 같은 파일을 보고 린트, 테스트, 보안 스캐너를 자동으로 결정합니다.
+agentic-dev-pipeline Skill — task 파일만 바꾸면 어떤 기능이든 자동 구현+검증 파이프라인을 돌릴 수 있습니다.
 가이드 문서도 만들어서 팀원 누구나 따라할 수 있게 했습니다.
 Quandri에서 Chloe와 이야기했을 때, 지금은 각 엔지니어가 자기만의 Skill을 쓰고 있고
 좋은 패턴이 엔지니어링 조직 전체에 공유되지 않는다고 들었습니다.
@@ -1239,6 +1105,59 @@ Agent-native는 AI에게 코드를 맡기는 게 아니라, AI가 잘 일할 수
 -->
 
 ---
+glowSeed: 21
+---
+
+# Agent-Native CI/CD
+
+<div class="text-sm text-gray-400 mb-3">Issue → Decompose → Implement → Review — fully automated chain</div>
+
+<div class="grid grid-cols-2 gap-5">
+<v-click>
+<div class="border border-blue-500/30 bg-blue-950/20 rounded-lg p-4">
+  <div class="text-blue-400 font-bold mb-2">3-Tier Task Framework</div>
+
+| Tier | Label | Agent Role |
+| ---- | ----- | ---------- |
+| One-Shot | `tier:one-shot` | Fully autonomous |
+| Manageable | `tier:manageable` | Agent + oversight |
+| Complex | `tier:complex` | Engineer-led |
+
+  <div class="text-sm text-gray-400 pt-2">GitHub Issue templates route tasks to the right workflow.</div>
+</div>
+</v-click>
+<v-click>
+<div class="border border-green-500/30 bg-green-950/20 rounded-lg p-4">
+  <div class="text-green-400 font-bold mb-2">Automated Chain</div>
+
+```
+Issue (tier:one-shot)
+  ↓ agent-dispatch.yml
+  Task Decomposition
+  → requirements + task files
+  ↓
+  Agentic Dev Pipeline
+  → implement → lint → test → verify
+  ↓
+  PR (closes #issue)
+  ↓ code-review.yml
+  Code Review Bot → comments
+```
+
+  <div class="text-sm text-gray-400 pt-1">Local: <code>--run</code> (직접 실행) · <code>--dispatch</code> (GitHub Issue → CI/CD)</div>
+</div>
+</v-click>
+</div>
+
+<!--
+"아티클의 3-Tier Task Framework를 GitHub Actions로 구현했습니다.
+One-Shot 이슈에 라벨을 붙이면 agent-dispatch 워크플로우가 자동으로 트리거됩니다.
+requirements + task 파일을 생성하고, Agentic Dev Pipeline으로 구현 → 품질 게이트 → 삼각 검증을 반복합니다.
+완료되면 PR을 자동 생성하고, code-review 워크플로우가 컨벤션/버그/보안 리뷰를 남깁니다.
+로컬에서도 동일한 파이프라인을 decompose-task.sh --run으로 실행할 수 있습니다."
+-->
+
+---
 layout: center
 class: text-center
 glowSeed: 14
@@ -1254,7 +1173,7 @@ glowSeed: 14
 
 **AI Tools**: Claude Code · MCP Toolbox · Custom Skills & Hooks
 
-**Metrics**: 116 tests · 21 endpoints · 8,000 policies < 1s · ~4,000 lines · 2 days
+**Metrics**: 116 tests · 20 endpoints · 8,000 policies < 1s · ~4,100 lines · 2 days
 
 </div>
 
@@ -1279,7 +1198,7 @@ AI 도구를 쓰더라도 기여자는 여전히 스스로 검토를 마친 양�
 Q1: "삼각검증으로 구현할 기능들을 큐에 어떻게 넣고 어떻게 보나요?"
 A: "디렉토리 기반입니다. docs/experiments/에 requirements + PROMPT 파일을 넣으면 파이프라인이 읽어갑니다.
 실행 로그는 docs/logs/loop-execution.log에, 검증 결과는 blind-review.md와 discrepancy-report.md에 자동 생성됩니다.
-팀에서 쓸 때는 가이드 문서(guide-self-correcting-loop.md)를 따르면 됩니다."
+팀에서 쓸 때는 가이드 문서(guide-agent-workflows.md)를 따르면 됩니다."
 
 Q2: "데이터 8,000건이 끝이 아니라 계속 들어올텐데 어떻게 하나요?"
 A: "실제로는 보험사가 갱신 시즌에 BMS로 배치 데이터를 내려보내고 Epic SDK로 주기적으로 가져옵니다.

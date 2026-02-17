@@ -1,0 +1,64 @@
+name: Code Review Bot
+
+on:
+  pull_request:
+    types: [opened, synchronize, ready_for_review]
+
+permissions:
+  contents: read
+  pull-requests: write
+  id-token: write
+
+jobs:
+  review:
+    if: ${{ !github.event.pull_request.draft }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Code Review
+        uses: anthropics/claude-code-action@v1
+        with:
+          anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
+          prompt: |
+            You are a code review bot. Review this PR and leave comments.
+
+            ## Review Criteria
+
+            ### 1. Convention Compliance
+            - Read .claude/rules/conventions.md
+            - Check: no docstrings on methods, type hints present, files < 300 lines
+            - Check: StrEnum for finite value sets, no mutable module-level state in routes
+            - Check: hexagonal architecture — domain/ imports nothing external
+
+            ### 2. Bug Detection
+            - Off-by-one errors, null/None handling, race conditions
+            - Missing error handling at system boundaries
+            - Incorrect type usage or implicit conversions
+
+            ### 3. Security
+            - OWASP Top 10: injection, XSS, SSRF, broken auth
+            - Hardcoded secrets or credentials
+            - Unvalidated external input
+
+            ### 4. Improvements
+            - Simpler alternatives to complex logic
+            - Missing test coverage for new code paths
+            - Performance concerns (N+1 queries, unnecessary iterations)
+
+            ## Output Format
+            For each finding, leave a review comment on the relevant file/line with:
+            - **Severity**: Critical / Warning / Info
+            - **Category**: Convention / Bug / Security / Improvement
+            - **Description**: What's wrong and why
+            - **Suggestion**: How to fix it (if applicable)
+
+            ## Rules
+            - This is READ-ONLY. Only leave comments, do not modify any code.
+            - Be concise. No praise, no filler.
+            - If the PR is clean, leave a single approval comment.
+            - Write ALL comments in English.

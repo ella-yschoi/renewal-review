@@ -1,0 +1,72 @@
+name: Agent Dispatch
+
+on:
+  issues:
+    types: [labeled]
+
+permissions:
+  contents: write
+  pull-requests: write
+  issues: write
+  id-token: write
+
+jobs:
+  dispatch:
+    if: github.event.label.name == 'tier:one-shot'
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v5
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+
+      - name: Install dependencies
+        run: uv sync --extra dev
+
+      - name: Run Agentic Dev Pipeline
+        uses: anthropics/claude-code-action@v1
+        with:
+          anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
+          prompt: |
+            You are an autonomous agent implementing a feature from a GitHub issue.
+
+            ## Setup
+            1. Read CLAUDE.md and .claude/rules/conventions.md for project rules.
+            2. Read the issue below for the task description.
+
+            ## Issue
+            Title: ${{ github.event.issue.title }}
+            Body:
+            ${{ github.event.issue.body }}
+
+            ## Task Decomposition
+            1. Create `docs/experiments/{N}-requirements-{name}.md` — What to build + acceptance criteria.
+            2. Create `docs/experiments/{N}-task-{name}.md` — How to implement (files, functions, steps).
+               Use the next available number N by checking existing files in docs/experiments/.
+
+            ## Agentic Dev Pipeline
+            3. Implement the feature following the task file.
+            4. Run quality gates: `make lint` then `make test`.
+               - If any gate fails, read the error output, fix the code, and retry.
+               - Repeat until all gates pass.
+            5. Run triangular verification:
+               - Agent B: Identify ALL changed, staged, and new untracked files (use `git diff --name-only main...HEAD`, `git diff --name-only HEAD`, `git diff --name-only --cached`, and `git ls-files --others --exclude-standard`). Read those files and describe what they do WITHOUT reading requirements.
+               - Agent C: Compare Agent B's description against the requirements file. Report discrepancies.
+               - If discrepancies found, fix and retry from step 4.
+            6. Once all gates and verification pass:
+               - Create a branch: `feat/{issue-slug}`
+               - Commit all changes with a descriptive message.
+               - Create a PR that closes #${{ github.event.issue.number }}.
+
+            ## Rules
+            - Follow conventions.md strictly (no docstrings, type hints, files < 300 lines).
+            - One logical change per commit.
+            - Do NOT install new dependencies without explicit approval in the issue.
+            - Write ALL output (commit messages, PR descriptions, comments, documents) in English.
