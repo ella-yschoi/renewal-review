@@ -24,7 +24,11 @@ GitHub Issue (tier:one-shot label)
 
 **로컬 진입점:**
 ```bash
+# 로컬에서 직접 실행
 bash scripts/decompose-task.sh --run "feature description"
+
+# GitHub Issue로 디스패치 (CI/CD 트리거)
+bash scripts/decompose-task.sh --dispatch "feature description"
 ```
 
 ---
@@ -73,9 +77,29 @@ bash scripts/decompose-task.sh "Add CSV export to analytics"
 
 # 생성 후 파이프라인까지 자동 실행
 bash scripts/decompose-task.sh --run "Add CSV export to analytics"
+
+# 생성 → 커밋 → 푸시 → GitHub Issue 생성 → CI/CD 자동 트리거
+bash scripts/decompose-task.sh --dispatch "Add CSV export to analytics"
 ```
 
 `docs/experiments/` 에 `{N}-requirements-{slug}.md`와 `{N}-task-{slug}.md`를 자동 생성한다.
+
+### 3가지 모드
+
+| 모드 | 명령 | 동작 |
+|------|------|------|
+| 생성만 | `decompose-task.sh "desc"` | requirements + task 파일 생성 |
+| 로컬 실행 | `--run "desc"` | 생성 → agentic-dev-pipeline 실행 |
+| 디스패치 | `--dispatch "desc"` | 생성 → git commit → push → GitHub Issue (`tier:one-shot`) → CI/CD 자동 트리거 |
+
+`--dispatch` 흐름:
+1. requirements + task 파일 생성
+2. `git add` + `git commit` (계획 파일만)
+3. `git push -u origin <현재 브랜치>`
+4. `gh issue create --label "tier:one-shot"` — 이슈 본문에 requirements 포함
+5. `agent-dispatch.yml` 워크플로우 자동 트리거
+
+**필수 도구**: `--dispatch`는 `gh` CLI (GitHub CLI)가 필요하다.
 
 ---
 

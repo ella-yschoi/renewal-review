@@ -125,7 +125,7 @@ glowSeed: 20
     <div class="text-gray-600 pl-6 text-xs">↓</div>
     <div>🔍 Diff Engine · Prior vs Renewal</div>
     <div class="text-gray-600 pl-6 text-xs">↓</div>
-    <div>🚩 Rule Flagger · 23 rules → DiffFlags</div>
+    <div>🚩 Rule Flagger · 22 rules → DiffFlags</div>
     <div class="text-gray-600 pl-6 text-xs">↓</div>
     <div>⚠️ Risk Classifier · 4 levels</div>
     <div class="text-gray-600 pl-6 text-xs">↓</div>
@@ -144,7 +144,7 @@ glowSeed: 20
     <div>🤖 LLM Insights — Review Recommended 100 sample</div>
   </div>
   <div class="mt-4 pt-3 border-t border-gray-700 text-xs text-gray-400">
-    117 tests · 17+ endpoints · 6 pages · 8,000 policies &lt; 1s
+    116 tests · 20 endpoints · 6 pages · 8,000 policies &lt; 1s
   </div>
 </div>
 </v-click>
@@ -186,7 +186,7 @@ glowSeed: 3
 | Phase                   | AI     | Manual | Speedup |
 | ----------------------- | ------ | ------ | ------- |
 | Models + Parser (ACORD) | 30 min | 4h     | 8x      |
-| Diff Engine + 15 Rules  | 45 min | 6h     | 8x      |
+| Diff Engine + 22 Rules  | 45 min | 6h     | 8x      |
 | Mock Data (8,000)       | 20 min | 3h     | 9x      |
 | LLM Client + Prompts    | 30 min | 5h     | 10x     |
 | Batch + API + Frontend  | 75 min | 10h    | 8x      |
@@ -235,7 +235,7 @@ glowSeed: 10
 <div class="border border-purple-500/30 bg-purple-950/20 rounded-lg p-4">
   <div class="text-purple-400 font-bold mb-2">Quality Gates</div>
   <div class="space-y-1.5 text-sm">
-    <div><span class="text-green-400">✅</span> pytest (100) — iterate until pass</div>
+    <div><span class="text-green-400">✅</span> pytest (116) — iterate until pass</div>
     <div><span class="text-green-400">✅</span> Ruff — lint + format</div>
     <div><span class="text-green-400">✅</span> Gitleaks — block secrets</div>
     <div><span class="text-green-400">✅</span> Semgrep — SAST scanning</div>
@@ -285,8 +285,8 @@ glowSeed: 5
   <div class="space-y-1.5 text-sm">
     <div>5-layer hexagonal arch</div>
     <div>8 Pydantic models</div>
-    <div>23 DiffFlags, 4 risk levels</div>
-    <div>14+ API endpoints</div>
+    <div>22 DiffFlags, 4 risk levels</div>
+    <div>20 API endpoints</div>
     <div class="text-yellow-400">Auto-updated via hooks</div>
   </div>
 </div>
@@ -1132,7 +1132,7 @@ Issue (tier:one-shot)
   Code Review Bot → comments
 ```
 
-  <div class="text-sm text-gray-400 pt-1">Local: <code>scripts/decompose-task.sh --run</code></div>
+  <div class="text-sm text-gray-400 pt-1">Local: <code>--run</code> (직접 실행) · <code>--dispatch</code> (GitHub Issue → CI/CD)</div>
 </div>
 </v-click>
 </div>
@@ -1161,7 +1161,7 @@ glowSeed: 14
 
 **AI Tools**: Claude Code · MCP Toolbox · Custom Skills & Hooks
 
-**Metrics**: 117 tests · 17+ endpoints · 8,000 policies < 1s · ~2,500 lines · 2 days
+**Metrics**: 116 tests · 20 endpoints · 8,000 policies < 1s · ~4,100 lines · 2 days
 
 </div>
 
