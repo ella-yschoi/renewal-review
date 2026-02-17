@@ -34,6 +34,7 @@ jobs:
         uses: anthropics/claude-code-action@v1
         with:
           anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
+          track_progress: true
           claude_args: '--allowedTools "Bash,Edit,Read,Write,Glob,Grep" --disallowedTools "Bash(rm -rf:*),Bash(sudo:*)"'
           prompt: |
             You are an autonomous agent implementing a feature from a GitHub issue.
@@ -61,10 +62,8 @@ jobs:
                - Agent B: Identify ALL changed, staged, and new untracked files (use `git diff --name-only main...HEAD`, `git diff --name-only HEAD`, `git diff --name-only --cached`, and `git ls-files --others --exclude-standard`). Read those files and describe what they do WITHOUT reading requirements.
                - Agent C: Compare Agent B's description against the requirements file. Report discrepancies.
                - If discrepancies found, fix and retry from step 4.
-            6. Once all gates and verification pass:
-               - Stage all changed and new files with `git add`.
-               - Commit with a descriptive message.
-               - The action will automatically create a branch and PR.
+            6. Once all gates and verification pass, leave all files in the working tree.
+               The action will automatically commit, push, and create a PR.
 
             ## Rules
             - Follow conventions.md strictly (no docstrings, type hints, files < 300 lines).
