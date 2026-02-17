@@ -41,7 +41,7 @@ def _bool_change(field: str, prior: bool, renewal: bool) -> FieldChange | None:
     return FieldChange(field=field, prior_value=str(prior), renewal_value=str(renewal))
 
 
-def _diff_entities(
+def _diff_entities[T](
     prior_items: Sequence[T],
     renewal_items: Sequence[T],
     key_fn: Callable[[T], str],

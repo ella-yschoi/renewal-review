@@ -20,13 +20,12 @@ import re
 import sys
 import time
 
-from dotenv import load_dotenv
-from langfuse import Evaluation, Langfuse
-
 from app.adaptor.llm.prompts import (
     ENDORSEMENT_COMPARISON,
     RISK_SIGNAL_EXTRACTOR,
 )
+from dotenv import load_dotenv
+from langfuse import Evaluation, Langfuse
 
 
 def _check_env():
