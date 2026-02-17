@@ -973,10 +973,10 @@ JSON → Docker Postgres
 <div class="border border-green-500/30 bg-green-950/20 rounded-lg p-4 h-full">
   <div class="text-green-400 font-bold mb-2">Hooks & Skills</div>
   <div class="text-sm space-y-1.5">
-    <div>🔒 require-design-doc</div>
-    <div>🔒 require-exp-log</div>
-    <div>🧠 insurance-domain skill</div>
-    <div>🔄 agentic-dev-pipeline skill</div>
+    <div>🔒 6 hooks in <code>.claude/hooks/</code></div>
+    <div>🧠 insurance-domain skill (project)</div>
+    <div>🔄 agentic-dev-pipeline (GitHub repo)</div>
+    <div class="text-gray-500">git clone → hooks auto-apply</div>
   </div>
   <div class="border-t border-gray-700 mt-3 pt-2">
     <div class="text-green-400 font-bold mb-1">Architecture</div>
@@ -992,7 +992,7 @@ DB — Docker + Postgres + SQLAlchemy + MCP 연동을 AI agent가 백엔드 이�
 
 Pydantic — LLM 응답을 외부 API처럼 취급해서 스키마로 계약을 걸고, 실패 시 rule-based fallback.
 도메인 지식 — 컨텍스트 윈도우는 유한한 자원이니까, CLAUDE.md에는 핵심만, 상세는 Custom Skill에 분리했습니다.
-훅 — 코드 변경 시 design-doc 없이 커밋 불가, 실험 브랜치에서 로그 없이 커밋 불가.
+훅 — 6개 훅이 프로젝트 `.claude/hooks/`에 포함되어 있어 클론만 하면 자동 적용. 코드 변경 시 design-doc 없이 커밋 불가, 실험 브랜치에서 로그 없이 커밋 불가.
 아키텍처 — flat 구조에서 시작해서 경계가 명확해진 시점에 헥사고날로 리팩토링했습니다. AI가 44파일을 테스트 깨지 않고 리팩토링했습니다."
 -->
 
@@ -1032,8 +1032,12 @@ PROMPT.md → Implement → Gates → Triangular
   <div class="text-sm text-gray-400 pt-2">Engineers use individual skills — but good patterns aren't shared across the org yet.</div>
 
 ```
-~/.agents/skills/agentic-dev-pipeline/
-└── SKILL.md  ← install, get the pipeline
+# Install (one command)
+git clone ella-yschoi/agentic-dev-pipeline
+  → ~/.agents/skills/agentic-dev-pipeline/
+
+# Project-level (auto on clone)
+.claude/skills/agentic-dev-pipeline/SKILL.md
 ```
 
   <div class="text-sm pt-2"><b>One engineer experiments → packages → team benefits.</b></div>
@@ -1045,7 +1049,7 @@ PROMPT.md → Implement → Gates → Triangular
 <!--
 "실험 결과를 Skill과 가이드로 패키징했습니다.
 agentic-dev-pipeline Skill — task 파일만 바꾸면 어떤 기능이든 자동 구현+검증 파이프라인을 돌릴 수 있습니다.
-가이드 문서도 만들어서 팀원 누구나 따라할 수 있게 했습니다.
+별도 GitHub repo로 분리해서 git clone 한 번으로 설치 가능하게 만들었고, 가이드 문서도 만들어서 팀원 누구나 따라할 수 있게 했습니다.
 Quandri에서 Chloe와 이야기했을 때, 지금은 각 엔지니어가 자기만의 Skill을 쓰고 있고
 좋은 패턴이 엔지니어링 조직 전체에 공유되지 않는다고 들었습니다.
 한 사람이 실험하고, 패키징하고, 팀 전체가 쓸 수 있게 만드는 것 — 이게 제가 가져가고 싶은 방식입니다.
@@ -1154,7 +1158,14 @@ Issue (tier:one-shot)
 One-Shot 이슈에 라벨을 붙이면 agent-dispatch 워크플로우가 자동으로 트리거됩니다.
 requirements + task 파일을 생성하고, Agentic Dev Pipeline으로 구현 → 품질 게이트 → 삼각 검증을 반복합니다.
 완료되면 PR을 자동 생성하고, code-review 워크플로우가 컨벤션/버그/보안 리뷰를 남깁니다.
-로컬에서도 동일한 파이프라인을 decompose-task.sh --run으로 실행할 수 있습니다."
+로컬에서도 동일한 파이프라인을 decompose-task.sh --run으로 실행할 수 있습니다.
+
+실제 E2E 테스트에서 2가지 문제를 발견했습니다.
+첫째, claude-code-action은 Bash를 기본 차단합니다. Agent가 mkdir를 15번 시도하다 실패했습니다.
+claude_args로 Bash를 명시적으로 허용하되, rm -rf와 sudo는 차단했습니다.
+둘째, prompt 입력이 있으면 Agent Mode로 라우팅되어 PR이 생성되지 않습니다.
+track_progress: true로 Tag Mode를 강제해야 자동 브랜치 → 커밋 → PR 체인이 동작합니다.
+Code Review Bot은 첫 PR에서 정상 동작을 확인했습니다."
 -->
 
 ---

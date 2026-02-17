@@ -104,6 +104,12 @@ Prior/Renewal 정책 쌍을 자동 비교하여 변경 사항을 감지하고 �
 - LLM provider 선택 가능 (OpenAI / Anthropic), 비활성화 시 Basic Analytics 정상 동작
 - LLM 추적 연동 (Langfuse), 비활성화 가능
 - 각 단계 추가 시 기존 기능/테스트 영향 없음
+- 에이전트 인프라(훅, 스킬, 설정)가 프로젝트에 포함되어 `git clone`만으로 개발 환경 재현 가능
+- agentic-dev-pipeline 스킬은 별도 GitHub repo로 관리하여 프로젝트 무관하게 재사용 가능
+- GitHub Actions CI/CD: `tier:one-shot` 이슈 → agent-dispatch 워크플로우 → 자동 구현 + PR 생성
+- Code Review Bot: PR 생성/동기화 시 자동 리뷰 코멘트 (컨벤션, 버그, 보안)
+- 3-Tier Issue Templates: one-shot / manageable / complex 분류 (GitHub Issue Templates)
+- 로컬 Task Decomposition: `scripts/decompose-task.sh`로 requirements + task 파일 생성
 
 ## 5. Success Criteria
 

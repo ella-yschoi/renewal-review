@@ -9,6 +9,54 @@
 
 ---
 
+### 2026-02-16 19:40 | `main` | `aea6692`
+
+**fix: enable tag mode with track_progress and grant Bash access**
+
+_1 file changed, 3 insertions(+), 4 deletions(-)_
+
+> **Context**: Agent Dispatch 2차 실행(Issue #4)이 88턴, $3.33을 소비하고 성공적으로 완료되었지만 PR/브랜치/코멘트가 하나도 생성되지 않았다. 원인: `claude-code-action`의 `prompt:` 입력이 Agent Mode로 라우팅되면 branch/commit/PR/comment 인프라가 전부 비활성화된다. Agent가 만든 모든 결과물은 러너 종료 시 사라진다.
+> **Result**: `track_progress: true` 추가로 Tag Mode를 강제하여 자동 브랜치 생성 → 커밋 → push → PR 링크 → 이슈 코멘트 체인이 활성화됨. 프롬프트 step 6도 "leave all files in the working tree"로 변경하여 action이 커밋을 담당하도록 수정.
+> **Insight**: `claude-code-action`의 내부 모드 분기(Agent vs Tag)는 문서화되어 있지 않다 — 소스코드 `detector.ts`를 직접 분석해야 발견할 수 있었다. "행동은 성공했지만 결과가 없다"는 증상에서 인프라 레이어 문제를 의심하는 것이 핵심이었다.
+
+---
+
+### 2026-02-16 19:40 | `main` | `f0875a6`
+
+**fix: grant Bash tool access and test health endpoint version**
+
+_3 files changed, 6 insertions(+), 5 deletions(-)_
+
+> **Context**: Agent Dispatch 1차 실행(Issue #3)에서 agent가 디렉토리 생성을 15회+ 시도(mkdir, touch, python os.makedirs, install -d 등)하며 전부 실패. `claude-code-action`은 Bash를 기본 차단하므로 파일 I/O(Read/Write/Edit)만 가능하고 쉘 명령은 불가능했다. Code Review Bot 테스트를 위해 health endpoint에 version 필드를 추가하여 PR #2 생성.
+> **Result**: `claude_args: '--allowedTools "Bash,Edit,Read,Write,Glob,Grep" --disallowedTools "Bash(rm -rf:*),Bash(sudo:*)"'` 추가로 Bash 허용 (파괴적 명령은 차단). Code Review Bot이 PR #2에 자동 리뷰 코멘트 작성 — 첫 번째 완전 동작 확인.
+> **Insight**: Agent에게 도구를 줄 때 "모두 허용 후 위험한 것 차단"이 "기본 차단 후 하나씩 허용"보다 실용적이다 — 예측 못한 도구 필요(mkdir, make, git)가 agent를 무한 루프에 빠뜨린다.
+
+---
+
+### 2026-02-16 19:40 | `main` | `41ec67a`
+
+**feat: add agent-native CI/CD pipeline**
+
+_9 files changed, 726 insertions(+), 235 deletions(-)_
+
+> **Context**: Agent-Native Engineering 아티클의 3가지 핵심 패턴(Issue Dispatch, Code Review Bot, Task Decomposition)을 프로젝트에 적용. `.github/` 디렉토리가 없는 상태에서 처음부터 구축. 3-Tier Issue Templates(`one-shot`/`manageable`/`complex`), 2개의 GitHub Actions 워크플로우, 로컬 Task Decomposition 스크립트를 한 번에 생성.
+> **Result**: `agent-dispatch.yml`(Issue → 자동 구현 → PR), `code-review.yml`(PR → 자동 리뷰), `decompose-task.sh`(로컬 진입점), Issue Templates 3종 생성. Self-Correcting Loop → Agentic Dev Pipeline으로 이름 변경. 가이드 문서 전면 개편.
+> **Insight**: CI/CD 파이프라인의 핵심은 "자동화"가 아니라 "진입점의 다양화"다 — GitHub Issue, 로컬 스크립트(`--run`), 로컬 스크립트(`--dispatch`) 3가지 경로로 동일한 파이프라인에 진입할 수 있어야 팀 전체가 채택한다.
+
+---
+
+### 2026-02-16 19:36 | `main` | `154e4d7`
+
+**chore: move hooks into project and register agentic-dev-pipeline skill**
+
+_9 files changed, 339 insertions(+), 3 deletions(-)_
+
+> **Context**: 에이전트 인프라(훅 6개, 스킬)가 로컬 머신의 홈 디렉토리에 흩어져 있어 repo 클론 시 재현 불가능했고, agentic-dev-pipeline 스킬은 공유할 방법이 없었다. 프레젠테이션에서 `.claude/` 디렉토리 구조를 한눈에 보여주려면 프로젝트 안에 통합 필요.
+> **Result**: 6개 훅 → `.claude/hooks/`로 이동 + `settings.json` 등록, agentic-dev-pipeline → 별도 GitHub repo(`ella-yschoi/agentic-dev-pipeline`)로 분리 + 프로젝트 스킬 등록(`.claude/skills/agentic-dev-pipeline/SKILL.md`). `git clone` 한 번으로 훅 자동 적용, 스킬 설치 가능.
+> **Insight**: Agent 인프라의 가치는 "만드는 것"이 아니라 "다른 사람이 클론 한 번으로 동일 환경을 재현할 수 있는 것"이다 — 훅은 프로젝트 안에, 범용 스킬은 별도 repo에 분리하면 이식성과 재사용성을 동시에 확보한다.
+
+---
+
 ### 2026-02-16 14:15 | `main` | uncommitted
 
 **feat: dashboard progress bar, account column split, account sorting, portfolio info banner**

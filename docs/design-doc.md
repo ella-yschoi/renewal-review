@@ -52,6 +52,29 @@
 - `application/`은 `domain/` + `ports/`만 import한다 (구현체 X)
 - 외부 시스템 변경은 `adaptor/`에서 흡수, 도메인으로 전파되지 않음
 
+### 에이전트 인프라 (`git tracked`)
+
+```
+.claude/
+├── hooks/                              # Claude Code 훅 (프로젝트 스코프)
+│   ├── require-design-doc.sh           # PreToolUse — 코드 변경 시 design-doc 없이 커밋 차단
+│   ├── require-experiment-log.sh       # PreToolUse — experiment 브랜치 로그 없이 커밋 차단
+│   ├── lint-on-save.sh                 # PostToolUse — 파일 저장 후 자동 린트
+│   ├── remind-design-doc.sh            # PostToolUse — 코드 수정 후 design-doc 리마인드
+│   ├── log-commit.sh                   # PostToolUse — 커밋 후 로그 리마인드
+│   └── verify-completion.sh            # Stop — 에이전트 종료 시 완료 검증
+├── rules/
+│   └── conventions.md                  # 코드 컨벤션 (헥사고날, StrEnum, <300줄 등)
+├── skills/
+│   ├── insurance-domain/SKILL.md       # 보험 도메인 지식 (ACORD 표준)
+│   └── agentic-dev-pipeline/SKILL.md   # 자동 구현+검증 파이프라인 스킬
+├── settings.json                       # 훅 설정 (git tracked, 클론 시 자동 적용)
+└── settings.local.json                 # 로컬 전용 설정 (gitignored)
+```
+
+- `settings.json`: 프로젝트 레벨 훅 경로 매핑. repo 클론 시 훅이 자동 적용됨
+- `agentic-dev-pipeline` 스킬: 별도 GitHub repo(`ella-yschoi/agentic-dev-pipeline`)에서 관리. `git clone`으로 설치
+
 ### 모듈 디렉토리
 
 ```
@@ -355,7 +378,7 @@ LLM 분석 결과에 따라 rule_risk보다 높은 level로 상향. 하향은 �
 
 | Method | Path | Description | Response | Status Codes |
 |--------|------|-------------|----------|-------------|
-| GET | `/health` | 헬스체크 | `{"status": "ok"}` | 200 |
+| GET | `/health` | 헬스체크 | `{"status": "ok", "version": "0.1.0"}` | 200 |
 | GET | `/reviews/{policy_number}` | 리뷰 결과 조회 (lazy LLM enrichment 트리거) | `ReviewResult` | 200, 404 |
 | PATCH | `/reviews/{pn}/broker-contacted` | 연락 여부 토글 | `{broker_contacted}` | 200, 404 |
 | PATCH | `/reviews/{pn}/quote-generated` | 견적 저장 (body에 quotes 포함 시) 또는 토글 | `{quote_generated}` | 200, 404 |

@@ -5,6 +5,44 @@
 
 ---
 
+## 2026-02-16 19:40 | `main`
+
+### 무엇을 했는가
+Agent-Native CI/CD 파이프라인(agent-dispatch + code-review)의 실제 E2E 테스트 수행. 3가지 핵심 검증:
+
+1. **Code Review Bot 검증 (성공)**: PR #2 생성 시 `code-review.yml`이 자동 트리거 → claude-code-action이 컨벤션/버그/보안 리뷰 코멘트를 PR에 작성. 완전 정상 동작 확인
+2. **Agent Dispatch 1차 실패 분석**: Issue #3(`tier:one-shot`) 트리거 → 워크플로우 완료. 하지만 agent가 `app/adaptor/export/` 디렉토리 생성을 15회+ 시도(mkdir, touch, python os.makedirs 등)하며 모두 실패. 원인: `claude-code-action`이 Bash를 기본 차단. `claude_args: '--allowedTools "Bash,Edit,Read,Write,Glob,Grep"'` 추가로 해결
+3. **Agent Dispatch 2차 실패 분석**: Issue #4 트리거 → 88턴, $3.33 소비, permission_denials 0건으로 성공적 실행. 하지만 PR/브랜치/코멘트 없음. 원인: `prompt:` 입력이 있으면 Agent Mode로 라우팅되어 branch/PR/comment 인프라가 비활성화. `track_progress: true`로 Tag Mode 강제 전환하여 해결
+
+커밋 3건: `41ec67a`(초기 구축), `f0875a6`(Bash 허용 + 테스트), `aea6692`(track_progress 적용)
+
+### 왜 했는가
+Agent-Native CI/CD의 핵심 가치는 "Issue를 만들면 PR까지 자동 생성"인데, 구현만으로는 이 체인이 실제 동작하는지 알 수 없었다. 특히 `claude-code-action`은 문서가 부족하여 실제 실행 없이는 내부 모드(Agent vs Tag) 분기, 도구 권한 모델 등을 발견할 수 없었다. 프레젠테이션에서 "실제로 동작한다"고 말하려면 실 실행 로그가 필요했다.
+
+### 어떻게 했는가
+GitHub Actions 워크플로우를 main에 push → Issue에 `tier:one-shot` 라벨 적용으로 트리거. 실패 시 `gh run view --log`로 agent의 tool call 로그를 추출하여 15회 mkdir 시도 확인. 2차 실패 시 claude-code-action 소스코드(`detector.ts`, `agent/index.ts`)를 직접 분석하여 Agent Mode vs Tag Mode 분기 로직 발견. `track_progress: true`가 detector.ts에서 Tag Mode를 강제하는 것을 확인하고 수정. Code Review Bot은 PR #2에서 자동 트리거되어 컨벤션/보안 리뷰 코멘트 작성까지 확인. 각 수정 후 커밋 → push → Issue 재생성으로 반복 검증.
+
+---
+
+## 2026-02-16 19:36 | `main`
+
+### 무엇을 했는가
+에이전트 인프라를 정리하여 프로젝트 이식성과 재사용성을 확보. 3가지 작업:
+
+1. **Hooks → 프로젝트 통합**: `~/Workspace/.claude/hooks/`에 있던 6개 훅 스크립트를 `.claude/hooks/`로 복사하고, `.claude/settings.json`에 프로젝트 상대 경로로 등록. 다른 사람이 repo를 클론하면 훅이 자동 적용됨
+2. **agentic-dev-pipeline → GitHub repo 분리**: `~/.agents/skills/agentic-dev-pipeline/` 5개 파일을 별도 GitHub repo(`ella-yschoi/agentic-dev-pipeline`)로 분리. README.md(영문) 작성, `git init` → `gh repo create --public` → push
+3. **프로젝트 스킬 등록**: `.claude/skills/agentic-dev-pipeline/SKILL.md` 생성하여 Claude Code가 프로젝트 레벨에서 스킬 인식. `guide-agent-workflows.md`에 GitHub repo URL 반영
+
+검증: 116 tests passed, ruff/gitleaks/semgrep 통과. 9개 파일 변경, +339줄/-3줄.
+
+### 왜 했는가
+에이전트 인프라(훅, 스킬)가 로컬 머신 여기저기에 흩어져 있어 프레젠테이션에서 디렉토리 구조로 보여줄 수 없었고, 다른 사람이 repo를 클론해도 훅이 동작하지 않았다. agentic-dev-pipeline은 프로젝트 무관한 범용 도구인데 특정 로컬 경로에만 존재해서 공유가 불가능했다. "팀 전체를 빠르게 만드는 것"을 프레젠테이션에서 주장하려면 실제로 `git clone` 한 번으로 스킬을 설치할 수 있어야 했다.
+
+### 어떻게 했는가
+Hooks는 `cp -p`로 실행 권한 유지하면서 복사, `.claude/settings.json`에 PreToolUse(Bash → require-experiment-log, require-design-doc), PostToolUse(Edit|Write → lint-on-save, remind-design-doc / Bash → log-commit), Stop(verify-completion) 매핑. agentic-dev-pipeline은 5개 파일 복사 후 README.md를 영문으로 작성하고 `gh repo create --public --source=. --push`로 GitHub 공개 repo 생성. 프로젝트 스킬 등록은 SKILL.md를 repo의 것과 동일한 frontmatter로 `.claude/skills/agentic-dev-pipeline/`에 배치.
+
+---
+
 ## 2026-02-16 14:15 | `main`
 
 ### 무엇을 했는가
