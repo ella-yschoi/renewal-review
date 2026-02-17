@@ -60,3 +60,4 @@ jobs:
             - This is READ-ONLY. Only leave comments, do not modify any code.
             - Be concise. No praise, no filler.
             - If the PR is clean, leave a single approval comment.
+            - Write ALL comments in English.

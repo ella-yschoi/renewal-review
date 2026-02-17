@@ -56,7 +56,7 @@ jobs:
                - If any gate fails, read the error output, fix the code, and retry.
                - Repeat until all gates pass.
             5. Run triangular verification:
-               - Agent B: Read the code changes (git diff main...HEAD) and describe what they do WITHOUT reading requirements.
+               - Agent B: Identify ALL changed, staged, and new untracked files (use `git diff --name-only main...HEAD`, `git diff --name-only HEAD`, `git diff --name-only --cached`, and `git ls-files --others --exclude-standard`). Read those files and describe what they do WITHOUT reading requirements.
                - Agent C: Compare Agent B's description against the requirements file. Report discrepancies.
                - If discrepancies found, fix and retry from step 4.
             6. Once all gates and verification pass:
@@ -68,3 +68,4 @@ jobs:
             - Follow conventions.md strictly (no docstrings, type hints, files < 300 lines).
             - One logical change per commit.
             - Do NOT install new dependencies without explicit approval in the issue.
+            - Write ALL output (commit messages, PR descriptions, comments, documents) in English.

@@ -17,20 +17,14 @@ glowSeed: 14
 
 # Agent-Native Engineering
 
-### Insurance Renewal Review Pipeline
-
-<div class="pt-6 text-gray-400 text-lg">
-8,000 Policies · Rule + LLM Hybrid · 5x Faster
+<div class="pt-3 text-gray-400 text-lg">
+Compress a work week into one day
 </div>
 
 <div class="pt-6 text-sm text-gray-400 max-w-xl mx-auto">
 
-**Goal**: Agent-native setup → thorough planning → AI execution — compress a work week into one day.
+Ella Choi · Feb 2026
 
-</div>
-
-<div class="abs-br m-6 text-sm text-gray-500">
-  Yeonsu Choi · Feb 2026
 </div>
 
 <!--
@@ -62,13 +56,13 @@ glowSeed: 7
 # The Problem
 
 <div class="text-lg text-gray-400 mb-6">
-Each policy takes ~20 min to review manually — the hours add up fast
+Brokers review each policy manually
 </div>
 
 <div class="grid grid-cols-3 gap-6 max-w-2xl mx-auto">
 <v-click>
 <div class="border border-red-500/30 bg-red-950/20 rounded-lg p-5 text-center">
-  <div class="text-4xl font-bold text-red-400">Days</div>
+  <div class="text-4xl font-bold text-red-400">20min+</div>
   <div class="text-sm text-gray-400 pt-1">manual comparison</div>
 </div>
 </v-click>
@@ -87,7 +81,7 @@ Each policy takes ~20 min to review manually — the hours add up fast
 </div>
 
 <v-click>
-<div class="pt-8 text-base text-gray-300">
+<div class="pt-8 text-3xl text-gray-300">
 
 **Setup** → **Plan** → **Build** → **Experiment** → **Iterate**
 
@@ -97,12 +91,15 @@ Each policy takes ~20 min to review manually — the hours add up fast
 <!--
 Quandri blog의 A day in the life: With vs. without Quandri 글에 따르면,
 브로커가 정책을 하나하나 검토하는데, 정책 1건당 평균 20분이 소요된다고 합니다.
-리스크 카테고리들을 눈으로 체크해야 하고, 메모나 특약 텍스트에 숨어있는 위험 신호는 놓치기 쉽습니다.
+15개 이상의 리스크 카테고리들을 눈으로 체크해야 하고, 메모나 특약 텍스트에 숨어있는 위험 신호는 놓치기 쉽습니다.
 
-저의 접근 방식은 Setup → Plan → Build → Experiment → Iterate 였습니다.
+이러한 문제를 해결하기 위해 프로덕트 개발을 했습니다.
+개발 방식은 Setup → Plan → Build → Experiment → Iterate 였습니다.
 먼저 환경을 세팅하고, 계획을 세우고, 빠르게 만들고, 실험하고, 반복합니다.
 
-여기서 Setup이란, AI agent가 일을 잘 할 수 있는 환경을 먼저 만드는 것입니다.
+#### 여기서 Setup이란,
+
+AI agent가 일을 잘 할 수 있는 환경을 먼저 만드는 것입니다.
 예를 들면 CLAUDE.md로 행동 규칙 정의, convention.md로 코드 컨벤션 통일, Git Hooks로 품질 게이트(테스트·린터·보안 스캐너) 자동 강제, 그리고 보험 도메인 지식을 Custom Skill로 주입하는 것까지 포함합니다.
 
 이 흐름을 담아 발표를 진행하겠습니다.
@@ -114,10 +111,10 @@ glowSeed: 20
 
 # What I Built
 
-<div class="grid grid-cols-2 gap-5">
+<div class="grid grid-cols-2 gap-5 mt-6">
 <v-click>
-<div class="border border-cyan-500/30 bg-cyan-950/20 rounded-lg p-4">
-  <div class="text-cyan-400 font-bold mb-3">Processing Pipeline</div>
+<div class="border border-cyan-500/30 bg-cyan-950/20 rounded-lg p-6">
+  <div class="text-cyan-400 font-bold mb-5 text-2xl">Processing Pipeline</div>
   <div class="space-y-1.5 text-sm">
     <div>📥 8,000 Policies <span class="text-gray-500">(JSON / PostgreSQL)</span></div>
     <div class="text-gray-600 pl-6 text-xs">↓</div>
@@ -134,27 +131,38 @@ glowSeed: 20
 </div>
 </v-click>
 <v-click>
-<div class="border border-green-500/30 bg-green-950/20 rounded-lg p-4">
-  <div class="text-green-400 font-bold mb-3">Features</div>
+<div class="border border-green-500/30 bg-green-950/20 rounded-lg p-6">
+  <div class="text-green-400 font-bold mb-5 text-2xl">Features</div>
   <div class="space-y-2 text-sm">
-    <div>📊 Dashboard — batch overview, broker workflow tracking</div>
+    <div>📊 Dashboard — broker workflow tracking, reviews table</div>
     <div>🔎 Review Detail — diff, flags, inline quote generation</div>
-    <div>📈 Analytics — broker metrics, risk trends</div>
-    <div>📦 Portfolio Analyzer — bundles, duplicates</div>
     <div>🤖 LLM Insights — Review Recommended 100 sample</div>
+    <div>📦 Portfolio Analyzer — bundles, duplicates</div>
   </div>
-  <div class="mt-4 pt-3 border-t border-gray-700 text-xs text-gray-400">
-    116 tests · 20 endpoints · 6 pages · 8,000 policies &lt; 1s
+  <div class="mt-4 py-6 border-t border-gray-700 text-m text-gray-400">
+    116 tests · 20 endpoints · 6 pages · 8,000+ policies <br/>
+    <div text-3xl mt-3>&lt; 1s</div>
   </div>
 </div>
 </v-click>
 </div>
 
 <!--
-"왼쪽이 전체 파이프라인입니다. 구조화된 필드는 100% rule-based로 처리하고,
-비정형 텍스트(메모, 특약)만 LLM에 선별 투입해 비용 측면을 고려했습니다.
-오른쪽은 주요 기능입니다. — 대시보드, 개별 리뷰, 분석, 견적, 포트폴리오 입니다.
-프레젠테이션을 마치면 데모 페이지로 자세히 보실 수 있습니다."
+#### 우선 프로세싱 파이프라인 소개하겠습니다.
+
+- 8천 건의 보험 정책 데이터가 JSON 또는 PostgreSQL로 들어오면, 먼저 Parser가 ACORD 표준에 맞게 정규화합니다.
+- 그 다음 Diff Engine이 기존 계약과 갱신 계약을 필드 단위로 비교하고, Rule Flagger가 23개 규칙으로 변경 사항에 플래그를 매깁니다. 예를 들면 보험료 급등, 보장 축소, 공제액 변경 같은 것들이요.
+- 이 flag들을 종합해서 Risk Classifier가 4단계 위험 등급을 매깁니다. No Action, Review Recommended, Action Required, Urgent Review. 네 가지로 나누어 브로커에게 보여줍니다.
+- 여기까지가 100% rule-based이고, 마지막에 텍스트가 변경된 정책만 예를 들면 메모, 특약 같은 비정형 텍스트만 LLM에 선별 투입합니다. 전체의 5~15%만 LLM을 호출하도록 설계해서 비용 측면을 고려했습니다.
+
+#### 다음은 주요 기능입니다.
+
+- Dashboard에서는 배치 단위로 정책들의 전체 현황을 한눈에 보고, 브로커가 고객 연락 여부나 견적 발행 여부와 같은 워크플로우를 추적할 수 있습니다. 여기서는 rule-based로 정책 간의 숫자 비교 등 비교적 간단한 분석을 진행합니다.
+- Review Detail에서는 각 정책의 변경 사항과 플래그를 확인하고, 바로 해당 페이지에서 견적을 생성할 수 있습니다.
+- LLM Insights는 Review Recommended 등급 중 100건을 샘플링해서 LLM이 분석한 인사이트를 보여줍니다. 아까 Dashboard에서는 단순 숫자만 분석했다면, 이 LLM insights 페이지에서는 자연어 같은 비정형 텍스트까지 분석합니다. (참고로 원래는 모든 Review Recommended 등급의 정책들을 LLM 분석하는 것이지만, 비용상 데모에서는 100개만 샘플링하는 방향으로 진행했습니다.)
+- 마지막으로 Portfolio Analyzer에서는 동일 고객의 Auto + Home 묶음 계약을 한 화면에서 관리하고, 정책 간 중복/갭 탐지를 할 수 있습니다.
+
+프레젠테이션을 마치면 데모 페이지의 UI를 통해 자세히 보여드리겠습니다.
 -->
 
 ---
@@ -164,7 +172,7 @@ glowSeed: 3
 
 # The Speed Story
 
-<div class="grid grid-cols-[1fr_auto_1fr] gap-6 items-center max-w-2xl mx-auto">
+<div class="mt-6 grid grid-cols-[1fr_auto_1fr] gap-6 items-center max-w-2xl mx-auto">
 <v-click>
 <div class="border border-red-500/30 bg-red-950/20 rounded-lg p-6 text-center">
   <div class="text-5xl font-bold text-gray-500">5 days</div>
@@ -175,7 +183,7 @@ glowSeed: 3
 <v-click>
 <div class="border border-green-500/30 bg-green-950/20 rounded-lg p-6 text-center">
   <div class="text-5xl font-bold text-green-400">1 day</div>
-  <div class="text-sm text-green-400/70 pt-2">With AI (~4h · 5x faster)</div>
+  <div class="text-sm text-green-400/70 pt-2">With AI (~4h · 9x faster)</div>
 </div>
 </v-click>
 </div>
@@ -196,8 +204,8 @@ glowSeed: 3
 
 <!--
 시니어 개발자 기준으로 산정하면 이 시스템은 순수 소프트웨어 개발로 약 37시간, 5일 걸리는 작업입니다.
-하지만, AI agent로 코어 시스템을 하루 만에 완성했습니다. 5배 빠른 결과를 냈습니다.
-거기에 5가지 실험 — agent 오케스트레이션, 삼각검증, 자가수정 루프, LLM 벤치마크 — 까지 포함해서 총 2일에 완료했습니다.
+하지만, AI agent로 코어 시스템을 하루 만에 완성했습니다. 9배 빠른 결과를 냈습니다.
+거기에 뒤에서 소개해 드릴 5가지 실험까지 포함해서 총 2일에 완료했습니다.
 
 가장 크게 시간 절약을 했던 부분은 도메인 리서치 였습니다. 
 자세한 보험 도메인은 몰랐지만 ACORD 보험 표준을 Claude.md와 Skills에 주입하여, 별도 학습 없이 바로 모델링할 수 있었습니다.
@@ -209,7 +217,7 @@ glowSeed: 10
 
 # How: Agent-Native Setup
 
-<div class="grid grid-cols-2 gap-5">
+<div class="mt-6 grid grid-cols-2 gap-5">
 <v-click>
 <div class="border border-blue-500/30 bg-blue-950/20 rounded-lg p-4">
   <div class="text-blue-400 font-bold mb-2">Rulesets</div>
@@ -313,11 +321,15 @@ _"Not 'build me an insurance system' — a phased plan with exact files, signatu
 </v-click>
 
 <!--
-"코드를 쓰기 전에 문서 3개를 먼저 작성했습니다.
-requirements.md에 기능 요구사항과 성공 기준, design-doc.md에 아키텍처와 데이터 모델,
-implementation-plan.md에 Phase별 실행 계획.
+"코드를 쓰기 전에 문서 3개를 Claude Code와 함께 작성했습니다.
+먼저 보험 도메인 지식을 Custom Skill로 주입했습니다 — ACORD 표준, 용어, 커버리지 매핑.
+그 다음 저는 핵심 결정만 했습니다 — '8,000건 처리', 'rule + LLM hybrid', '헥사고날 아키텍처'.
+Agent가 그 결정을 기반으로 상세 스펙을 생성했습니다 — 기능 요구사항 9개, 골든 시나리오 5개, 임계값까지.
+사람은 '무엇을, 왜'를 결정하고, Agent가 '어떻게'를 상세화하는 겁니다.
+
 Agent에게 '보험 시스템 만들어줘'가 아니라 '이 순서로, 이 구조로, 이 기준을 통과하게' 라고 지시합니다.
-그리고 앞서 말했듯, design-doc은 코드 변경 시 훅으로 자동 업데이트를 강제합니다."
+그리고 앞서 말했듯, design-doc은 코드 변경 시 훅으로 자동 업데이트를 강제합니다.
+이 requirements.md는 나중에 코드 검증의 기준이 되기도 합니다 — 이건 잠시 후에 설명드리겠습니다."
 -->
 
 ---

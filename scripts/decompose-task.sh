@@ -106,6 +106,7 @@ The requirements file must include:
 4. API Endpoints — if new routes are needed
 5. Acceptance Criteria — checkbox list of verifiable conditions
 
+Write ALL output in English.
 Write the output as a standalone markdown file. Do NOT include code fences around the entire document.
 Output ONLY the markdown content, nothing else.
 " > "$REQUIREMENTS_FILE"
@@ -136,6 +137,7 @@ The task file must include:
 5. On Failure — what to do when each gate fails
 6. Completion Signal — <promise>LOOP_COMPLETE</promise>
 
+Write ALL output in English.
 Write the output as a standalone markdown file. Do NOT include code fences around the entire document.
 Output ONLY the markdown content, nothing else.
 " > "$TASK_FILE"
