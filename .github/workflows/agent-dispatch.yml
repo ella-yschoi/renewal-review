@@ -35,7 +35,7 @@ jobs:
         with:
           anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
           track_progress: true
-          claude_args: '--allowedTools "Bash,Edit,Read,Write,Glob,Grep" --disallowedTools "Bash(rm -rf:*),Bash(sudo:*)"'
+          disallowed_tools: "Bash(rm -rf:*),Bash(sudo:*)"
           prompt: |
             You are an autonomous agent implementing a feature from a GitHub issue.
 
