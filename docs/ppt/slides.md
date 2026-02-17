@@ -122,7 +122,7 @@ glowSeed: 20
     <div class="text-gray-600 pl-6 text-xs">↓</div>
     <div>🔍 Diff Engine · Prior vs Renewal</div>
     <div class="text-gray-600 pl-6 text-xs">↓</div>
-    <div>🚩 Rule Flagger · 22 rules → DiffFlags</div>
+    <div>🚩 Rule Flagger · 23 rules → DiffFlags</div>
     <div class="text-gray-600 pl-6 text-xs">↓</div>
     <div>⚠️ Risk Classifier · 4 levels</div>
     <div class="text-gray-600 pl-6 text-xs">↓</div>
@@ -140,7 +140,7 @@ glowSeed: 20
     <div>📦 Portfolio Analyzer — bundles, duplicates</div>
   </div>
   <div class="mt-4 py-6 border-t border-gray-700 text-m text-gray-400">
-    116 tests · 20 endpoints · 6 pages · 8,000+ policies <br/>
+    <br/>116 tests · 20 endpoints · 5 pages · 8,000+ policies <br/>
     <div text-3xl mt-3>&lt; 1s</div>
   </div>
 </div>
@@ -194,7 +194,7 @@ glowSeed: 3
 | Phase                   | AI     | Manual | Speedup |
 | ----------------------- | ------ | ------ | ------- |
 | Models + Parser (ACORD) | 30 min | 4h     | 8x      |
-| Diff Engine + 22 Rules  | 45 min | 6h     | 8x      |
+| Diff Engine + 23 Rules  | 45 min | 6h     | 8x      |
 | Mock Data (8,000)       | 20 min | 3h     | 9x      |
 | LLM Client + Prompts    | 30 min | 5h     | 10x     |
 | Batch + API + Frontend  | 75 min | 10h    | 8x      |
@@ -250,11 +250,14 @@ glowSeed: 10
     <div><span class="text-green-400">✅</span> Hypothesis — property-based</div>
   </div>
   <div class="border-t border-gray-700 mt-3 pt-3">
-    <div class="text-purple-400 font-bold mb-1 text-sm">Claude Code Hooks</div>
+    <div class="text-purple-400 font-bold mb-1 text-sm">Claude Code Hooks (6)</div>
     <div class="space-y-1 text-sm">
       <div>🔒 require-experiment-log</div>
       <div>🔒 require-design-doc</div>
       <div>💡 remind-design-doc</div>
+      <div>🧹 lint-on-save</div>
+      <div>📋 log-commit</div>
+      <div>✅ verify-completion</div>
     </div>
   </div>
 </div>
@@ -262,11 +265,21 @@ glowSeed: 10
 </div>
 
 <!--
-"Agent-native의 핵심은 agent에게 코드를 맡기는 게 아니라, agent가 일할 수 있는 환경을 먼저 만드는 것입니다.
-CLAUDE.md와 convention.md로 행동 규칙을 정의하고, 품질 게이트(테스트, 린터, 보안 스캐너)를 agent의 reward signal로 설정합니다.
+Agent-native의 핵심은 agent에게 코드를 맡기는 게 아니라, agent가 일할 수 있는 환경을 먼저 만드는 것입니다.
+
+#### CLAUDE.md와 convention.md
+
+우선 저는 CLAUDE.md와 convention.md로 행동 규칙을 정의하고, 품질 게이트(테스트, 린터, 보안 스캐너)를 agent의 reward signal로 설정했습니다.
 커밋할 때마다 자동으로 전부 실행되고, 통과하지 못하면 커밋 자체가 불가합니다.
 
-추가로 이 프로젝트를 위해서는 Claude Code Hook 3개를 만들었습니다. — 실험 로그 없이 커밋 불가, 코드 변경 시 design-doc 없이 커밋 불가 — 문서 업데이트를 자동으로 강제했습니다."
+#### Claude Code Hook
+
+추가로 이 프로젝트를 위해 Claude Code Hook 6개를 만들었습니다.
+- PreToolUse 훅 2개: 실험 로그 없이 커밋 불가, design-doc 없이 커밋 불가
+- PostToolUse 훅 3개: 파일 저장 시 자동 린트, design-doc 리마인드, 커밋 후 프레젠테이션 로그 리마인드
+- Stop 훅 1개: agent 종료 시 완료 검증
+
+이 6개 훅이 .claude/hooks/에 포함되어 있어 git clone만 하면 자동 적용됩니다.
 -->
 
 ---
@@ -275,14 +288,14 @@ glowSeed: 5
 
 # Documentation-Driven Planning
 
-<div class="grid grid-cols-3 gap-4">
+<div class="mt-6 grid grid-cols-3 gap-4">
 <v-click>
 <div class="border border-cyan-500/30 bg-cyan-950/20 rounded-lg p-4 h-full">
   <div class="text-cyan-400 font-bold mb-2">requirements.md</div>
   <div class="space-y-1.5 text-sm">
-    <div>FR-1~9 functional specs</div>
+    <div>5 functional categories</div>
     <div>Success criteria w/ numbers</div>
-    <div>5 golden eval scenarios</div>
+    <div>Golden set eval (90%+ target)</div>
     <div>NFR: &lt;10s for 8,000 policies</div>
   </div>
 </div>
@@ -292,8 +305,8 @@ glowSeed: 5
   <div class="text-green-400 font-bold mb-2">design-doc.md</div>
   <div class="space-y-1.5 text-sm">
     <div>5-layer hexagonal arch</div>
-    <div>8 Pydantic models</div>
-    <div>22 DiffFlags, 4 risk levels</div>
+    <div>27 Pydantic models (8 modules)</div>
+    <div>23 DiffFlags, 4 risk levels</div>
     <div>20 API endpoints</div>
     <div class="text-yellow-400">Auto-updated via hooks</div>
   </div>
@@ -303,33 +316,42 @@ glowSeed: 5
 <div class="border border-purple-500/30 bg-purple-950/20 rounded-lg p-4 h-full">
   <div class="text-purple-400 font-bold mb-2">implementation-plan.md</div>
   <div class="space-y-1.5 text-sm">
-    <div>Phase 0-2C roadmap</div>
-    <div>Per-phase: files, lines, commit</div>
-    <div>V1 (rule) → V2 (LLM)</div>
-    <div>Flag: <code>RR_LLM_ENABLED</code></div>
+    <div>Policy fields + risk thresholds</div>
+    <div>Rule engine → LLM rules</div>
+    <div>Batch monitoring specs</div>
+    <div>Coding conventions</div>
   </div>
 </div>
 </v-click>
 </div>
 
 <v-click>
-<div class="pt-5 text-center text-sm text-gray-400">
+<div class="pt-5 text-center text-xl text-gray-400">
 
-_"Not 'build me an insurance system' — a phased plan with exact files, signatures, and criteria."_
+_"Not 'build me an insurance system' - a phased plan with exact files, signatures, and criteria."_
 
 </div>
 </v-click>
 
 <!--
-"코드를 쓰기 전에 문서 3개를 Claude Code와 함께 작성했습니다.
-먼저 보험 도메인 지식을 Custom Skill로 주입했습니다 — ACORD 표준, 용어, 커버리지 매핑.
-그 다음 저는 핵심 결정만 했습니다 — '8,000건 처리', 'rule + LLM hybrid', '헥사고날 아키텍처'.
-Agent가 그 결정을 기반으로 상세 스펙을 생성했습니다 — 기능 요구사항 9개, 골든 시나리오 5개, 임계값까지.
-사람은 '무엇을, 왜'를 결정하고, Agent가 '어떻게'를 상세화하는 겁니다.
+코드를 쓰기 전에 문서 3개를 Claude Code와 함께 작성했습니다.
 
-Agent에게 '보험 시스템 만들어줘'가 아니라 '이 순서로, 이 구조로, 이 기준을 통과하게' 라고 지시합니다.
-그리고 앞서 말했듯, design-doc은 코드 변경 시 훅으로 자동 업데이트를 강제합니다.
-이 requirements.md는 나중에 코드 검증의 기준이 되기도 합니다 — 이건 잠시 후에 설명드리겠습니다."
+#### requirements.md
+
+먼저 ACORD 표준, 용어, 커버리지 매핑과 같은 보험 도메인 지식을 Custom Skill로 주입했습니다. 그리고 'rule + LLM hybrid', '헥사고날 아키텍처' 등 Agent가 이 결정을 바탕으로 기능 요구사항, Golden eval 기준(90%+ 목표), 성공 지표의 수치까지 상세화했습니다.
+
+#### design-doc.md
+
+아키텍처, 데이터 모델, API 표면을 문서화합니다.
+앞서 설명한 훅이 코드 변경 시 자동 업데이트를 강제하므로, 코드와 문서가 항상 동기화됩니다.
+
+#### implementation-plan.md
+
+데이터 구조와 임계값, 룰 엔진과 LLM 분석 규칙, 배치 모니터링 스펙, 코딩 컨벤션을 상세히 정의합니다. Agent가 구현할 때 참조하는 구체적인 규칙과 기준값이 여기에 있습니다.
+
+#### 핵심
+
+Agent에게 '보험 시스템 만들어줘'가 아니라 '이 순서로, 이 구조로, 이 기준을 통과하게' 라고 지시했습니다.
 -->
 
 ---
@@ -340,11 +362,11 @@ glowSeed: 22
 
 # Five Experiments
 
-<div class="text-sm text-gray-400 pb-4">
+<div class="text-lg text-gray-400 pb-6">
 Each answered a specific question about AI-assisted development
 </div>
 
-```mermaid {scale: 0.55}
+```mermaid {scale: 0.85}
 flowchart LR
     E1["<b>Exp 1</b><br/>SubAgent vs<br/>Agent Teams"] --> E2["<b>Exp 2</b><br/>Triangular<br/>Verification"]
     E2 --> E3["<b>Exp 3</b><br/>Agentic Dev<br/>Pipeline"]
@@ -360,7 +382,7 @@ flowchart LR
 
 <v-clicks>
 
-<div class="grid grid-cols-5 gap-4 pt-2 text-sm text-gray-400">
+<div class="grid grid-cols-5 gap-6 pt-4 text-base text-gray-400">
 <div class="text-center">Multiple agents?</div>
 <div class="text-center">Agents verify?</div>
 <div class="text-center">Automate fix?</div>
@@ -371,14 +393,15 @@ flowchart LR
 </v-clicks>
 
 <!--
-"5가지 실험을 순차적으로 진행했고, 각 실험은 이전 실험의 결과 위에 쌓입니다.
-실험을 간단하게 요약한다면 이와 같습니다. 자세한 내용은 다음 장부터 설명드리겠습니다.
+5가지 실험을 순차적으로 진행했고, 각 실험은 이전 실험의 결과 위에 쌓입니다.
 
-실험 1: 여러 agent를 동시에 돌릴 수 있는가?
-실험 2: agent끼리 서로 검증할 수 있는가?
-실험 3: 검증부터 수정까지 자동화할 수 있는가?
-실험 4: 그 파이프라인이 다른 기능에서도 재사용 가능한가?
-실험 5: 어떤 LLM provider가 이 도메인에 최적인가?"
+실험을 간단하게 요약한다면 이와 같습니다. 각 실험의 자세한 내용은 다음 장부터 설명드리겠습니다.
+
+- 실험 1: 여러 agent를 동시에 돌릴 수 있는가?
+- 실험 2: agent끼리 서로 검증할 수 있는가?
+- 실험 3: 구현 - 검증 - 수정까지 자동화할 수 있는가?
+- 실험 4: 그 파이프라인이 다른 기능과 다른 프로젝트에서도 재사용 가능한가?
+- 실험 5: 어떤 LLM provider가 이 도메인에 최적인가?
 -->
 
 ---
@@ -423,7 +446,7 @@ Team Lead
 </div>
 
 <v-click>
-<div class="pt-3">
+<div class="mt-4">
 
 | Metric | SubAgent           | Agent Teams        |
 | ------ | ------------------ | ------------------ |
@@ -431,13 +454,14 @@ Team Lead
 | Code   | 334 lines, 8 files | 335 lines, 8 files |
 | Tests  | 73 all pass        | 73 all pass        |
 
-<div class="text-sm text-gray-400 pt-1">~300 lines → SubAgent simpler. Agent Teams shines at scale with complex dependencies.</div>
+<div class="text-xl mt-4 text-gray-400">~300 lines → SubAgent simpler. Agent Teams shines at scale with complex dependencies.</div>
 
 </div>
 </v-click>
 
 <!--
-"동일한 과제 — Analytics 모듈 추가 — 기능 구현을 두 가지 방식으로 진행했습니다.
+SubAgent와 Agent Teams에게는 동일한 과제를 주어, 기능 구현을 두 가지 방식으로 진행했습니다.
+
 SubAgent는 오케스트레이터가 인터페이스 스펙을 프롬프트에 명시해서 병렬 디스패치합니다.
 Agent Teams는 TaskCreate로 태스크를 등록하고 의존성을 설정합니다.
 결과는 거의 동일 — 6분 안에 프로덕션 레디 모듈을 생성했습니다.
@@ -446,7 +470,7 @@ Agent Teams는 TaskCreate로 태스크를 등록하고 의존성을 설정합니
 다만, 이번 기능 구현과 같이 소규모에서는 SubAgent가 실용적이고,
 대규모 프로젝트에서 Teams의 태스크 추적/의존성 관리가 빛날 것입니다.
 
-한계를 개선한다면, 1000줄 이상의 멀티모듈 과제로 재실험하면 Teams의 장점이 드러날 것이라고 생각합니다."
+한계를 개선한다면, 1000줄 이상의 멀티모듈 과제로 재실험하면 Teams의 장점이 드러날 것이라고 생각합니다.
 -->
 
 ---
@@ -455,7 +479,7 @@ glowSeed: 12
 
 # Exp 2: Triangular Verification — Concept
 
-<div class="text-sm text-gray-400 mb-3">3-agent information isolation catches what linters cannot</div>
+<div class="text-sm text-gray-400 mb-6">3-agent information isolation catches what linters cannot</div>
 
 <div class="grid grid-cols-[1fr_auto_1fr] gap-4 items-center">
 <div class="space-y-3">
@@ -479,11 +503,14 @@ glowSeed: 12
 <div>
   <div class="text-center text-xl font-bold pb-3">PASS / FAIL</div>
 
-| Tool           | Catches          | Misses       |
-| -------------- | ---------------- | ------------ |
-| Ruff/Semgrep   | Syntax, security | Intent       |
-| Pytest         | Logic bugs       | Missing feat |
-| **Triangular** | **Intent, gaps** | UI           |
+<table class="text-sm w-full">
+  <thead><tr class="border-b border-gray-600"><th class="text-left py-1">Tool</th><th class="text-left py-1">Catches</th><th class="text-left py-1">Misses</th></tr></thead>
+  <tbody>
+    <tr class="text-blue-400"><td class="py-1">Ruff/Semgrep</td><td>Syntax, security</td><td>Intent</td></tr>
+    <tr class="text-yellow-400"><td class="py-1">Pytest</td><td>Logic bugs</td><td>Missing feat</td></tr>
+    <tr class="text-green-400 font-bold"><td class="py-1">Triangular</td><td>Intent, gaps</td><td>UI</td></tr>
+  </tbody>
+</table>
 
   <div class="pt-2 text-sm text-gray-400">B describes what code does. C compares against requirements.</div>
 </div>
@@ -491,12 +518,14 @@ glowSeed: 12
 </div>
 
 <!--
-"삼각 검증의 핵심은 정보 격리입니다.
-Agent B는 코드와 컨벤션만 보고 '이 코드가 뭘 하는지' 설명합니다. 요구사항은 보지 못합니다.
-Agent C는 요구사항과 B의 설명만 보고 '불일치가 있는가' 판단합니다. 코드는 보지 못합니다.
+두 번째로는 삼각 검증이라는 실험을 진행했습니다.
+삼각 검증의 핵심은 정보 격리 입니다.
+
+- Agent B는 코드와 컨벤션만 보고 '이 코드가 뭘 하는지' 설명합니다. 요구사항은 보지 못합니다.
+- Agent C는 요구사항과 B의 설명만 보고 '불일치가 있는가' 판단합니다. 코드는 보지 못합니다.
+
 이 세 관점 — 요구사항, 코드, 독립 분석 — 이 일치하면 PASS입니다.
-기존 도구(ruff, pytest, semgrep)는 구문과 보안만 체크했었으나,
-삼각 검증은 '의도대로 만들었는가'를 추가로 검증해, 개발자가 요구사항대로 잘 구현했는지 확인할 수 있습니다."
+기존 도구(ruff, pytest, semgrep)는 구문과 보안만 체크했었으나, 삼각 검증은 '의도대로 만들었는가'를 추가로 검증해, 개발자가 요구사항대로 잘 구현했는지 확인할 수 있습니다.
 -->
 
 ---
@@ -1057,58 +1086,6 @@ Quandri에서 Chloe와 이야기했을 때, 지금은 각 엔지니어가 자기
 -->
 
 ---
-layout: center
-glowSeed: 2
----
-
-# What I'd Improve
-
-<div class="grid grid-cols-2 gap-5 pt-2">
-<v-click>
-<div class="border border-red-500/30 bg-red-950/20 rounded-lg p-5">
-  <div class="text-red-400 font-bold mb-3">Limitations</div>
-  <div class="space-y-2 text-sm">
-    <div>Triangular <b>blind to UI</b> — Python only</div>
-    <div>5 test cases insufficient — need 20+</div>
-    <div>Prompt v2 cross-model regression</div>
-    <div>Loop speed — <code>--print</code> buffering +90s</div>
-    <div>Hexagonal added late — should be day 1</div>
-  </div>
-</div>
-</v-click>
-<v-click>
-<div class="border border-green-500/30 bg-green-950/20 rounded-lg p-5">
-  <div class="text-green-400 font-bold mb-3">With More Time</div>
-  <div class="space-y-2 text-sm">
-    <div>Frontend analysis skill for Agent B</div>
-    <div>30+ Langfuse cases for production</div>
-    <div>Model-specific prompt variants</div>
-    <div>Streaming output for loop</div>
-    <div>Architecture-aware skill from start</div>
-    <div>Batch ingestion API for BMS</div>
-  </div>
-</div>
-</v-click>
-</div>
-
-<v-click>
-<div class="pt-5 text-center text-sm text-gray-300 max-w-2xl mx-auto">
-
-> _"Agent-native isn't delegating code to AI. It's building an environment where AI does its best work — rulesets, quality gates, clear plans. Then a week becomes two days."_
-
-</div>
-</v-click>
-
-<!--
-"한계와 개선 방향입니다.
-삼각 검증은 UI를 못 봅니다 — 프론트엔드 분석 skill을 추가하면 됩니다.
-Langfuse 테스트 케이스 5개는 부족합니다 — 프로덕션 결정 전 30개 이상 필요합니다.
-프롬프트 개선은 모든 대상 모델에서 회귀 테스트가 필수입니다.
-헥사고날 아키텍처는 늦게 추가했는데, 다시 한다면 처음부터 convention.md에 넣겠습니다.
-Agent-native는 AI에게 코드를 맡기는 게 아니라, AI가 잘 일할 수 있는 환경을 만드는 것입니다."
--->
-
----
 glowSeed: 21
 ---
 
@@ -1153,6 +1130,17 @@ Issue (tier:one-shot)
 </v-click>
 </div>
 
+<v-click>
+<div class="border border-amber-500/30 bg-amber-950/20 rounded-lg p-3 mt-4">
+  <div class="text-amber-400 font-bold mb-2">E2E Test Findings</div>
+  <div class="grid grid-cols-3 gap-4 text-sm">
+    <div><span class="text-green-400">&#10003;</span> Code Review Bot — PR 자동 리뷰 정상 동작</div>
+    <div><span class="text-red-400">&#10007;</span> Bash 기본 차단 → <code>claude_args</code>로 명시 허용</div>
+    <div><span class="text-red-400">&#10007;</span> Agent Mode 라우팅 → <code>track_progress: true</code>로 해결</div>
+  </div>
+</div>
+</v-click>
+
 <!--
 "아티클의 3-Tier Task Framework를 GitHub Actions로 구현했습니다.
 One-Shot 이슈에 라벨을 붙이면 agent-dispatch 워크플로우가 자동으로 트리거됩니다.
@@ -1166,6 +1154,90 @@ claude_args로 Bash를 명시적으로 허용하되, rm -rf와 sudo는 차단했
 둘째, prompt 입력이 있으면 Agent Mode로 라우팅되어 PR이 생성되지 않습니다.
 track_progress: true로 Tag Mode를 강제해야 자동 브랜치 → 커밋 → PR 체인이 동작합니다.
 Code Review Bot은 첫 PR에서 정상 동작을 확인했습니다."
+-->
+
+---
+layout: center
+glowSeed: 2
+---
+
+# What I'd Improve
+
+<div class="grid grid-cols-2 gap-5 pt-2">
+<v-click>
+<div class="border border-red-500/30 bg-red-950/20 rounded-lg p-5">
+  <div class="text-red-400 font-bold mb-3">Limitations</div>
+  <div class="space-y-2 text-sm">
+    <div>Triangular <b>blind to UI</b> — Python only</div>
+    <div>5 test cases insufficient — need 20+</div>
+    <div>Prompt v2 cross-model regression</div>
+    <div>Loop speed — <code>--print</code> buffering +90s</div>
+    <div>Hexagonal added late — should be day 1</div>
+  </div>
+</div>
+</v-click>
+<v-click>
+<div class="border border-green-500/30 bg-green-950/20 rounded-lg p-5">
+  <div class="text-green-400 font-bold mb-3">With More Time</div>
+  <div class="space-y-2 text-sm">
+    <div>Frontend analysis skill for Agent B</div>
+    <div>30+ Langfuse cases for production</div>
+    <div>Model-specific prompt variants</div>
+    <div>Streaming output for loop</div>
+    <div>Architecture-aware skill from start</div>
+    <div>Batch ingestion API for BMS</div>
+  </div>
+</div>
+</v-click>
+</div>
+
+<!--
+"한계와 개선 방향입니다.
+삼각 검증은 UI를 못 봅니다 — 프론트엔드 분석 skill을 추가하면 됩니다.
+Langfuse 테스트 케이스 5개는 부족합니다 — 프로덕션 결정 전 30개 이상 필요합니다.
+프롬프트 개선은 모든 대상 모델에서 회귀 테스트가 필수입니다.
+헥사고날 아키텍처는 늦게 추가했는데, 다시 한다면 처음부터 convention.md에 넣겠습니다."
+-->
+
+---
+layout: center
+glowSeed: 16
+---
+
+# Key Takeaways
+
+<div class="space-y-6 pt-4 max-w-2xl mx-auto">
+<v-click>
+<div class="border border-blue-500/30 bg-blue-950/20 rounded-lg p-5">
+  <div class="text-blue-400 font-bold text-lg">1. Agent-Native = Design the Environment First</div>
+  <div class="text-sm text-gray-400 pt-2">Rulesets + Quality Gates + Domain Skills — then let AI execute.</div>
+</div>
+</v-click>
+<v-click>
+<div class="border border-yellow-500/30 bg-yellow-950/20 rounded-lg p-5">
+  <div class="text-yellow-400 font-bold text-lg">2. Failure = Data</div>
+  <div class="text-sm text-gray-400 pt-2">Failure output becomes next iteration's input. Don't stop — feed it back.</div>
+</div>
+</v-click>
+<v-click>
+<div class="border border-green-500/30 bg-green-950/20 rounded-lg p-5">
+  <div class="text-green-400 font-bold text-lg">3. Experiment → Package → Share</div>
+  <div class="text-sm text-gray-400 pt-2">One engineer's experiment becomes the whole team's asset.</div>
+</div>
+</v-click>
+</div>
+
+<!--
+"마지막으로 세 가지만 기억해 주시면 좋겠습니다.
+
+첫째, Agent-Native는 AI에게 코드를 맡기는 게 아니라, AI가 잘 일할 수 있는 환경을 먼저 설계하는 것입니다.
+룰셋, 품질 게이트, 도메인 스킬을 세팅한 다음에 AI가 실행하게 합니다.
+
+둘째, 실패는 데이터입니다. 실패 출력을 다음 반복의 입력으로 넘기면 agent가 스스로 수정합니다.
+멈출 이유가 아니라, 다음 시도를 더 정확하게 만드는 정보입니다.
+
+셋째, 한 사람이 실험하고, 패키징하고, 팀 전체가 쓸 수 있게 만드는 것.
+빠르게 만드는 것뿐 아니라, 팀 전체를 빠르게 만드는 것이 목표입니다."
 -->
 
 ---
@@ -1190,7 +1262,7 @@ glowSeed: 14
 
 <div class="pt-8 text-sm text-gray-500">
 
-github.com/[repo] · Yeonsu Choi
+Yeonsu Choi
 
 </div>
 
