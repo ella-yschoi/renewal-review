@@ -4,11 +4,11 @@ COPY --from=ghcr.io/astral-sh/uv:latest /uv /usr/local/bin/uv
 
 WORKDIR /app
 
-# 의존성 먼저 복사 → 레이어 캐싱
+# Copy dependencies first → layer caching
 COPY pyproject.toml uv.lock ./
 RUN uv sync --frozen --no-dev
 
-# 앱 코드 복사
+# Copy app code
 COPY app/ app/
 COPY data/ data/
 

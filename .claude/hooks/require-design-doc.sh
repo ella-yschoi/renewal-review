@@ -20,7 +20,7 @@ fi
 DOC_STAGED=$(git diff --cached --name-only 2>/dev/null | grep 'design-doc.md')
 if [ -z "$DOC_STAGED" ]; then
   cat <<'BLOCK'
-{"decision": "block", "reason": "app/ 또는 tests/ 코드가 변경되었지만 docs/design-doc.md가 staging에 없습니다.\n\n관련 섹션을 업데이트하세요:\n- 1. Architecture — 새 모듈/계층 추가 시\n- 2. Data Model — 모델 변경 시\n- 3. Processing Pipeline — 처리 흐름 변경 시\n- 4. API Surface — 엔드포인트 추가/변경 시\n- 5. UI — 페이지/템플릿 변경 시\n- 6. Error Handling — 에러 처리 추가 시\n- 7. Testing Strategy — 테스트 추가 시\n- 8. Tech Stack — 의존성 변경 시\n\n업데이트 후 git add docs/design-doc.md 하고 다시 커밋하세요."}
+{"decision": "block", "reason": "app/ or tests/ code was changed but docs/design-doc.md is not staged.\n\nUpdate the relevant section:\n- 1. Architecture — when adding new modules/layers\n- 2. Data Model — when changing models\n- 3. Processing Pipeline — when changing processing flow\n- 4. API Surface — when adding/changing endpoints\n- 5. UI — when changing pages/templates\n- 6. Error Handling — when adding error handling\n- 7. Testing Strategy — when adding tests\n- 8. Tech Stack — when changing dependencies\n\nAfter updating, run git add docs/design-doc.md and commit again."}
 BLOCK
   exit 0
 fi

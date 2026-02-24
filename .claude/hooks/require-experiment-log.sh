@@ -35,7 +35,7 @@ fi
 
 if [ -n "$MISSING" ]; then
   cat <<BLOCK
-{"decision": "block", "reason": "커밋 전에 로그를 작성하세요.\n\n누락: ${MISSING}\n\n실험 로그 (docs/logs/experiments-log.md):\n## YYYY-MM-DD HH:MM | 브랜치명\n### 무엇을 했는가\n### 왜 했는가\n### 어떻게 했는가\n\n프레젠테이션 로그 (docs/logs/presentation-log.md):\n> Context: / Result: / Insight:\n\n작성 후 git add 하고 다시 커밋하세요."}
+{"decision": "block", "reason": "Write the logs before committing.\n\nMissing: ${MISSING}\n\nExperiment log (docs/logs/experiments-log.md):\n## YYYY-MM-DD HH:MM | branch-name\n### What was done\n### Why it was done\n### How it was done\n\nPresentation log (docs/logs/presentation-log.md):\n> Context: / Result: / Insight:\n\nAfter writing, run git add and commit again."}
 BLOCK
   exit 0
 fi

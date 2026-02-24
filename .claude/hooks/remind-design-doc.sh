@@ -20,5 +20,5 @@ fi
 
 # First code edit in this batch — remind once
 touch "$FLAG"
-echo "코드 변경 감지 ($(basename "$FILE_PATH")). 커밋 전에 docs/design-doc.md 관련 섹션을 업데이트하세요."
+echo "Code change detected ($(basename "$FILE_PATH")). Update the relevant section of docs/design-doc.md before committing."
 exit 0

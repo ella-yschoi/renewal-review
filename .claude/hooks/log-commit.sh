@@ -20,7 +20,7 @@ fi
 # Check if presentation-log.md was part of this commit
 COMMITTED=$(git diff-tree --no-commit-id --name-only -r HEAD 2>/dev/null)
 if ! echo "$COMMITTED" | grep -q 'presentation-log.md'; then
-  echo "주의: 이 커밋에 docs/presentation-log.md가 포함되지 않았습니다. 프레젠테이션 로그 업데이트가 필요하면 별도 커밋으로 추가하세요."
+  echo "Note: docs/presentation-log.md was not included in this commit. If a presentation log update is needed, add it in a separate commit."
 fi
 
 exit 0
