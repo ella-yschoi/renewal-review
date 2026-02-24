@@ -37,77 +37,77 @@ Before making any code change, read `.claude/rules/conventions.md` in the repo r
 - Git: 2.39.2
 - Main branch: `main`
 
-## 실험 로그 (experiment 브랜치 전용)
+## Experiment Logs (experiment/ branches only)
 
-experiment/ 브랜치에서 커밋할 때 **두 파일 모두** 작성하고 staging에 포함해야 한다. 훅이 둘 다 체크하며, 누락 시 커밋을 차단한다.
+When committing on an experiment/ branch, **both files** must be written and staged. The hook checks both and blocks the commit if either is missing.
 
-### 1. 실험 로그 — `docs/logs/experiments-log.md`
-
-```markdown
-## YYYY-MM-DD HH:MM | `브랜치명`
-
-### 무엇을 했는가
-구체적 작업 내용. 정량 결과 (시간, 파일 수, 테스트 수) 포함.
-
-### 왜 했는가
-프로젝트/실험 맥락에서 이 작업이 필요한 이유.
-
-### 어떻게 했는가
-구현 방식, 도구, 결정과 그 이유.
-```
-
-### 2. 프레젠테이션 로그 — `docs/logs/presentation-log.md`
+### 1. Experiment Log — `docs/logs/experiments-log.md`
 
 ```markdown
-### YYYY-MM-DD HH:MM | `브랜치명` | `해시`
+## YYYY-MM-DD HH:MM | `branch-name`
 
-**커밋 메시지**
+### What was done
+Specific work performed. Include quantitative results (time, file count, test count).
 
-_diff 통계_
+### Why it was done
+Why this work was needed in the context of the project/experiment.
 
-> **Context**: 이 커밋의 맥락과 의도
-> **Result**: 결과 또는 변경 효과
-> **Insight**: 청중이 기억할 한 문장
+### How it was done
+Implementation approach, tools used, decisions and rationale.
 ```
 
-### 규칙
+### 2. Presentation Log — `docs/logs/presentation-log.md`
 
-- **최신순 정렬** — 새 엔트리는 항상 맨 위에 추가한다. 두 로그 파일 모두 동일하게 적용.
-- **밴쿠버 시간** — 타임스탬프는 `TZ=America/Vancouver date "+%Y-%m-%d %H:%M"` 으로 확인한 시간을 사용한다. 추정하지 말 것.
-- 프레젠테이션 소스로 쓸 것이므로 구체적이고 맥락이 풍부하게 작성
-- 커밋 메시지 수준이 아니라, "이 작업을 모르는 사람이 읽어도 이해할 수 있는" 수준
-- 한국어로 작성 (나중에 영어로 번역 예정)
-- 의도와 맥락에 집중 — 파일 목록 나열 불필요
+```markdown
+### YYYY-MM-DD HH:MM | `branch-name` | `hash`
 
-## Design Doc 자동 업데이트
+**Commit message**
 
-코드(`app/`, `tests/`)를 변경하면 `docs/design-doc.md`의 관련 섹션을 함께 업데이트한다.
-별도 요청 없이 자동으로 수행하며, 커밋 시 design-doc.md가 staging에 없으면 훅이 블록한다.
+_diff stats_
 
-| 변경 대상 | 업데이트 섹션 |
-|-----------|--------------|
-| 새 모듈/파일 추가, 계층 구조 변경 | 1. Architecture |
-| Pydantic/SQLAlchemy 모델 | 2. Data Model |
-| engine/ 비즈니스 로직 | 3. Processing Pipeline |
-| routes/ 엔드포인트 | 4. API Surface |
+> **Context**: The context and intent of this commit
+> **Result**: Outcome or effect of the change
+> **Insight**: One sentence the audience should remember
+```
+
+### Rules
+
+- **Reverse chronological order** — new entries always go at the top. Applies to both log files.
+- **Vancouver time** — use the timestamp from `TZ=America/Vancouver date "+%Y-%m-%d %H:%M"`. Do not estimate.
+- Write with enough detail and context to serve as a presentation source
+- Not commit-message level — write so that "someone unfamiliar with this work can still understand it"
+- Write in English
+- Focus on intent and context — no need to list files
+
+## Design Doc Auto-Update
+
+When changing code (`app/`, `tests/`), update the relevant section of `docs/design-doc.md` alongside it.
+This is done automatically without a separate request. The hook blocks commits if design-doc.md is not staged.
+
+| Change Target | Section to Update |
+|--------------|-------------------|
+| New module/file added, layer structure change | 1. Architecture |
+| Pydantic/SQLAlchemy models | 2. Data Model |
+| engine/ business logic | 3. Processing Pipeline |
+| routes/ endpoints | 4. API Surface |
 | templates/ HTML | 5. UI |
-| 에러 처리, 예외 핸들링 | 6. Error Handling |
-| tests/ 테스트 추가 | 7. Testing Strategy |
-| pyproject.toml 의존성 | 8. Tech Stack |
+| Error handling, exception handling | 6. Error Handling |
+| tests/ test additions | 7. Testing Strategy |
+| pyproject.toml dependencies | 8. Tech Stack |
 
-### 규칙
+### Rules
 
-- 변경과 무관한 섹션은 건드리지 않는다
-- 아직 비어 있는 섹션은 해당 변경에 맞춰 처음 작성한다
-- 기존 내용이 있으면 변경 부분만 업데이트한다
-- 구현과 일치하는 정확한 내용만 작성한다 (추측 금지)
+- Do not touch sections unrelated to the change
+- If a section is still empty, write it for the first time based on the change
+- If existing content exists, only update the changed parts
+- Write only accurate content that matches the implementation (no guessing)
 
 ## Insurance Domain
 
-보험 갱신(renewal) 리뷰 시스템. ACORD 표준 기반 Personal Lines (Auto + Home).
-핵심 용어: Renewal(갱신), Endorsement(특약), Premium(보험료), Deductible(공제액), Liability Limit(배상한도), Coverage(보장), Bundle(묶음), SR-22(고위험증명).
-`domain/models/`, `domain/services/`, `adaptor/llm/` 변경 시 `/insurance-domain` 스킬을 참조할 것.
-현재 모델은 ACORD 표준 대비 UIM/PIP, Loss History, HO Form Type 등이 미구현 — 스킬에 갭 분석 포함.
+Insurance renewal review system. ACORD standard-based Personal Lines (Auto + Home).
+Key terms: Renewal, Endorsement, Premium, Deductible, Liability Limit, Coverage, Bundle, SR-22 (high-risk certification).
+When modifying `domain/models/`, `domain/services/`, or `adaptor/llm/`, refer to the `/insurance-domain` skill.
+Current models lack UIM/PIP, Loss History, HO Form Type, etc. compared to ACORD standards — gap analysis included in the skill.
 
 ## What NOT to Do
 

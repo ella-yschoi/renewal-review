@@ -24,19 +24,19 @@
 
 ## Architecture (Hexagonal)
 
-의존성 방향: `api/` → `application/` → `domain/` ← `adaptor/`
+Dependency direction: `api/` → `application/` → `domain/` ← `adaptor/`
 
-- `domain/`은 외부 모듈을 import하지 않는다 (`ports/` Protocol만 정의)
-- `application/`은 `domain/` + `ports/`만 import한다 (구현체 X)
-- `api/`와 `adaptor/`는 어떤 레이어든 import 가능
-- `infra/`는 와이어링 전용
+- `domain/` must not import external modules (only defines `ports/` Protocols)
+- `application/` may only import `domain/` + `ports/` (no concrete implementations)
+- `api/` and `adaptor/` may import any layer
+- `infra/` is for wiring only
 
 ## Design Patterns
 
-1. 유한 값 집합 필드는 `StrEnum` 사용 (bare `str` 금지)
-2. engine 숫자 리터럴 임계값 금지 → `config.py`에 정의
-3. 라우트에 모듈 레벨 mutable state 금지 → `Depends()`로 접근
-4. engine 함수는 입력 파라미터 mutation 금지 → `model_copy(update=...)` 사용
+1. Use `StrEnum` for finite value set fields (no bare `str`)
+2. No numeric literal thresholds in engine — define in `config.py`
+3. No module-level mutable state in routes — access via `Depends()`
+4. Engine functions must not mutate input parameters — use `model_copy(update=...)`
 
 ## File Organization
 
