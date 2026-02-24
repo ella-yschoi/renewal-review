@@ -1,6 +1,6 @@
-"""Langfuse Dataset 생성 스크립트.
+"""Langfuse Dataset creation script.
 
-3개 Dataset을 Langfuse에 등록한다:
+Registers 3 datasets in Langfuse:
   - risk-signal-benchmark (notes → risk signals)
   - endorsement-benchmark (prior/renewal endorsement → material change)
   - coverage-benchmark (prior/renewal coverage → equivalence)

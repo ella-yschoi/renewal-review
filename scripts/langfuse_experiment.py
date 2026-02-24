@@ -1,7 +1,7 @@
-"""Langfuse Experiment 실행 스크립트.
+"""Langfuse Experiment runner script.
 
-등록된 3개 Dataset에 대해 OpenAI / Anthropic 두 provider로 실험을 실행한다.
-각 실험 결과는 Langfuse에 trace + generation으로 기록되어 대시보드에서 비교 가능.
+Runs experiments on 3 registered datasets with OpenAI / Anthropic providers.
+Each experiment result is recorded as a trace + generation in Langfuse for dashboard comparison.
 
 Usage:
     uv run python scripts/langfuse_experiment.py
@@ -20,13 +20,12 @@ import re
 import sys
 import time
 
-from dotenv import load_dotenv
-from langfuse import Evaluation, Langfuse
-
 from app.adaptor.llm.prompts import (
     ENDORSEMENT_COMPARISON,
     RISK_SIGNAL_EXTRACTOR,
 )
+from dotenv import load_dotenv
+from langfuse import Evaluation, Langfuse
 
 
 def _check_env():
