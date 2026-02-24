@@ -1,33 +1,33 @@
-# Agent Workflows — 팀 가이드
+# Agent Workflows — Team Guide
 
-이 프로젝트는 **Agentic Dev Pipeline**, **Issue Dispatch**, **Code Review Bot** 3가지 에이전트 워크플로우를 사용한다.
+This project uses three agent workflows: **Agentic Dev Pipeline**, **Issue Dispatch**, and **Code Review Bot**.
 
 ---
 
-## 전체 흐름 (End-to-End)
+## End-to-End Flow
 
 ```
 GitHub Issue (tier:one-shot label)
   │
-  ▼ ① agent-dispatch.yml 트리거
+  ▼ ① agent-dispatch.yml trigger
   Task Decomposition (claude-code-action)
-  → requirements + task 파일 생성
+  → requirements + task file generation
   │
   ▼ ② Agentic Dev Pipeline
-  구현 → 품질 게이트 → 삼각 검증 → 수정 반복
+  Implementation → Quality Gate → Triangular Verification → Fix Loop
   │
-  ▼ ③ PR 생성 (closes #issue)
+  ▼ ③ PR creation (closes #issue)
   │
-  ▼ ④ code-review.yml 자동 트리거
-  Code Review Bot → 코멘트
+  ▼ ④ code-review.yml auto-trigger
+  Code Review Bot → comments
 ```
 
-**로컬 진입점:**
+**Local entry point:**
 ```bash
-# 로컬에서 직접 실행
+# Run directly from local
 bash scripts/decompose-task.sh --run "feature description"
 
-# GitHub Issue로 디스패치 (CI/CD 트리거)
+# Dispatch via GitHub Issue (CI/CD trigger)
 bash scripts/decompose-task.sh --dispatch "feature description"
 ```
 
@@ -35,104 +35,104 @@ bash scripts/decompose-task.sh --dispatch "feature description"
 
 ## 3-Tier Task Taxonomy
 
-| Tier | Label | 처리 방식 | Issue Template |
+| Tier | Label | Processing Method | Issue Template |
 |------|-------|----------|----------------|
-| One-Shot | `tier:one-shot` | AI 자율 처리 (dispatch → pipeline → PR) | tier-one-shot.yml |
-| Manageable | `tier:manageable` | Background agent + 엔지니어 감독 | tier-manageable.yml |
-| Complex | `tier:complex` | 엔지니어 주도, 동기 작업 | tier-complex.yml |
+| One-Shot | `tier:one-shot` | AI autonomous processing (dispatch → pipeline → PR) | tier-one-shot.yml |
+| Manageable | `tier:manageable` | Background agent + engineer supervision | tier-manageable.yml |
+| Complex | `tier:complex` | Engineer-led, synchronous work | tier-complex.yml |
 
 ---
 
 ## Issue Dispatch (GitHub Actions)
 
-`tier:one-shot` 라벨이 붙은 이슈가 생성되면 `.github/workflows/agent-dispatch.yml`이 자동 트리거된다.
+When an issue with the `tier:one-shot` label is created, `.github/workflows/agent-dispatch.yml` is automatically triggered.
 
-1. 이슈 내용을 읽고 requirements + task 파일 생성
-2. Agentic Dev Pipeline 실행 (구현 → 품질 게이트 → 삼각 검증)
-3. PR 생성 (closes #issue)
+1. Read the issue content and generate requirements + task files
+2. Run the Agentic Dev Pipeline (implementation → quality gate → triangular verification)
+3. Create a PR (closes #issue)
 
-**필수 Secret**: `ANTHROPIC_API_KEY` (GitHub Settings → Secrets → Actions)
+**Required Secret**: `ANTHROPIC_API_KEY` (GitHub Settings → Secrets → Actions)
 
 ---
 
 ## Code Review Bot (GitHub Actions)
 
-PR이 열리면 `.github/workflows/code-review.yml`이 자동 트리거된다.
+When a PR is opened, `.github/workflows/code-review.yml` is automatically triggered.
 
-검토 기준:
-- **컨벤션**: conventions.md 준수 (no docstrings, type hints, < 300줄, StrEnum, hexagonal)
-- **버그**: off-by-one, null handling, 누락된 에러 처리
-- **보안**: OWASP Top 10, 하드코딩된 시크릿, 미검증 입력
-- **개선점**: 더 간단한 대안, 누락된 테스트 커버리지
+Review criteria:
+- **Conventions**: conventions.md compliance (no docstrings, type hints, < 300 lines, StrEnum, hexagonal)
+- **Bugs**: off-by-one, null handling, missing error handling
+- **Security**: OWASP Top 10, hardcoded secrets, unvalidated input
+- **Improvements**: simpler alternatives, missing test coverage
 
-읽기 전용 — 코멘트만 작성하고 코드를 수정하지 않는다.
+Read-only — only writes comments, does not modify code.
 
 ---
 
-## Task Decomposition (로컬 스크립트)
+## Task Decomposition (Local Script)
 
 ```bash
-# requirements + task 파일만 생성
+# Generate requirements + task files only
 bash scripts/decompose-task.sh "Add CSV export to analytics"
 
-# 생성 후 파이프라인까지 자동 실행
+# Generate then automatically run the pipeline
 bash scripts/decompose-task.sh --run "Add CSV export to analytics"
 
-# 생성 → 커밋 → 푸시 → GitHub Issue 생성 → CI/CD 자동 트리거
+# Generate → commit → push → create GitHub Issue → CI/CD auto-trigger
 bash scripts/decompose-task.sh --dispatch "Add CSV export to analytics"
 ```
 
-`docs/experiments/` 에 `{N}-requirements-{slug}.md`와 `{N}-task-{slug}.md`를 자동 생성한다.
+Automatically generates `{N}-requirements-{slug}.md` and `{N}-task-{slug}.md` in `docs/experiments/`.
 
-### 3가지 모드
+### Three Modes
 
-| 모드 | 명령 | 동작 |
+| Mode | Command | Behavior |
 |------|------|------|
-| 생성만 | `decompose-task.sh "desc"` | requirements + task 파일 생성 |
-| 로컬 실행 | `--run "desc"` | 생성 → agentic-dev-pipeline 실행 |
-| 디스패치 | `--dispatch "desc"` | 생성 → git commit → push → GitHub Issue (`tier:one-shot`) → CI/CD 자동 트리거 |
+| Generate only | `decompose-task.sh "desc"` | Generate requirements + task files |
+| Local execution | `--run "desc"` | Generate → run agentic-dev-pipeline |
+| Dispatch | `--dispatch "desc"` | Generate → git commit → push → GitHub Issue (`tier:one-shot`) → CI/CD auto-trigger |
 
-`--dispatch` 흐름:
-1. requirements + task 파일 생성
-2. `git add` + `git commit` (계획 파일만)
-3. `git push -u origin <현재 브랜치>`
-4. `gh issue create --label "tier:one-shot"` — 이슈 본문에 requirements 포함
-5. `agent-dispatch.yml` 워크플로우 자동 트리거
+`--dispatch` flow:
+1. Generate requirements + task files
+2. `git add` + `git commit` (plan files only)
+3. `git push -u origin <current branch>`
+4. `gh issue create --label "tier:one-shot"` — issue body includes requirements
+5. `agent-dispatch.yml` workflow auto-triggers
 
-**필수 도구**: `--dispatch`는 `gh` CLI (GitHub CLI)가 필요하다.
+**Required tool**: `--dispatch` requires `gh` CLI (GitHub CLI).
 
 ---
 
-## Agentic Dev Pipeline (스킬)
+## Agentic Dev Pipeline (Skill)
 
-이 프로젝트는 **agentic-dev-pipeline 스킬**을 사용한다.
-스킬은 GitHub repo에서 관리되며, **Python/Node/Rust/Go 어떤 프로젝트에서든** 사용 가능하다.
+This project uses the **agentic-dev-pipeline skill**.
+The skill is managed in a GitHub repo and can be used with **any Python/Node/Rust/Go project**.
 
-설치:
+Installation:
 ```bash
 git clone https://github.com/ella-yschoi/agentic-dev-pipeline.git ~/.agents/skills/agentic-dev-pipeline
 ```
 
-기능 요구사항을 task 파일 하나로 정의하면, AI가 구현 → 품질 검증 → 의도 검증 → 자가 수정까지 **사람 개입 없이** 반복 실행한다.
+Define feature requirements in a single task file, and the AI will iteratively run implementation → quality verification → intent verification → self-correction **without human intervention**.
 
 ---
 
-## 스킬 위치
+## Skill Location
 
 ```
 ~/.agents/skills/agentic-dev-pipeline/
-├── SKILL.md                  ← Skill 정의 (Claude Code가 읽음)
-├── detect-project.sh         ← 프로젝트 자동 감지 라이브러리
-├── agentic-dev-pipeline.sh   ← 메인 루프 스크립트
-├── triangular-verify.sh      ← 삼각 검증 스크립트
-└── PROMPT-TEMPLATE.md        ← 범용 PROMPT 템플릿
+├── SKILL.md                  ← Skill definition (read by Claude Code)
+├── detect-project.sh         ← Project auto-detection library
+├── agentic-dev-pipeline.sh   ← Main loop script
+├── triangular-verify.sh      ← Triangular verification script
+└── PROMPT-TEMPLATE.md        ← General-purpose PROMPT template
 ```
 
-## 이 프로젝트에서 자동 감지되는 설정
+## Auto-Detected Settings for This Project
 
-`detect-project.sh`가 프로젝트 루트의 파일 구조를 분석하여 린트/테스트/보안 명령을 자동 결정한다. 환경변수로 오버라이드 가능.
+`detect-project.sh` analyzes the file structure at the project root to automatically determine lint/test/security commands. Can be overridden with environment variables.
 
-| 항목 | 감지 결과 |
+| Item | Detection Result |
 |------|----------|
 | Project Type | Python (`pyproject.toml`) |
 | Lint | `make lint` (Makefile target) |
@@ -144,29 +144,29 @@ git clone https://github.com/ella-yschoi/agentic-dev-pipeline.git ~/.agents/skil
 
 ---
 
-## 전제 조건
+## Prerequisites
 
-### 도구
+### Tools
 
-| 도구 | 용도 | 설치 확인 |
+| Tool | Purpose | Installation Check |
 |------|------|-----------|
-| Claude Code | AI 코딩 + Skill 실행 | `claude --version` |
-| 린트 도구 | 코드 품질 (자동 감지) | `ruff --version` / `eslint --version` 등 |
-| 테스트 도구 | 테스트 (자동 감지) | `pytest --version` / `npm test` 등 |
-| 보안 스캐너 | SAST (optional, 자동 감지) | `semgrep --version` (없으면 skip) |
+| Claude Code | AI coding + Skill execution | `claude --version` |
+| Lint tool | Code quality (auto-detected) | `ruff --version` / `eslint --version` etc. |
+| Test tool | Testing (auto-detected) | `pytest --version` / `npm test` etc. |
+| Security scanner | SAST (optional, auto-detected) | `semgrep --version` (skipped if not found) |
 
-### 프로젝트 설정 (이 프로젝트)
+### Project Setup (This Project)
 
 ```bash
 cd ~/Workspace/renewal-review
-uv sync --extra dev          # 의존성 설치
-uv run pytest -q             # 기존 테스트 통과 확인
-ruff check app/ tests/       # 린트 클린 확인
+uv sync --extra dev          # Install dependencies
+uv run pytest -q             # Verify existing tests pass
+ruff check app/ tests/       # Verify lint is clean
 ```
 
-### `.gitignore` 설정
+### `.gitignore` Setup
 
-루프 아티팩트가 실수로 커밋되지 않도록 `.gitignore`에 추가한다:
+Add to `.gitignore` to prevent loop artifacts from being accidentally committed:
 
 ```
 .agentic-dev-pipeline/
@@ -174,7 +174,7 @@ ruff check app/ tests/       # 린트 클린 확인
 
 ---
 
-## 파이프라인 구조
+## Pipeline Structure
 
 ```
 PROMPT.md + requirements.md
@@ -183,58 +183,61 @@ PROMPT.md + requirements.md
 ┌─────────────────────────────────────────┐
 │  Loop (max N iterations)                │
 │                                         │
-│  Phase 1: 구현                          │
-│    Agent A: 코드 작성 (또는 수정)       │
-│    - 첫 반복: PROMPT.md 기반 전체 구현  │
-│    - 이후 반복: 피드백 기반 수정만      │
+│  Phase 1: Implementation                │
+│    Agent A: Write code (or fix)         │
+│    - First iteration: Full impl from    │
+│      PROMPT.md                          │
+│    - Subsequent iterations: Fix based   │
+│      on feedback only                   │
 │                                         │
-│  Phase 2: 품질 게이트 (자동 감지)       │
-│    lint → test → security (순차)        │
-│    ❌ 실패 → 에러 출력을 피드백으로     │
-│       → Phase 1로 되돌아감              │
+│  Phase 2: Quality Gate (auto-detected)  │
+│    lint → test → security (sequential)  │
+│    ❌ Failure → error output as         │
+│       feedback → return to Phase 1      │
 │                                         │
-│  Phase 3: 삼각 검증                     │
-│    Agent B: blind review (코드만 읽음)  │
-│    Agent C: requirements vs B 비교      │
-│    ❌ 불일치 → 리포트를 피드백으로      │
-│       → Phase 1로 되돌아감              │
+│  Phase 3: Triangular Verification       │
+│    Agent B: blind review (reads code    │
+│    only)                                │
+│    Agent C: requirements vs B compare   │
+│    ❌ Mismatch → report as feedback     │
+│       → return to Phase 1              │
 │                                         │
-│  Phase 4: 완료                          │
-│    모든 게이트 통과 → LOOP_COMPLETE     │
+│  Phase 4: Complete                      │
+│    All gates passed → LOOP_COMPLETE     │
 └─────────────────────────────────────────┘
 ```
 
-**핵심 원칙:**
-- 실패 = 데이터 — 실패 출력이 다음 반복의 입력이 된다
-- 안전장치 — `MAX_ITERATIONS`로 무한 루프 방지 (기본 5회)
-- 점진적 수렴 — 대부분 1~2회 반복 내 완료
+**Core Principles:**
+- Failure = data — failure output becomes input for the next iteration
+- Safety net — `MAX_ITERATIONS` prevents infinite loops (default: 5)
+- Incremental convergence — most tasks complete within 1-2 iterations
 
 ---
 
-## 환경변수 레퍼런스
+## Environment Variable Reference
 
-| Variable | Default | 설명 |
+| Variable | Default | Description |
 |----------|---------|------|
-| `PROMPT_FILE` | **(필수)** | PROMPT.md 경로 |
-| `REQUIREMENTS_FILE` | **(필수)** | 요구사항 문서 경로 |
-| `OUTPUT_DIR` | `.agentic-dev-pipeline/` | 아티팩트 출력 디렉토리 |
-| `LINT_CMD` | (auto-detect) | 린트 명령 (`"true"`로 설정하면 skip) |
-| `TEST_CMD` | (auto-detect) | 테스트 명령 (`"true"`로 설정하면 skip) |
-| `SECURITY_CMD` | (auto-detect) | 보안 스캔 명령 (`""`로 설정하면 skip) |
-| `SRC_DIRS` | (auto-detect) | 소스 디렉토리 |
-| `BASE_BRANCH` | `main` | git diff 기준 브랜치 |
-| `MAX_ITERATIONS` | `5` | 최대 반복 횟수 |
+| `PROMPT_FILE` | **(required)** | Path to PROMPT.md |
+| `REQUIREMENTS_FILE` | **(required)** | Path to requirements document |
+| `OUTPUT_DIR` | `.agentic-dev-pipeline/` | Artifact output directory |
+| `LINT_CMD` | (auto-detect) | Lint command (set to `"true"` to skip) |
+| `TEST_CMD` | (auto-detect) | Test command (set to `"true"` to skip) |
+| `SECURITY_CMD` | (auto-detect) | Security scan command (set to `""` to skip) |
+| `SRC_DIRS` | (auto-detect) | Source directories |
+| `BASE_BRANCH` | `main` | Base branch for git diff |
+| `MAX_ITERATIONS` | `5` | Maximum number of iterations |
 
 ---
 
-## 사용법
+## Usage
 
-### 1단계: 파일 두 개 작성
+### Step 1: Write Two Files
 
-**requirements 파일** — 삼각 검증의 기준이 되는 기능 요구사항.
+**Requirements file** — Functional requirements that serve as the basis for triangular verification.
 
 ```markdown
-# <기능명> — Requirements
+# <Feature Name> — Requirements
 
 ## Functional Requirements
 
@@ -242,19 +245,19 @@ PROMPT.md + requirements.md
 ### FR-2: ...
 
 ## Non-Functional Requirements
-- 프로젝트 컨벤션 준수
-- 기존 테스트 전부 통과
-- 린트 0 errors
-- 파일당 300줄 미만
+- Follow project conventions
+- All existing tests pass
+- Lint 0 errors
+- Less than 300 lines per file
 ```
 
-**task 파일** — 에이전트에게 전달하는 구현 지시서. `~/.agents/skills/agentic-dev-pipeline/PROMPT-TEMPLATE.md`를 복사하여 작성.
+**Task file** — Implementation instructions delivered to the agent. Copy from `~/.agents/skills/agentic-dev-pipeline/PROMPT-TEMPLATE.md` to create.
 
-### 2단계: 실행
+### Step 2: Run
 
-**방법 A: 셸 스크립트 (터미널에서 직접)**
+**Method A: Shell Script (directly from terminal)**
 
-Claude Code 세션 밖에서 실행한다. 스크립트가 `claude --print`를 nested 호출하므로 터미널에서 직접 실행해야 한다.
+Run outside of a Claude Code session. Since the script makes nested `claude --print` calls, it must be run directly from the terminal.
 
 ```bash
 cd ~/Workspace/renewal-review
@@ -264,11 +267,11 @@ REQUIREMENTS_FILE="docs/experiments/4-requirements-portfolio-aggregator.md" \
 bash ~/.agents/skills/agentic-dev-pipeline/agentic-dev-pipeline.sh 5
 ```
 
-- 첫 번째 인자: max iterations (기본 5)
-- `PROMPT_FILE`, `REQUIREMENTS_FILE`은 필수
-- 로그: `.agentic-dev-pipeline/loop-execution.log`
+- First argument: max iterations (default: 5)
+- `PROMPT_FILE`, `REQUIREMENTS_FILE` are required
+- Logs: `.agentic-dev-pipeline/loop-execution.log`
 
-환경변수 오버라이드 예시:
+Environment variable override example:
 
 ```bash
 PROMPT_FILE="PROMPT.md" \
@@ -279,68 +282,68 @@ OUTPUT_DIR="docs/experiments" \
 bash ~/.agents/skills/agentic-dev-pipeline/agentic-dev-pipeline.sh
 ```
 
-**방법 B: Skill 호출 (Claude Code 세션 안에서)**
+**Method B: Skill Invocation (inside a Claude Code session)**
 
-Claude Code 세션 안에서 skill을 호출하면, 에이전트가 직접 루프를 오케스트레이션한다.
+When invoking the skill inside a Claude Code session, the agent orchestrates the loop directly.
 
 ```
-agentic-dev-pipeline Skill을 사용해서 <기능명>을 구현해줘.
-PROMPT: docs/experiments/<번호>-PROMPT-<기능명>.md
-Requirements: docs/experiments/<번호>-requirements-<기능명>.md
+Use the agentic-dev-pipeline Skill to implement <feature name>.
+PROMPT: docs/experiments/<number>-PROMPT-<feature name>.md
+Requirements: docs/experiments/<number>-requirements-<feature name>.md
 ```
 
-이 방식에서는:
-- Phase 1: 에이전트가 직접 코드 작성
-- Phase 2: 자동 감지된 lint/test/security 명령 직접 실행
-- Phase 3: Task tool로 Agent B, Agent C를 subagent로 실행
-- Phase 4: 모든 게이트 통과 시 완료 보고
+In this approach:
+- Phase 1: Agent writes code directly
+- Phase 2: Runs auto-detected lint/test/security commands directly
+- Phase 3: Runs Agent B and Agent C as subagents via the Task tool
+- Phase 4: Reports completion when all gates pass
 
-### 3단계: 결과 확인
+### Step 3: Check Results
 
-루프 완료 후 `$OUTPUT_DIR/` (기본: `.agentic-dev-pipeline/`)에 생성되는 파일:
+After loop completion, files generated in `$OUTPUT_DIR/` (default: `.agentic-dev-pipeline/`):
 
-| 파일 | 내용 |
+| File | Content |
 |------|------|
-| `loop-execution.log` | 전체 실행 로그 (반복 횟수, 시간, 각 phase 결과) |
-| `feedback.txt` | 마지막 반복의 피드백 (성공 시 삭제됨, 실패 시 디버깅용) |
-| `blind-review.md` | Agent B의 blind code review |
-| `discrepancy-report.md` | Agent C의 requirements vs code 비교 |
+| `loop-execution.log` | Full execution log (iteration count, time, result of each phase) |
+| `feedback.txt` | Feedback from the last iteration (deleted on success, kept for debugging on failure) |
+| `blind-review.md` | Agent B's blind code review |
+| `discrepancy-report.md` | Agent C's requirements vs code comparison |
 
-확인 사항:
-- `LOOP_COMPLETE` 출력 여부
-- 총 반복 횟수 (1~2회가 정상)
-- Phase 2/3 실패 횟수와 원인
-- 새로 생성된 코드 파일의 품질
+Things to check:
+- Whether `LOOP_COMPLETE` was output
+- Total number of iterations (1-2 is normal)
+- Phase 2/3 failure count and causes
+- Quality of newly generated code files
 
 ---
 
-## 삼각 검증이란
+## What Is Triangular Verification
 
-일반적인 품질 도구(lint, test, security)는 **구문과 구조**를 검사한다.
-삼각 검증은 **의도(intent)**를 검사한다 — "코드가 요구사항과 일치하는가?"
+Typical quality tools (lint, test, security) check **syntax and structure**.
+Triangular verification checks **intent** — "Does the code match the requirements?"
 
 ```
-Requirements (원본 요구사항)
-        ↕ 비교
-Code → Agent B (코드만 읽고 행동 기술) → Blind Review
-        ↕ 비교
+Requirements (original requirements)
+        ↕ compare
+Code → Agent B (reads code only, describes behavior) → Blind Review
+        ↕ compare
 Agent C (Requirements vs Blind Review) → Discrepancy Report
 ```
 
-- **Agent B**: 코드를 읽되 requirements는 보지 않음 → 편향 없는 행동 기술
-- **Agent C**: Requirements와 B의 분석을 비교 → 불일치 발견
-- 세 관점(요구사항, 코드, 독립 분석)이 일치하면 `TRIANGULAR_PASS`
+- **Agent B**: Reads the code without seeing requirements → unbiased behavior description
+- **Agent C**: Compares requirements with B's analysis → finds discrepancies
+- When all three perspectives (requirements, code, independent analysis) align → `TRIANGULAR_PASS`
 
-삼각 검증만 단독 실행:
+Run triangular verification standalone:
 
 ```bash
-REQUIREMENTS_FILE="docs/experiments/<번호>-requirements-<기능명>.md" \
+REQUIREMENTS_FILE="docs/experiments/<number>-requirements-<feature name>.md" \
 bash ~/.agents/skills/agentic-dev-pipeline/triangular-verify.sh
 ```
 
 ---
 
-## 실제 사례
+## Real-World Examples
 
 ### Experiment 3: Smart Quote Generator
 
@@ -350,7 +353,7 @@ REQUIREMENTS_FILE="docs/experiments/3-requirements-quote-generator.md" \
 bash ~/.agents/skills/agentic-dev-pipeline/agentic-dev-pipeline.sh 5
 ```
 
-결과: 1회 반복, 641초, 사람 개입 0회, 81/81 테스트 통과
+Result: 1 iteration, 641 seconds, 0 human interventions, 81/81 tests passed
 
 ### Experiment 4: Portfolio Risk Aggregator
 
@@ -362,50 +365,50 @@ bash ~/.agents/skills/agentic-dev-pipeline/agentic-dev-pipeline.sh 5
 
 ---
 
-## 트러블슈팅
+## Troubleshooting
 
-### `claude` 명령어를 찾을 수 없음
+### `claude` command not found
 
-셸 스크립트 방식은 `claude` CLI가 PATH에 있어야 한다.
+The shell script method requires `claude` CLI to be in PATH.
 
 ```bash
-which claude    # 경로 확인
+which claude    # Check path
 claude --version
 ```
 
-### nested claude 호출 차단
+### Nested claude call blocked
 
-Claude Code 세션 안에서 셸 스크립트를 실행하면 `CLAUDECODE` 환경변수 때문에 nested 호출이 차단된다. 스크립트에 `unset CLAUDECODE`가 이미 포함되어 있지만, 직접 터미널에서 실행하는 것을 권장한다.
+Running the shell script inside a Claude Code session blocks nested calls due to the `CLAUDECODE` environment variable. The script already includes `unset CLAUDECODE`, but running directly from the terminal is recommended.
 
-### Phase 2에서 품질 게이트 실패가 반복됨
+### Quality gate failure repeats in Phase 2
 
-- 기존 테스트가 통과하는 상태에서 시작했는지 확인
-- 감지된 명령이 예상과 맞는지 확인:
+- Verify that existing tests pass before starting
+- Confirm that the detected commands match expectations:
   ```bash
   source ~/.agents/skills/agentic-dev-pipeline/detect-project.sh && print_detected_config
   ```
-- 환경변수 오버라이드로 명확히 지정: `LINT_CMD="..."`, `TEST_CMD="..."`
+- Specify explicitly with environment variable overrides: `LINT_CMD="..."`, `TEST_CMD="..."`
 
-### Phase 3에서 TRIANGULAR_PASS가 안 나옴
+### TRIANGULAR_PASS not returned in Phase 3
 
-- `$OUTPUT_DIR/discrepancy-report.md`를 직접 읽고 어떤 요구사항이 누락/불일치인지 확인
-- requirements 파일이 너무 모호하면 Agent C가 판단을 못 함 → requirements를 더 구체적으로 작성
-- 피드백이 다음 반복에 전달되므로, 루프가 자동으로 수정 시도함
+- Read `$OUTPUT_DIR/discrepancy-report.md` directly to check which requirements are missing or mismatched
+- If the requirements file is too vague, Agent C cannot make a judgment → write more specific requirements
+- Feedback is passed to the next iteration, so the loop automatically attempts corrections
 
-### 잘못된 도구가 감지됨
+### Wrong tool detected
 
-환경변수로 오버라이드: `LINT_CMD`, `TEST_CMD`, `SECURITY_CMD`
+Override with environment variables: `LINT_CMD`, `TEST_CMD`, `SECURITY_CMD`
 
-### max iterations에 도달했는데 미완료
+### Max iterations reached but incomplete
 
-- `$OUTPUT_DIR/loop-execution.log`에서 마지막 피드백 확인
-- max iterations를 늘려서 재실행하거나
-- 남은 이슈를 수동으로 수정 후 삼각 검증만 따로 실행
+- Check the last feedback in `$OUTPUT_DIR/loop-execution.log`
+- Re-run with a higher max iterations, or
+- Manually fix the remaining issues and run triangular verification separately
 
 ---
 
-## 상세 문서
+## Detailed Documentation
 
-스킬의 전체 문서(지원 언어, 감지 우선순위, 트러블슈팅 등)는 다음을 참조:
+For the skill's full documentation (supported languages, detection priority, troubleshooting, etc.), refer to:
 - GitHub: https://github.com/ella-yschoi/agentic-dev-pipeline
-- 로컬 (설치 후): `~/.agents/skills/agentic-dev-pipeline/SKILL.md`
+- Local (after installation): `~/.agents/skills/agentic-dev-pipeline/SKILL.md`
