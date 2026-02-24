@@ -1,0 +1,46 @@
+/* Global typography — readable sizes */
+.slidev-layout {
+  padding: 2rem 2.5rem !important;
+}
+
+.slidev-layout h1 {
+  font-size: 1.75rem !important;
+  margin-bottom: 0.3rem !important;
+  line-height: 1.3 !important;
+}
+
+/* Tables */
+.slidev-layout table {
+  font-size: 0.78rem !important;
+  line-height: 1.35 !important;
+}
+
+.slidev-layout table th,
+.slidev-layout table td {
+  padding: 0.15rem 0.5rem !important;
+}
+
+.slidev-layout table th {
+  font-weight: 600;
+}
+
+/* Lists */
+.slidev-layout li {
+  line-height: 1.4;
+  font-size: 0.85rem;
+}
+
+/* Code blocks */
+.slidev-layout pre {
+  font-size: 0.72rem !important;
+  line-height: 1.35 !important;
+  padding: 0.4rem 0.6rem;
+  margin-top: 0.2rem;
+  margin-bottom: 0.2rem;
+}
+
+/* Mermaid */
+.slidev-layout .mermaid {
+  max-height: 280px;
+  overflow: hidden;
+}
