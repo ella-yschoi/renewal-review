@@ -11,7 +11,10 @@ permissions:
 
 jobs:
   review:
-    if: ${{ !github.event.pull_request.draft }}
+    if: |
+      !github.event.pull_request.draft &&
+      github.event.pull_request.user.login != 'claude[bot]' &&
+      github.event.pull_request.user.login != 'github-actions[bot]'
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
@@ -24,6 +27,7 @@ jobs:
         uses: anthropics/claude-code-action@v1
         with:
           anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
+          claude_args: '--model ${{ vars.CLAUDE_MODEL_REVIEW || ''haiku'' }} --max-turns 10'
           prompt: |
             You are a code review bot. Review this PR and leave comments.
 
