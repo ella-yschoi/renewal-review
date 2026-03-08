@@ -35,42 +35,31 @@ jobs:
         with:
           anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
           track_progress: true
-          claude_args: '--allowedTools "Bash,Edit,Read,Write,Glob,Grep"'
+          claude_args: '--model ${{ vars.CLAUDE_MODEL_DISPATCH || ''sonnet'' }} --max-turns 25 --allowedTools "Bash,Edit,Read,Write,Glob,Grep"'
           settings: '{"hooks": {}}'
           prompt: |
             You are an autonomous agent implementing a feature from a GitHub issue.
 
             ## Setup
-            1. Read CLAUDE.md and .claude/rules/conventions.md for project rules.
-            2. Read the issue below for the task description.
+            Follow CLAUDE.md and .claude/rules/conventions.md (already loaded).
 
             ## Issue
             Title: ${{ github.event.issue.title }}
             Body:
             ${{ github.event.issue.body }}
 
-            ## Task Decomposition
-            1. Create `docs/experiments/{N}-requirements-{name}.md` — What to build + acceptance criteria.
-            2. Create `docs/experiments/{N}-task-{name}.md` — How to implement (files, functions, steps).
-               Use the next available number N by checking existing files in docs/experiments/.
-
-            ## Agentic Dev Pipeline
+            ## Steps
+            1. Create `docs/experiments/{N}-requirements-{name}.md` with acceptance criteria.
+            2. Create `docs/experiments/{N}-task-{name}.md` with implementation plan.
+               Use the next available N by checking existing files in docs/experiments/.
             3. Implement the feature following the task file.
-            4. Run quality gates: `make lint` then `make test`.
-               - If any gate fails, read the error output, fix the code, and retry.
-               - Repeat until all gates pass.
-            5. Run triangular verification:
-               - Agent B: Identify ALL changed, staged, and new untracked files (use `git diff --name-only main...HEAD`, `git diff --name-only HEAD`, `git diff --name-only --cached`, and `git ls-files --others --exclude-standard`). Read those files and describe what they do WITHOUT reading requirements.
-               - Agent C: Compare Agent B's description against the requirements file. Report discrepancies.
-               - If discrepancies found, fix and retry from step 4.
-            6. Once all gates and verification pass:
-               - `git add` all changed files
-               - `git commit -m "feat: <descriptive message>"` with a clear commit message
-               - `git push origin HEAD` to push the branch
+            4. Run `make lint` then `make test`. If any fail, read the error, fix, and retry.
+            5. Self-verify: list changed files (`git diff --name-only main...HEAD && git ls-files --others --exclude-standard`), describe what each does, compare against the requirements doc. Fix discrepancies and re-run step 4.
+            6. `git add` changed files, `git commit`, `git push origin HEAD`.
 
             ## Rules
-            - Follow conventions.md strictly (no docstrings, type hints, files < 300 lines).
+            - Follow conventions.md (no docstrings, type hints, files < 300 lines).
             - One logical change per commit.
-            - Do NOT install new dependencies without explicit approval in the issue.
+            - Do NOT install new dependencies without approval in the issue.
             - Do NOT use rm -rf or sudo commands.
-            - Write ALL output (commit messages, PR descriptions, comments, documents) in English.
+            - Write ALL output in English.
