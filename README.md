@@ -1,8 +1,39 @@
 # Renewal Review
 
-Insurance renewal review pipeline — rule-based + LLM hybrid analysis for personal lines (Auto + Home).
+Insurance renewal review pipeline - rule-based + LLM hybrid analysis for personal lines (Auto + Home).
 
 Compares prior vs. renewal policy data, flags risk changes, generates broker-ready summaries and alternative quotes.
+
+<br/>
+
+## Screenshots
+
+### Dashboard
+Broker workflow tracker, risk distribution, and policy review table with filtering.
+
+![Dashboard](docs/images/renewal-review-dashboard.png)
+
+### LLM Insights
+Side-by-side comparison of rule-based vs. LLM risk analysis with per-policy breakdown.
+
+![LLM Insights](docs/images/renewal-review-llm.png)
+
+### Portfolio Risk Aggregator
+Account-level view grouping bundled policies to detect cross-policy risks.
+
+![Portfolio](docs/images/renewal-review-portfolio-1.png)
+
+### Portfolio Analysis
+Bundle analysis, cross-policy flags, and premium concentration warnings.
+
+![Portfolio Analysis](docs/images/renewal-review-portfolio-2.png)
+
+### Quote Recommendations
+LLM-generated alternative quotes with trade-off explanations and broker tips.
+
+![Quote Recommendations](docs/images/renewal-review-quote.png)
+
+<br/>
 
 ## Tech Stack
 
@@ -12,13 +43,15 @@ Compares prior vs. renewal policy data, flags risk changes, generates broker-rea
 - **Frontend**: Jinja2 templates (server-rendered)
 - **Tooling**: uv, Ruff, pytest, Docker Compose
 
+<br/>
+
 ## Quick Start
 
 ### Prerequisites
 
 - Python 3.13+
 - [uv](https://docs.astral.sh/uv/) package manager
-- PostgreSQL 16+ (optional — app works without DB, data stays in-memory)
+- PostgreSQL 16+ (optional - app works without DB, data stays in-memory)
 
 ### 1. Setup
 
@@ -58,6 +91,8 @@ make compose-up
 # Stop: make compose-down
 ```
 
+<br/>
+
 ## LLM Configuration
 
 Set `RR_LLM_ENABLED=true` in `.env` and add your Anthropic API key:
@@ -69,6 +104,8 @@ ANTHROPIC_API_KEY=sk-ant-...
 
 Without LLM enabled, the app uses mock responses for development.
 
+<br/>
+
 ## Development
 
 ```bash
@@ -78,6 +115,8 @@ make test
 # Run linter
 make lint
 ```
+
+<br/>
 
 ## Project Structure
 
