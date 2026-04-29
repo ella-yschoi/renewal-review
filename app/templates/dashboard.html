@@ -61,6 +61,24 @@
   </div>
 </div>
 
+<div class="card" style="margin-bottom:16px;">
+  <h2 style="margin-bottom:12px;">Review Completion Summary</h2>
+  <div style="display:grid; grid-template-columns:repeat(2, 1fr); gap:12px;">
+    <div style="text-align:center;">
+      <div style="font-size:24px; font-weight:700; color:#3182ce;">{{ broker.contacted }} / {{ broker.total }}</div>
+      <div style="font-size:11px; color:#718096; margin-top:2px;">Contacted</div>
+      {% set contacted_pct = (broker.contacted / broker.total * 100) if broker.total else 0 %}
+      <div style="font-size:12px; color:#4a5568; margin-top:4px;">{{ "%.1f"|format(contacted_pct) }}%</div>
+    </div>
+    <div style="text-align:center;">
+      <div style="font-size:24px; font-weight:700; color:#805ad5;">{{ broker.quotes_generated }} / {{ broker.total }}</div>
+      <div style="font-size:11px; color:#718096; margin-top:2px;">Quoted</div>
+      {% set quoted_pct = (broker.quotes_generated / broker.total * 100) if broker.total else 0 %}
+      <div style="font-size:12px; color:#4a5568; margin-top:4px;">{{ "%.1f"|format(quoted_pct) }}%</div>
+    </div>
+  </div>
+</div>
+
 <div class="stats-grid" style="grid-template-columns:repeat(6, 1fr); margin-bottom:16px;">
   <div class="stat-card">
     <div class="value">{{ risk_dist.total }}</div>
