@@ -651,7 +651,7 @@ For batch (`/batch/run`) and migration (`/migration/comparison`) async operation
 | ORM | SQLAlchemy >= 2.0 (asyncio) |
 | Validation | Pydantic >= 2.10 |
 | Templating | Jinja2 >= 3.1 |
-| LLM (optional) | OpenAI >= 2.18, Anthropic >= 0.43, Langfuse >= 3.14 — `pip install .[llm]` |
+| LLM (optional) | OpenAI >= 2.18, Anthropic >= 0.43, Langfuse >= 4.9 — `pip install .[llm]` |
 | DB Driver | asyncpg >= 0.30, psycopg >= 3.1 |
 | Container | Docker (python:3.13-slim + uv), Docker Compose |
 | DB | PostgreSQL 16 (alpine) |

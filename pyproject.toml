@@ -14,7 +14,7 @@ dependencies = [
     "asyncpg>=0.30",
     "psycopg[binary]>=3.1",
     "anthropic>=0.43.0",
-    "langfuse>=3.14.1",
+    "langfuse>=4.9.1,<5",
 ]
 
 [project.optional-dependencies]
