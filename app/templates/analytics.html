@@ -3,12 +3,12 @@
 
 {% block content %}
 <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px;">
-  <h1 style="font-size:20px;">Analytics</h1>
+  <h1 style="font-size:24px;">Analytics</h1>
   <button class="btn btn-secondary" onclick="loadAnalytics()">Refresh</button>
 </div>
 
 <div id="empty-state" class="card" style="text-align:center; padding:40px; {% if history %}display:none{% endif %}">
-  <p style="color:#718096; font-size:14px;">No review data yet. Run a review from the <a href="/">Dashboard</a> to see analytics.</p>
+  <p style="color:#6b6b66; font-size:14px;">No review data yet. Run a review from the <a href="/">Dashboard</a> to see analytics.</p>
 </div>
 
 <div id="analytics-content" style="{% if not history %}display:none{% endif %}">
@@ -23,7 +23,7 @@
       <div class="label">Policies Reviewed</div>
     </div>
     <div class="stat-card">
-      <div class="value" style="color:#9b2c2c" id="stat-urgent">{{ summary.risk_distribution.urgent_review }}</div>
+      <div class="value" style="color:#8f2a22" id="stat-urgent">{{ summary.risk_distribution.urgent_review }}</div>
       <div class="label">Urgent Total</div>
     </div>
   </div>
@@ -34,31 +34,31 @@
     {% set bt = broker.total if broker.total else 1 %}
     <div style="display:grid; grid-template-columns:repeat(4, 1fr); gap:16px; margin-top:12px;">
       <div>
-        <div style="font-size:24px; font-weight:700; color:#c05621;" id="broker-contact-needed">{{ broker.contact_needed }}</div>
-        <div style="font-size:12px; color:#718096;">Contact Needed</div>
-        <div class="progress-bar" style="margin-top:6px;">
-          <div class="progress-fill" id="broker-bar-contact" style="width:{{ (broker.contact_needed / bt * 100) }}%; background:#ed8936;"></div>
+        <div style="font-size:24px; font-weight:600; color:#9a5410;" id="broker-contact-needed">{{ broker.contact_needed }}</div>
+        <div style="font-size:12px; color:#6b6b66;">Contact Needed</div>
+        <div class="progress-bar" style="margin-top:8px;">
+          <div class="progress-fill" id="broker-bar-contact" style="width:{{ (broker.contact_needed / bt * 100) }}%; background:#c27a1e;"></div>
         </div>
       </div>
       <div>
-        <div style="font-size:24px; font-weight:700; color:#2b6cb0;" id="broker-contacted">{{ broker.contacted }}</div>
-        <div style="font-size:12px; color:#718096;">Contacted</div>
-        <div class="progress-bar" style="margin-top:6px;">
-          <div class="progress-fill" id="broker-bar-contacted" style="width:{{ (broker.contacted / bt * 100) }}%; background:#3182ce;"></div>
+        <div style="font-size:24px; font-weight:600; color:#0b4a4a;" id="broker-contacted">{{ broker.contacted }}</div>
+        <div style="font-size:12px; color:#6b6b66;">Contacted</div>
+        <div class="progress-bar" style="margin-top:8px;">
+          <div class="progress-fill" id="broker-bar-contacted" style="width:{{ (broker.contacted / bt * 100) }}%; background:#0f5c5c;"></div>
         </div>
       </div>
       <div>
-        <div style="font-size:24px; font-weight:700; color:#2f855a;" id="broker-quotes">{{ broker.quotes_generated }}</div>
-        <div style="font-size:12px; color:#718096;">Quotes Generated</div>
-        <div class="progress-bar" style="margin-top:6px;">
-          <div class="progress-fill" id="broker-bar-quotes" style="width:{{ (broker.quotes_generated / bt * 100) }}%; background:#48bb78;"></div>
+        <div style="font-size:24px; font-weight:600; color:#2f6b47;" id="broker-quotes">{{ broker.quotes_generated }}</div>
+        <div style="font-size:12px; color:#6b6b66;">Quotes Generated</div>
+        <div class="progress-bar" style="margin-top:8px;">
+          <div class="progress-fill" id="broker-bar-quotes" style="width:{{ (broker.quotes_generated / bt * 100) }}%; background:#5a9a74;"></div>
         </div>
       </div>
       <div>
-        <div style="font-size:24px; font-weight:700; color:#553c9a;" id="broker-reviewed">{{ broker.reviewed }}</div>
-        <div style="font-size:12px; color:#718096;">Reviewed</div>
-        <div class="progress-bar" style="margin-top:6px;">
-          <div class="progress-fill" id="broker-bar-reviewed" style="width:{{ (broker.reviewed / bt * 100) }}%; background:#805ad5;"></div>
+        <div style="font-size:24px; font-weight:600; color:#0b4a4a;" id="broker-reviewed">{{ broker.reviewed }}</div>
+        <div style="font-size:12px; color:#6b6b66;">Reviewed</div>
+        <div class="progress-bar" style="margin-top:8px;">
+          <div class="progress-fill" id="broker-bar-reviewed" style="width:{{ (broker.reviewed / bt * 100) }}%; background:#0f5c5c;"></div>
         </div>
       </div>
     </div>
@@ -68,9 +68,9 @@
   <div class="card">
     <h2>Risk Overview</h2>
     <div style="display:flex; gap:16px; margin-top:12px;">
-      {% for level, color in [("no_action_needed", "#c6f6d5"), ("review_recommended", "#fefcbf"), ("action_required", "#fed7d7"), ("urgent_review", "#9b2c2c")] %}
+      {% for level, color in [("no_action_needed", "#e1efe5"), ("review_recommended", "#f6ecd0"), ("action_required", "#f6dcd8"), ("urgent_review", "#8f2a22")] %}
       <div style="flex:1; text-align:center;">
-        <div style="background:#e2e8f0; border-radius:6px; height:120px; position:relative; overflow:hidden;">
+        <div style="background:#e4e4e0; border-radius:8px; height:120px; position:relative; overflow:hidden;">
           {% set total = summary.risk_distribution.no_action_needed + summary.risk_distribution.review_recommended + summary.risk_distribution.action_required + summary.risk_distribution.urgent_review %}
           {% set count = summary.risk_distribution[level] %}
           {% set pct = (count / total * 100) if total else 0 %}
@@ -82,7 +82,7 @@
         </div>
         <div style="margin-top:8px;">
           <span class="badge badge-{{ level }}">{{ level|label }}</span>
-          <div style="font-size:18px; font-weight:700; margin-top:4px;" id="risk-count-{{ level }}">{{ count }}</div>
+          <div style="font-size:18px; font-weight:600; margin-top:4px;" id="risk-count-{{ level }}">{{ count }}</div>
         </div>
       </div>
       {% endfor %}
@@ -105,9 +105,9 @@
           <td>
             <div style="display:flex; align-items:center; gap:8px;">
               <div class="progress-bar" style="flex:1; height:8px;">
-                <div class="progress-fill" style="width:{{ t.urgent_review_ratio * 100 }}%; background:{% if t.urgent_review_ratio > 0.1 %}#9b2c2c{% elif t.urgent_review_ratio > 0.05 %}#e53e3e{% else %}#48bb78{% endif %};"></div>
+                <div class="progress-fill" style="width:{{ t.urgent_review_ratio * 100 }}%; background:{% if t.urgent_review_ratio > 0.1 %}#8f2a22{% elif t.urgent_review_ratio > 0.05 %}#c2372d{% else %}#5a9a74{% endif %};"></div>
               </div>
-              <span style="font-size:12px; color:#4a5568; min-width:40px;">{{ "%.1f"|format(t.urgent_review_ratio * 100) }}%</span>
+              <span style="font-size:12px; color:#4a4a46; min-width:40px;">{{ "%.1f"|format(t.urgent_review_ratio * 100) }}%</span>
             </div>
           </td>
         </tr>
@@ -133,7 +133,7 @@
           <td><span class="badge badge-review_recommended">{{ r.review_recommended }}</span></td>
           <td><span class="badge badge-action_required">{{ r.action_required }}</span></td>
           <td><span class="badge badge-urgent_review">{{ r.urgent_review }}</span></td>
-          <td style="font-size:12px; color:#718096;">{{ r.created_at.strftime("%Y-%m-%d %H:%M") }}</td>
+          <td style="font-size:12px; color:#6b6b66;">{{ r.created_at.strftime("%Y-%m-%d %H:%M") }}</td>
         </tr>
         {% endfor %}
       </tbody>
@@ -197,7 +197,7 @@ async function loadAnalytics() {
       '<td><span class="badge badge-review_recommended">'+r.review_recommended+'</span></td>'+
       '<td><span class="badge badge-action_required">'+r.action_required+'</span></td>'+
       '<td><span class="badge badge-urgent_review">'+r.urgent_review+'</span></td>'+
-      '<td style="font-size:12px;color:#718096;">'+dateStr+'</td>'+
+      '<td style="font-size:12px;color:#6b6b66;">'+dateStr+'</td>'+
       '</tr>';
   });
 }

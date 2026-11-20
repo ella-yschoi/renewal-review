@@ -3,38 +3,38 @@
 
 {% block content %}
 <style>
-  .progress-container { background:#edf2f7; border-radius:8px; overflow:hidden; height:24px; position:relative; }
-  .progress-bar { height:100%; background:linear-gradient(90deg, #805ad5, #6b46c1); border-radius:8px; transition:width 0.3s ease; min-width:0; }
-  .progress-text { position:absolute; top:0; left:0; right:0; bottom:0; display:flex; align-items:center; justify-content:center; font-size:12px; font-weight:600; color:#2d3748; }
+  .progress-container { background:#eeeeeb; border-radius:8px; overflow:hidden; height:24px; position:relative; }
+  .progress-bar { height:100%; background:#0f5c5c; border-radius:8px;  min-width:0; }
+  .progress-text { position:absolute; top:0; left:0; right:0; bottom:0; display:flex; align-items:center; justify-content:center; font-size:12px; font-weight:600; color:#1c1c1a; }
   .results-table td, .results-table th { font-size:12px; }
-  .risk-changed-row { background:#faf5ff; }
+  .risk-changed-row { background:#eef5f4; }
 </style>
 
 <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px;">
-  <h1 style="font-size:20px;">LLM Insights</h1>
+  <h1 style="font-size:24px;">LLM Insights</h1>
   <button class="btn btn-primary" id="compare-btn" onclick="runComparison()">Compare</button>
 </div>
 
-<div class="card" style="margin-bottom:16px; background:#faf5ff; border-left:4px solid #805ad5;">
-  <p style="font-size:13px; color:#553c9a; margin-bottom:6px; font-weight:600;">Reviewed + Review Recommended policies only</p>
-  <p style="font-size:12px; color:#718096; line-height:1.6;">
+<div class="card" style="margin-bottom:16px; background:#eef5f4; border-color:#cfe2df;">
+  <p style="font-size:13px; color:#0b4a4a; margin-bottom:8px; font-weight:600;">Reviewed + Review Recommended policies only</p>
+  <p style="font-size:12px; color:#6b6b66; line-height:1.6;">
     LLM analysis targets policies that have been <strong>reviewed</strong> and classified as <strong>Review Recommended</strong>
     — those flagged by rules but not yet critical.
     The AI re-evaluates risk using context that rules alone cannot capture (e.g., notes, claim patterns, coverage gaps).
   </p>
-  <p style="font-size:12px; color:#805ad5; line-height:1.6; margin-top:6px;">
+  <p style="font-size:12px; color:#0f5c5c; line-height:1.6; margin-top:8px;">
     <strong>Production:</strong> All reviewed Review Recommended policies are analyzed via LLM API.
     <br><strong>Demo:</strong> Random sample of up to 100 policies to manage API costs.
   </p>
 </div>
 
 <div id="loading" style="display:none; max-width:480px; margin:0 auto; text-align:center;">
-  <p style="margin-bottom:8px; font-size:13px; color:#553c9a; font-weight:500;" id="loading-msg">Comparing policies with AI...</p>
+  <p style="margin-bottom:8px; font-size:13px; color:#0b4a4a; font-weight:500;" id="loading-msg">Comparing policies with AI...</p>
   <div class="progress-container">
     <div class="progress-bar" id="progress-bar" style="width:0%;"></div>
     <div class="progress-text" id="progress-text">0%</div>
   </div>
-  <p style="font-size:12px; color:#718096; margin-top:6px;" id="progress-detail"></p>
+  <p style="font-size:12px; color:#6b6b66; margin-top:8px;" id="progress-detail"></p>
 </div>
 
 <div id="result" style="display:none;">
@@ -44,11 +44,11 @@
       <div class="label">Policies Compared</div>
     </div>
     <div class="stat-card">
-      <div class="value" style="color:#3182ce" id="risk-changes"></div>
+      <div class="value" style="color:#0f5c5c" id="risk-changes"></div>
       <div class="label">Risk Level Changes</div>
     </div>
     <div class="stat-card">
-      <div class="value" style="color:#805ad5" id="llm-analyzed"></div>
+      <div class="value" style="color:#0f5c5c" id="llm-analyzed"></div>
       <div class="label">Policies with Insights</div>
     </div>
   </div>
@@ -56,7 +56,7 @@
   <div style="display:grid; grid-template-columns:1fr 1fr; gap:16px;">
     <div class="card">
       <h2>Basic Analytics</h2>
-      <p style="font-size:12px; color:#718096; margin-bottom:8px;" id="basic-time"></p>
+      <p style="font-size:12px; color:#6b6b66; margin-bottom:8px;" id="basic-time"></p>
       <table>
         <tr><td>No Action Needed</td><td id="basic-no-action-needed"></td></tr>
         <tr><td>Review Recommended</td><td id="basic-review-recommended"></td></tr>
@@ -66,36 +66,36 @@
     </div>
     <div class="card">
       <h2>LLM Analytics</h2>
-      <p style="font-size:12px; color:#718096; margin-bottom:8px;" id="llm-time"></p>
+      <p style="font-size:12px; color:#6b6b66; margin-bottom:8px;" id="llm-time"></p>
       <table>
         <tr><td>No Action Needed</td><td id="llm-no-action-needed"></td></tr>
         <tr><td>Review Recommended</td><td id="llm-review-recommended"></td></tr>
         <tr><td>Action Required</td><td id="llm-action-required"></td></tr>
         <tr><td>Urgent Review</td><td id="llm-urgent-review"></td></tr>
       </table>
-      <p style="font-size:12px; color:#805ad5; margin-top:8px;" id="llm-pct"></p>
+      <p style="font-size:12px; color:#0f5c5c; margin-top:8px;" id="llm-pct"></p>
     </div>
   </div>
 
   <div class="card" id="all-results-section" style="display:none;">
-    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
+    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
       <div>
         <h2 style="display:inline;">All Compared Policies</h2>
-        <span style="font-weight:400; font-size:12px; color:#718096; margin-left:8px;" id="all-results-count"></span>
+        <span style="font-weight:400; font-size:12px; color:#6b6b66; margin-left:8px;" id="all-results-count"></span>
       </div>
       <div style="display:flex; gap:8px; align-items:center;">
-        <label style="font-size:12px; color:#718096; display:flex; align-items:center; gap:4px; cursor:pointer;">
+        <label style="font-size:12px; color:#6b6b66; display:flex; align-items:center; gap:4px; cursor:pointer;">
           <input type="checkbox" id="filter-risk-changed" onchange="filterAllResults()">
           Risk changed only
         </label>
-        <label style="font-size:12px; color:#718096; display:flex; align-items:center; gap:4px; cursor:pointer;">
+        <label style="font-size:12px; color:#6b6b66; display:flex; align-items:center; gap:4px; cursor:pointer;">
           <input type="checkbox" id="filter-with-insights" onchange="filterAllResults()">
           With insights only
         </label>
       </div>
     </div>
-    <p style="font-size:12px; color:#718096; margin-bottom:10px;">
-      All policies compared in this run. <span style="background:#faf5ff; padding:2px 6px; border-radius:3px; color:#805ad5;">Purple rows</span> = risk level changed by LLM.
+    <p style="font-size:12px; color:#6b6b66; margin-bottom:12px;">
+      All policies compared in this run. <span style="background:#eef5f4; padding:2px 8px; border-radius:3px; color:#0f5c5c;">Purple rows</span> = risk level changed by LLM.
     </p>
     <table class="results-table">
       <thead>
@@ -111,7 +111,7 @@
     </table>
     <div id="all-results-pager" style="display:none; justify-content:center; align-items:center; gap:12px; margin-top:16px;">
       <button class="btn btn-secondary" style="padding:4px 12px; font-size:12px;" id="all-prev" onclick="allResultsPage(-1)">&larr; Prev</button>
-      <span style="font-size:13px; color:#4a5568;" id="all-page-info"></span>
+      <span style="font-size:13px; color:#4a4a46;" id="all-page-info"></span>
       <button class="btn btn-secondary" style="padding:4px 12px; font-size:12px;" id="all-next" onclick="allResultsPage(1)">Next &rarr;</button>
     </div>
   </div>
@@ -200,10 +200,10 @@ function renderAllResultsPage() {
     var riskArrow = r.risk_changed ? ' &rarr; ' : ' = ';
 
     body.innerHTML += '<tr' + rowClass + '>' +
-      '<td style="font-weight:500;"><a href="/ui/review/'+r.policy_number+'?ref=insight" style="color:#3182ce;">'+r.policy_number+'</a></td>' +
+      '<td style="font-weight:500;"><a href="/ui/review/'+r.policy_number+'?ref=insight" style="color:#0f5c5c;">'+r.policy_number+'</a></td>' +
       '<td><span class="badge badge-'+r.basic_risk+'">'+getLabel(r.basic_risk)+'</span></td>' +
       '<td><span class="badge badge-'+r.llm_risk+'">'+getLabel(r.llm_risk)+'</span>' +
-      (r.risk_changed ? ' <span style="font-size:10px; color:#805ad5; font-weight:600;">CHANGED</span>' : '') + '</td>' +
+      (r.risk_changed ? ' <span style="font-size:10px; color:#0f5c5c; font-weight:600;">CHANGED</span>' : '') + '</td>' +
       '<td>'+flags+'</td>' +
       '<td>'+(r.llm_insights && r.llm_insights.length > 0 ? '<span class="llm-sparkle" title="LLM analyzed"></span>' : '')+'</td>' +
       '</tr>';
@@ -265,7 +265,7 @@ async function runComparison() {
   const resp = await fetch('/migration/comparison', {method:'POST'});
   if (!resp.ok) {
     var err = await resp.json();
-    loading.innerHTML = '<p style="color:#e53e3e;">' + (err.detail || 'Failed') + '</p>';
+    loading.innerHTML = '<p style="color:#c2372d;">' + (err.detail || 'Failed') + '</p>';
     document.getElementById('compare-btn').disabled = false;
     document.getElementById('compare-btn').textContent = 'Compare';
     return;
@@ -289,7 +289,7 @@ async function runComparison() {
         break;
       }
       if (status.status === 'failed') {
-        loading.innerHTML = '<p style="color:#e53e3e;">Failed: ' + (status.error || 'unknown') + '</p>';
+        loading.innerHTML = '<p style="color:#c2372d;">Failed: ' + (status.error || 'unknown') + '</p>';
         document.getElementById('compare-btn').disabled = false;
         document.getElementById('compare-btn').textContent = 'Compare';
         return;

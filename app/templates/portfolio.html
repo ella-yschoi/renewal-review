@@ -3,69 +3,66 @@
 
 {% block content %}
 <style>
-  .modal-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 100; }
+  .modal-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(28,28,26,0.4); z-index: 100; }
   .modal-overlay.open { display: flex; align-items: center; justify-content: center; }
-  .modal { background: #f5f7fa; border-radius: 12px; max-width: 860px; width: 94%; max-height: 88vh; overflow-y: auto; padding: 28px; position: relative; box-shadow: 0 20px 60px rgba(0,0,0,0.3); }
-  .modal-close { position: absolute; top: 12px; right: 16px; background: none; border: none; font-size: 20px; cursor: pointer; color: #718096; padding: 4px 8px; }
-  .modal-close:hover { color: #1a1a2e; }
-  .modal h2 { font-size: 16px; margin-bottom: 12px; color: #2d3748; }
-  .modal-title { font-size: 18px; font-weight: 700; margin-bottom: 4px; padding-right: 32px; }
-  .modal-subtitle { font-size: 13px; color: #718096; margin-bottom: 20px; }
-  .modal-spinner { text-align: center; padding: 32px; color: #718096; }
+  .modal { background: #f6f6f4; border-radius: 16px; max-width: 860px; width: 94%; max-height: 88vh; overflow-y: auto; padding: 28px; position: relative; box-shadow: 0 16px 48px rgba(0,0,0,0.16); }
+  .modal-close { position: absolute; top: 12px; right: 16px; background: none; border: none; font-size: 20px; cursor: pointer; color: #6b6b66; padding: 4px 8px; }
+  .modal-close:hover { color: #1c1c1a; }
+  .modal h2 { font-size: 16px; margin-bottom: 12px; color: #1c1c1a; }
+  .modal-title { font-size: 18px; font-weight: 500; margin-bottom: 4px; padding-right: 32px; }
+  .modal-subtitle { font-size: 13px; color: #6b6b66; margin-bottom: 20px; }
+  .modal-spinner { text-align: center; padding: 32px; color: #6b6b66; }
   .bundle-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
-  .bundle-item { display: flex; align-items: center; gap: 8px; font-size: 13px; padding: 8px 12px; background: #fff; border-radius: 6px; }
+  .bundle-item { display: flex; align-items: center; gap: 8px; font-size: 13px; padding: 8px 12px; background: #fff; border-radius: 8px; }
   .bundle-item .icon { font-size: 16px; }
-  .bundle-item .icon.check { color: #22543d; }
-  .bundle-item .icon.cross { color: #9b2c2c; }
-  .flag-card { border-left: 4px solid #e2e8f0; padding: 12px 16px; margin-bottom: 10px; background: #fff; border-radius: 0 6px 6px 0; }
-  .flag-card.severity-info { border-left-color: #3182ce; }
-  .flag-card.severity-warning { border-left-color: #d69e2e; }
-  .flag-card.severity-critical { border-left-color: #e53e3e; }
+  .bundle-item .icon.check { color: #1f5a3a; }
+  .bundle-item .icon.cross { color: #8f2a22; }
+  .flag-card { border: 1px solid #e4e4e0; padding: 12px 16px; margin-bottom: 8px; background: #fff; border-radius: 8px; }
   .flag-card .flag-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px; }
-  .flag-card .flag-type { font-weight: 600; font-size: 13px; color: #2d3748; }
-  .severity-badge { display: inline-block; padding: 1px 8px; border-radius: 4px; font-size: 11px; font-weight: 600; text-transform: uppercase; }
-  .severity-badge.info { background: #bee3f8; color: #2a4365; }
-  .severity-badge.warning { background: #fefcbf; color: #744210; }
-  .severity-badge.critical { background: #fed7d7; color: #9b2c2c; }
-  .flag-card .flag-desc { font-size: 13px; color: #4a5568; line-height: 1.5; }
-  .flag-card .flag-policies { font-size: 11px; color: #718096; margin-top: 4px; }
-  .risk-bar { height: 24px; display: flex; border-radius: 6px; overflow: hidden; }
-  .risk-bar-labels { display: flex; justify-content: space-between; margin-top: 6px; font-size: 11px; color: #718096; }
-  .change-positive { color: #9b2c2c; }
-  .change-negative { color: #22543d; }
+  .flag-card .flag-type { font-weight: 600; font-size: 13px; color: #1c1c1a; }
+  .severity-badge { display: inline-block; padding: 1px 8px; border-radius: 4px; font-size: 11px; font-weight: 600;  }
+  .severity-badge.info { background: #d7e8e6; color: #0b4a4a; }
+  .severity-badge.warning { background: #f6ecd0; color: #6b4a0f; }
+  .severity-badge.critical { background: #f6dcd8; color: #8f2a22; }
+  .flag-card .flag-desc { font-size: 13px; color: #4a4a46; line-height: 1.5; }
+  .flag-card .flag-policies { font-size: 11px; color: #6b6b66; margin-top: 4px; }
+  .risk-bar { height: 24px; display: flex; border-radius: 8px; overflow: hidden; }
+  .risk-bar-labels { display: flex; justify-content: space-between; margin-top: 8px; font-size: 11px; color: #6b6b66; }
+  .change-positive { color: #8f2a22; }
+  .change-negative { color: #1f5a3a; }
   .verdict-banner { padding: 12px 16px; border-radius: 8px; font-size: 14px; font-weight: 600; margin-bottom: 16px; }
-  .verdict-banner.verdict-red { background: #fed7d7; color: #9b2c2c; border: 1px solid #feb2b2; }
-  .verdict-banner.verdict-yellow { background: #fefcbf; color: #744210; border: 1px solid #f6e05e; }
-  .verdict-banner.verdict-blue { background: #bee3f8; color: #2a4365; border: 1px solid #90cdf4; }
-  .verdict-banner.verdict-green { background: #c6f6d5; color: #22543d; border: 1px solid #9ae6b4; }
-  .bundle-recommendation { grid-column: 1 / -1; padding: 10px 14px; border-radius: 6px; font-size: 13px; font-weight: 500; }
-  .bundle-recommendation.rec-green { background: #c6f6d5; color: #22543d; }
-  .bundle-recommendation.rec-yellow { background: #fefcbf; color: #744210; }
-  .bundle-recommendation.rec-blue { background: #bee3f8; color: #2a4365; }
-  .unbundle-warning { grid-column: 1 / -1; padding: 10px 14px; border-radius: 6px; font-size: 13px; background: #fed7d7; color: #9b2c2c; font-weight: 500; }
-  .flag-action { font-size: 12px; color: #2a4365; margin-top: 6px; padding: 4px 8px; background: #ebf8ff; border-radius: 4px; }
+  .verdict-banner.verdict-red { background: #f6dcd8; color: #8f2a22; border: 1px solid #e8b4ae; }
+  .verdict-banner.verdict-yellow { background: #f6ecd0; color: #6b4a0f; border: 1px solid #e3c65a; }
+  .verdict-banner.verdict-blue { background: #d7e8e6; color: #0b4a4a; border: 1px solid #9cc3bf; }
+  .verdict-banner.verdict-green { background: #e1efe5; color: #1f5a3a; border: 1px solid #a9cdb5; }
+  .bundle-recommendation { grid-column: 1 / -1; padding: 12px 16px; border-radius: 8px; font-size: 13px; font-weight: 500; }
+  .bundle-recommendation.rec-green { background: #e1efe5; color: #1f5a3a; }
+  .bundle-recommendation.rec-yellow { background: #f6ecd0; color: #6b4a0f; }
+  .bundle-recommendation.rec-blue { background: #d7e8e6; color: #0b4a4a; }
+  .unbundle-warning { grid-column: 1 / -1; padding: 12px 16px; border-radius: 8px; font-size: 13px; background: #f6dcd8; color: #8f2a22; font-weight: 500; }
+  .flag-action { font-size: 12px; color: #0b4a4a; margin-top: 8px; padding: 4px 8px; background: #eef5f4; border-radius: 4px; }
   .action-items-list { list-style: none; padding: 0; margin: 0; counter-reset: action-counter; }
-  .action-items-list li { counter-increment: action-counter; padding: 8px 12px; margin-bottom: 6px; border-radius: 6px; font-size: 13px; display: flex; align-items: baseline; gap: 8px; }
-  .action-items-list li::before { content: counter(action-counter); display: inline-flex; align-items: center; justify-content: center; width: 20px; height: 20px; border-radius: 50%; font-size: 11px; font-weight: 700; flex-shrink: 0; }
-  .action-items-list li.priority-critical { background: #fed7d7; border-left: 3px solid #e53e3e; }
-  .action-items-list li.priority-critical::before { background: #e53e3e; color: white; }
-  .action-items-list li.priority-warning { background: #fefcbf; border-left: 3px solid #d69e2e; }
-  .action-items-list li.priority-warning::before { background: #d69e2e; color: white; }
-  .action-items-list li.priority-info { background: #bee3f8; border-left: 3px solid #3182ce; }
-  .action-items-list li.priority-info::before { background: #3182ce; color: white; }
+  .action-items-list li { counter-increment: action-counter; padding: 8px 12px; margin-bottom: 6px; border-radius: 8px; font-size: 13px; display: flex; align-items: baseline; gap: 8px; }
+  .action-items-list li::before { content: counter(action-counter); display: inline-flex; align-items: center; justify-content: center; width: 20px; height: 20px; border-radius: 50%; font-size: 11px; font-weight: 600; flex-shrink: 0; }
+  .action-items-list li.priority-critical { background: #f6dcd8; }
+  .action-items-list li.priority-critical::before { background: #c2372d; color: white; }
+  .action-items-list li.priority-warning { background: #f6ecd0; }
+  .action-items-list li.priority-warning::before { background: #b88a1e; color: white; }
+  .action-items-list li.priority-info { background: #d7e8e6; }
+  .action-items-list li.priority-info::before { background: #0f5c5c; color: white; }
   .type-badge { display: inline-block; padding: 2px 8px; border-radius: 4px; font-size: 11px; font-weight: 600; }
-  .type-badge.type-bundle { background: #e9d8fd; color: #553c9a; }
-  .type-badge.type-auto { background: #bee3f8; color: #2a4365; }
-  .type-badge.type-home { background: #c6f6d5; color: #22543d; }
+  .type-badge.type-bundle { background: #d7e8e6; color: #0b4a4a; }
+  .type-badge.type-auto { background: #d7e8e6; color: #0b4a4a; }
+  .type-badge.type-home { background: #e1efe5; color: #1f5a3a; }
 </style>
 
 <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px;">
-  <h1 style="font-size:20px;">Portfolio Risk Aggregator</h1>
+  <h1 style="font-size:24px;">Portfolio Risk Aggregator</h1>
 </div>
 
-<div class="card" style="margin-bottom:16px; background:#faf5ff; border-left:4px solid #805ad5;">
-  <p style="font-size:13px; color:#553c9a; margin-bottom:6px; font-weight:600;">Account-level risk analysis for bundled policies</p>
-  <p style="font-size:12px; color:#718096; line-height:1.6;">
+<div class="card" style="margin-bottom:16px; background:#eef5f4; border-color:#cfe2df;">
+  <p style="font-size:13px; color:#0b4a4a; margin-bottom:8px; font-weight:600;">Account-level risk analysis for bundled policies</p>
+  <p style="font-size:12px; color:#6b6b66; line-height:1.6;">
     Groups policies by client account to detect <strong>cross-policy risks</strong> — coverage overlaps,
     bundle discount eligibility, and gaps that single-policy review cannot catch.
     Accounts with 2+ policies can be analyzed together via the <strong>Analyze</strong> button.
@@ -74,17 +71,17 @@
 
 {% if not accounts %}
 <div class="card">
-  <p style="color:#718096; text-align:center; padding:24px;">No reviewed policies found. Run a batch review from the Dashboard first.</p>
+  <p style="color:#6b6b66; text-align:center; padding:24px;">No reviewed policies found. Run a batch review from the Dashboard first.</p>
 </div>
 {% else %}
 <div class="card">
   <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
-    <h2 style="margin:0;">Client Accounts <span style="font-weight:400; font-size:12px; color:#718096;">{{ total_results }} accounts — page {{ page }}/{{ total_pages }}</span></h2>
+    <h2 style="margin:0;">Client Accounts <span style="font-weight:400; font-size:12px; color:#6b6b66;">{{ total_results }} accounts — page {{ page }}/{{ total_pages }}</span></h2>
   </div>
   <table style="width:100%; table-layout:fixed;">
     <thead>
       <tr>
-        <th style="width:26%; cursor:pointer; user-select:none;" onclick="sortByAccount()">Account {% if sort == 'account' %}{% if order == 'asc' %}&#9650;{% else %}&#9660;{% endif %}{% else %}<span style="color:#cbd5e0;">&#9650;</span>{% endif %}</th>
+        <th style="width:26%; cursor:pointer; user-select:none;" onclick="sortByAccount()">Account {% if sort == 'account' %}{% if order == 'asc' %}&#9650;{% else %}&#9660;{% endif %}{% else %}<span style="color:#d4d4cf;">&#9650;</span>{% endif %}</th>
         <th style="width:10%;">Policies</th>
         <th style="width:12%;">Type</th>
         <th style="width:18%;">Total Premium</th>
@@ -99,7 +96,7 @@
           {% if acct.insured_name and acct.insured_name != acct.policy_numbers[0] %}
           <div style="font-weight:500;">{{ acct.insured_name }}</div>
           {% endif %}
-          <div style="font-size:11px; color:#718096;">{{ acct.policy_numbers | join(", ") }}</div>
+          <div style="font-size:11px; color:#6b6b66;">{{ acct.policy_numbers | join(", ") }}</div>
         </td>
         <td>{{ acct.policy_count }}</td>
         <td><span class="type-badge type-{{ acct.type|lower }}">{{ acct.type }}</span></td>
@@ -121,7 +118,7 @@
     {% if page > 1 %}
     <a href="/ui/portfolio?page={{ page - 1 }}&sort={{ sort }}&order={{ order }}" class="btn btn-secondary" style="padding:4px 12px; font-size:12px;">&larr; Prev</a>
     {% endif %}
-    <span style="font-size:13px; color:#4a5568;">{{ page }} / {{ total_pages }}</span>
+    <span style="font-size:13px; color:#4a4a46;">{{ page }} / {{ total_pages }}</span>
     {% if page < total_pages %}
     <a href="/ui/portfolio?page={{ page + 1 }}&sort={{ sort }}&order={{ order }}" class="btn btn-secondary" style="padding:4px 12px; font-size:12px;">Next &rarr;</a>
     {% endif %}
@@ -209,7 +206,7 @@ async function analyzeAccount(policyNumbers) {
     if (!resp.ok) {
       var err = await resp.json();
       content.style.display = 'block';
-      content.innerHTML = '<p style="color:#9b2c2c; text-align:center; padding:16px;">Error: ' + (err.detail || 'Analysis failed') + '</p>';
+      content.innerHTML = '<p style="color:#8f2a22; text-align:center; padding:16px;">Error: ' + (err.detail || 'Analysis failed') + '</p>';
       return;
     }
 
@@ -218,7 +215,7 @@ async function analyzeAccount(policyNumbers) {
   } catch (e) {
     loading.style.display = 'none';
     content.style.display = 'block';
-    content.innerHTML = '<p style="color:#9b2c2c; text-align:center; padding:16px;">Error: ' + e.message + '</p>';
+    content.innerHTML = '<p style="color:#8f2a22; text-align:center; padding:16px;">Error: ' + e.message + '</p>';
   }
 }
 
@@ -246,10 +243,10 @@ function renderStats(data) {
 
 function renderRiskBar(breakdown) {
   var levels = [
-    {key: 'no_action_needed', color: '#c6f6d5', label: getLabel('no_action_needed')},
-    {key: 'review_recommended', color: '#fefcbf', label: getLabel('review_recommended')},
-    {key: 'action_required', color: '#fed7d7', label: getLabel('action_required')},
-    {key: 'urgent_review', color: '#9b2c2c', label: getLabel('urgent_review'), textColor: '#fff'}
+    {key: 'no_action_needed', color: '#e1efe5', label: getLabel('no_action_needed')},
+    {key: 'review_recommended', color: '#f6ecd0', label: getLabel('review_recommended')},
+    {key: 'action_required', color: '#f6dcd8', label: getLabel('action_required')},
+    {key: 'urgent_review', color: '#8f2a22', label: getLabel('urgent_review'), textColor: '#fff'}
   ];
   var total = 0;
   levels.forEach(function(l) { total += breakdown[l.key] || 0; });
@@ -261,7 +258,7 @@ function renderRiskBar(breakdown) {
     var count = breakdown[l.key] || 0;
     var pct = (count / total * 100);
     if (count > 0) {
-      var textColor = l.textColor || '#2d3748';
+      var textColor = l.textColor || '#1c1c1a';
       var innerText = pct >= 15 ? count : '';
       barHtml += '<div style="background:' + l.color + '; height:100%; width:' + pct + '%; display:flex; align-items:center; justify-content:center; font-size:11px; font-weight:600; color:' + textColor + ';" title="' + l.label + ': ' + count + ' (' + pct.toFixed(1) + '%)">' + innerText + '</div>';
     }
@@ -318,7 +315,7 @@ var FLAG_ACTIONS = {
 function renderFlags(flags) {
   var container = document.getElementById('flags-list');
   if (flags.length === 0) {
-    container.innerHTML = '<p style="color:#718096; text-align:center; padding:12px;">No cross-policy issues detected.</p>';
+    container.innerHTML = '<p style="color:#6b6b66; text-align:center; padding:12px;">No cross-policy issues detected.</p>';
     return;
   }
 

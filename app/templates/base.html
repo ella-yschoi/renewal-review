@@ -4,43 +4,62 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>{% block title %}Renewal Review{% endblock %}</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
   <style>
+    :root {
+      --bg: #f6f6f4; --surface: #fff; --surface-2: #f7f7f5; --hover: #f1f1ee;
+      --line: #e4e4e0; --line-strong: #d4d4cf;
+      --text: #1c1c1a; --text-2: #4a4a46; --text-3: #6b6b66;
+      --accent: #0f5c5c; --accent-hover: #0b4a4a; --accent-tint: #eef5f4;
+      --ok-bg: #e1efe5; --ok: #1f5a3a; --warn-bg: #f6ecd0; --warn: #6b4a0f;
+      --bad-bg: #f6dcd8; --bad: #8f2a22;
+      --mono: "IBM Plex Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
+      --ease: cubic-bezier(0.2, 0, 0, 1);
+    }
     * { margin: 0; padding: 0; box-sizing: border-box; }
-    body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background: #f5f7fa; color: #1a1a2e; }
-    nav { background: #1a1a2e; padding: 12px 24px; display: flex; align-items: center; gap: 24px; }
-    nav a { color: #a0aec0; text-decoration: none; font-size: 14px; font-weight: 500; }
-    nav a:hover, nav a.active { color: #fff; }
-    nav .logo { color: #fff; font-weight: 700; font-size: 16px; margin-right: 12px; }
-    .container { max-width: 1200px; margin: 24px auto; padding: 0 24px; }
-    .card { background: #fff; border-radius: 8px; padding: 20px; margin-bottom: 16px; box-shadow: 0 1px 3px rgba(0,0,0,0.08); }
-    .card h2 { font-size: 16px; margin-bottom: 12px; color: #2d3748; }
+    body { font-family: "IBM Plex Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background: var(--bg); color: var(--text); line-height: 1.5; font-variant-numeric: tabular-nums; -webkit-font-smoothing: antialiased; }
+    h1 { font-weight: 500; letter-spacing: -0.01em; }
+    a { color: var(--accent); }
+    nav { background: var(--surface); border-bottom: 1px solid var(--line); padding: 0 24px; height: 52px; display: flex; align-items: center; gap: 4px; }
+    nav a { color: var(--text-3); text-decoration: none; font-size: 14px; font-weight: 500; padding: 6px 12px; border-radius: 8px; transition: color 0.15s var(--ease), background-color 0.15s var(--ease); }
+    nav a:hover { color: var(--text); background: var(--hover); }
+    nav a.active { color: var(--text); background: var(--hover); }
+    nav .logo { color: var(--text); font-weight: 600; font-size: 15px; margin-right: 20px; letter-spacing: -0.01em; }
+    a:focus-visible, button:focus-visible, select:focus-visible, input:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+    .container { max-width: 1280px; margin: 28px auto; padding: 0 24px; }
+    .card { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 20px; margin-bottom: 16px; }
+    .card h2 { font-size: 14px; font-weight: 600; margin-bottom: 12px; color: var(--text); }
     table { width: 100%; border-collapse: collapse; font-size: 13px; }
-    th { text-align: left; padding: 8px 12px; background: #f7fafc; border-bottom: 2px solid #e2e8f0; font-weight: 600; color: #4a5568; }
-    td { padding: 8px 12px; border-bottom: 1px solid #edf2f7; }
-    tr:hover { background: #f7fafc; }
-    .badge { display: inline-block; padding: 2px 8px; border-radius: 4px; font-size: 11px; font-weight: 600; text-transform: uppercase; }
-    .badge-no_action_needed { background: #c6f6d5; color: #22543d; }
-    .badge-review_recommended { background: #fefcbf; color: #744210; }
-    .badge-action_required { background: #fed7d7; color: #9b2c2c; }
-    .badge-urgent_review { background: #9b2c2c; color: #fff; }
-    .btn { display: inline-block; padding: 8px 16px; border-radius: 6px; font-size: 13px; font-weight: 600; cursor: pointer; border: none; text-decoration: none; }
-    .btn-primary { background: #3182ce; color: #fff; }
-    .btn-primary:hover { background: #2b6cb0; }
-    .btn-secondary { background: #e2e8f0; color: #2d3748; }
-    .btn-secondary:hover { background: #cbd5e0; }
+    th { text-align: left; padding: 8px 12px; background: var(--surface-2); border-bottom: 1px solid var(--line-strong); font-weight: 500; font-size: 12px; color: var(--text-3); }
+    td { padding: 8px 12px; border-bottom: 1px solid var(--line); }
+    tr:hover td { background: var(--surface-2); }
+    .badge { display: inline-block; padding: 2px 8px; border-radius: 4px; font-size: 12px; font-weight: 500; }
+    .badge-no_action_needed { background: var(--ok-bg); color: var(--ok); }
+    .badge-review_recommended { background: var(--warn-bg); color: var(--warn); }
+    .badge-action_required { background: var(--bad-bg); color: var(--bad); }
+    .badge-urgent_review { background: var(--bad); color: #fff; }
+    .btn { display: inline-block; padding: 8px 16px; border-radius: 8px; font-family: inherit; font-size: 13px; font-weight: 500; cursor: pointer; border: 1px solid transparent; text-decoration: none; transition: background-color 0.15s var(--ease), border-color 0.15s var(--ease), transform 0.1s var(--ease); }
+    .btn:active:not(:disabled) { transform: scale(0.98); }
+    .btn-primary { background: var(--accent); color: #fff; }
+    .btn-primary:hover { background: var(--accent-hover); }
+    .btn-secondary { background: var(--surface); color: var(--text); border-color: var(--line-strong); }
+    .btn-secondary:hover { background: var(--hover); }
     .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 12px; margin-bottom: 16px; }
-    .stat-card { background: #fff; border-radius: 8px; padding: 16px; text-align: center; box-shadow: 0 1px 3px rgba(0,0,0,0.08); }
-    .stat-card .value { font-size: 28px; font-weight: 700; }
-    .stat-card .label { font-size: 12px; color: #718096; margin-top: 4px; }
-    .flag-tag { display: inline-block; padding: 1px 6px; margin: 1px; border-radius: 3px; font-size: 11px; background: #edf2f7; color: #4a5568; }
-    .progress-bar { height: 8px; background: #e2e8f0; border-radius: 4px; overflow: hidden; }
-    .progress-fill { height: 100%; border-radius: 4px; transition: width 0.3s; }
-    #loading { display: none; text-align: center; padding: 40px; color: #718096; }
-    .spinner { display: inline-block; width: 24px; height: 24px; border: 3px solid #e2e8f0; border-top-color: #3182ce; border-radius: 50%; animation: spin 0.8s linear infinite; }
+    .stat-card { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 16px 20px; text-align: left; }
+    .stat-card .value { font-size: 28px; font-weight: 500; line-height: 1.2; letter-spacing: -0.01em; }
+    .stat-card .label { font-size: 12px; color: var(--text-3); margin-top: 4px; }
+    .flag-tag { display: inline-block; padding: 2px 8px; margin: 2px; border-radius: 4px; font-size: 12px; background: var(--hover); color: var(--text-2); }
+    .progress-bar { height: 8px; background: var(--line); border-radius: 4px; overflow: hidden; }
+    .progress-fill { height: 100%; border-radius: 4px; }
+    #loading { display: none; text-align: center; padding: 40px; color: var(--text-3); }
+    .spinner { display: inline-block; width: 24px; height: 24px; border: 3px solid var(--line); border-top-color: var(--accent); border-radius: 50%; animation: spin 0.8s linear infinite; }
     @keyframes spin { to { transform: rotate(360deg); } }
-    .llm-sparkle { display:inline-block; color:#805ad5; font-size:14px; animation: sparkle 2s ease-in-out infinite; }
-    .llm-sparkle::before { content: '\2728'; }
-    @keyframes sparkle { 0%,100% { opacity:0.6; transform:scale(1); } 50% { opacity:1; transform:scale(1.2); } }
+    .llm-sparkle { display: inline-block; width: 6px; height: 6px; border-radius: 50%; background: var(--accent); vertical-align: middle; margin-right: 2px; }
+    select, input[type="text"] { font-family: inherit; }
+    select { appearance: none; -webkit-appearance: none; padding-right: 36px !important; background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 16 16' fill='none' stroke='%236b6b66' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m4 6 4 4 4-4'/%3E%3C/svg%3E") !important; background-repeat: no-repeat !important; background-position: right 12px center !important; background-size: 16px 16px !important; }
+    @media (prefers-reduced-motion: reduce) { * { transition: none !important; animation: none !important; } }
   </style>
 </head>
 <body>
