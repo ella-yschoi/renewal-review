@@ -3,13 +3,13 @@
 
 {% block content %}
 <style>
-  .batch-progress-container { background:#edf2f7; border-radius:8px; overflow:hidden; height:24px; position:relative; }
-  .batch-progress-bar { height:100%; background:linear-gradient(90deg, #3182ce, #2b6cb0); border-radius:8px; transition:width 0.3s ease; min-width:0; }
-  .batch-progress-text { position:absolute; top:0; left:0; right:0; bottom:0; display:flex; align-items:center; justify-content:center; font-size:12px; font-weight:600; color:#2d3748; }
+  .batch-progress-container { background:#eeeeeb; border-radius:8px; overflow:hidden; height:24px; position:relative; }
+  .batch-progress-bar { height:100%; background:#0f5c5c; border-radius:8px;  min-width:0; }
+  .batch-progress-text { position:absolute; top:0; left:0; right:0; bottom:0; display:flex; align-items:center; justify-content:center; font-size:12px; font-weight:600; color:#1c1c1a; }
 </style>
 
 <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px;">
-  <h1 style="font-size:20px;">Dashboard</h1>
+  <h1 style="font-size:24px;">Dashboard</h1>
   <div style="display:flex; gap:8px; align-items:center;">
     <button class="btn btn-primary" id="btn-review-selected" onclick="reviewSelected()" disabled style="opacity:0.5;">Review (<span id="selected-count">0</span>)</button>
     <button class="btn btn-secondary" id="btn-review-all" onclick="runBatch()">Review All ({{ data_total | default(0) }})</button>
@@ -17,46 +17,46 @@
 </div>
 
 <div id="batch-loading" style="display:none; max-width:480px; margin:0 auto 16px; text-align:center;">
-  <p style="margin-bottom:8px; font-size:13px; color:#2b6cb0; font-weight:500;" id="batch-loading-msg">Processing...</p>
+  <p style="margin-bottom:8px; font-size:13px; color:#0b4a4a; font-weight:500;" id="batch-loading-msg">Processing...</p>
   <div class="batch-progress-container">
     <div class="batch-progress-bar" id="batch-progress-bar" style="width:0%;"></div>
     <div class="batch-progress-text" id="batch-progress-text">0%</div>
   </div>
-  <p style="font-size:12px; color:#718096; margin-top:6px;" id="batch-progress-detail"></p>
+  <p style="font-size:12px; color:#6b6b66; margin-top:8px;" id="batch-progress-detail"></p>
 </div>
 
 <div class="card" style="margin-bottom:16px;">
   <h2 style="margin-bottom:12px;">Broker Workflow</h2>
   <div style="display:grid; grid-template-columns:repeat(5, 1fr); gap:12px;">
-    <div style="text-align:center;">
-      <div style="font-size:24px; font-weight:700; color:#a0aec0;" id="broker-pending">{{ broker.pending }}</div>
-      <div style="font-size:11px; color:#718096; margin-top:2px;">Not Reviewed</div>
+    <div>
+      <div style="font-size:24px; font-weight:600; color:#8a8a84;" id="broker-pending">{{ broker.pending }}</div>
+      <div style="font-size:11px; color:#6b6b66; margin-top:2px;">Not Reviewed</div>
       {% set pending_pct = (broker.pending / broker.total * 100) if broker.total else 0 %}
-      <div class="progress-bar" style="margin-top:6px;"><div class="progress-fill" id="broker-bar-pending" style="width:{{ pending_pct }}%; background:#a0aec0;"></div></div>
+      <div class="progress-bar" style="margin-top:8px;"><div class="progress-fill" id="broker-bar-pending" style="width:{{ pending_pct }}%; background:#8a8a84;"></div></div>
     </div>
-    <div style="text-align:center;">
-      <div style="font-size:24px; font-weight:700; color:#dd6b20;" id="broker-contact-needed">{{ broker.contact_needed }}</div>
-      <div style="font-size:11px; color:#718096; margin-top:2px;">Contact Needed</div>
+    <div>
+      <div style="font-size:24px; font-weight:600; color:#b4690e;" id="broker-contact-needed">{{ broker.contact_needed }}</div>
+      <div style="font-size:11px; color:#6b6b66; margin-top:2px;">Contact Needed</div>
       {% set contact_pct = (broker.contact_needed / broker.total * 100) if broker.total else 0 %}
-      <div class="progress-bar" style="margin-top:6px;"><div class="progress-fill" id="broker-bar-contact" style="width:{{ contact_pct }}%; background:#dd6b20;"></div></div>
+      <div class="progress-bar" style="margin-top:8px;"><div class="progress-fill" id="broker-bar-contact" style="width:{{ contact_pct }}%; background:#b4690e;"></div></div>
     </div>
-    <div style="text-align:center;">
-      <div style="font-size:24px; font-weight:700; color:#3182ce;" id="broker-contacted">{{ broker.contacted }}</div>
-      <div style="font-size:11px; color:#718096; margin-top:2px;">Contacted</div>
+    <div>
+      <div style="font-size:24px; font-weight:600; color:#0f5c5c;" id="broker-contacted">{{ broker.contacted }}</div>
+      <div style="font-size:11px; color:#6b6b66; margin-top:2px;">Contacted</div>
       {% set contacted_pct = (broker.contacted / broker.total * 100) if broker.total else 0 %}
-      <div class="progress-bar" style="margin-top:6px;"><div class="progress-fill" id="broker-bar-contacted" style="width:{{ contacted_pct }}%; background:#3182ce;"></div></div>
+      <div class="progress-bar" style="margin-top:8px;"><div class="progress-fill" id="broker-bar-contacted" style="width:{{ contacted_pct }}%; background:#0f5c5c;"></div></div>
     </div>
-    <div style="text-align:center;">
-      <div style="font-size:24px; font-weight:700; color:#805ad5;" id="broker-quotes">{{ broker.quotes_generated }}</div>
-      <div style="font-size:11px; color:#718096; margin-top:2px;">Quotes Generated</div>
+    <div>
+      <div style="font-size:24px; font-weight:600; color:#0f5c5c;" id="broker-quotes">{{ broker.quotes_generated }}</div>
+      <div style="font-size:11px; color:#6b6b66; margin-top:2px;">Quotes Generated</div>
       {% set quotes_pct = (broker.quotes_generated / broker.total * 100) if broker.total else 0 %}
-      <div class="progress-bar" style="margin-top:6px;"><div class="progress-fill" id="broker-bar-quotes" style="width:{{ quotes_pct }}%; background:#805ad5;"></div></div>
+      <div class="progress-bar" style="margin-top:8px;"><div class="progress-fill" id="broker-bar-quotes" style="width:{{ quotes_pct }}%; background:#0f5c5c;"></div></div>
     </div>
-    <div style="text-align:center;">
-      <div style="font-size:24px; font-weight:700; color:#38a169;" id="broker-reviewed">{{ broker.reviewed }}</div>
-      <div style="font-size:11px; color:#718096; margin-top:2px;">Reviewed</div>
+    <div>
+      <div style="font-size:24px; font-weight:600; color:#3f7d58;" id="broker-reviewed">{{ broker.reviewed }}</div>
+      <div style="font-size:11px; color:#6b6b66; margin-top:2px;">Reviewed</div>
       {% set reviewed_pct = (broker.reviewed / broker.total * 100) if broker.total else 0 %}
-      <div class="progress-bar" style="margin-top:6px;"><div class="progress-fill" id="broker-bar-reviewed" style="width:{{ reviewed_pct }}%; background:#38a169;"></div></div>
+      <div class="progress-bar" style="margin-top:8px;"><div class="progress-fill" id="broker-bar-reviewed" style="width:{{ reviewed_pct }}%; background:#3f7d58;"></div></div>
     </div>
   </div>
 </div>
@@ -67,23 +67,23 @@
     <div class="label">Total</div>
   </div>
   <div class="stat-card">
-    <div class="value" style="color:#a0aec0">{{ risk_dist.pending }}</div>
+    <div class="value" style="color:#8a8a84">{{ risk_dist.pending }}</div>
     <div class="label">Not Reviewed</div>
   </div>
   <div class="stat-card">
-    <div class="value" style="color:#22543d">{{ risk_dist.no_action_needed }}</div>
+    <div class="value" style="color:#1f5a3a">{{ risk_dist.no_action_needed }}</div>
     <div class="label">No Action Needed</div>
   </div>
   <div class="stat-card">
-    <div class="value" style="color:#744210">{{ risk_dist.review_recommended }}</div>
+    <div class="value" style="color:#6b4a0f">{{ risk_dist.review_recommended }}</div>
     <div class="label">Review Recommended</div>
   </div>
   <div class="stat-card">
-    <div class="value" style="color:#9b2c2c">{{ risk_dist.action_required }}</div>
+    <div class="value" style="color:#8f2a22">{{ risk_dist.action_required }}</div>
     <div class="label">Action Required</div>
   </div>
   <div class="stat-card">
-    <div class="value" style="color:#fff; background:#9b2c2c; border-radius:6px; padding:2px 8px;">{{ risk_dist.urgent_review }}</div>
+    <div class="value" style="color:#8f2a22;">{{ risk_dist.urgent_review }}</div>
     <div class="label">Urgent Review</div>
   </div>
 </div>
@@ -91,14 +91,14 @@
 <div class="card" style="margin-bottom:16px;">
   <h2>Risk Distribution</h2>
   {% set t = risk_dist.total or 1 %}
-  <div class="progress-bar" style="height:24px; display:flex; border-radius:6px; overflow:hidden;">
-    <div style="background:#e2e8f0; height:100%; width:{{ (risk_dist.pending / t * 100) }}%;" title="Not Reviewed"></div>
-    <div style="background:#c6f6d5; height:100%; width:{{ (risk_dist.no_action_needed / t * 100) }}%;" title="No Action Needed"></div>
-    <div style="background:#fefcbf; height:100%; width:{{ (risk_dist.review_recommended / t * 100) }}%;" title="Review Recommended"></div>
-    <div style="background:#fed7d7; height:100%; width:{{ (risk_dist.action_required / t * 100) }}%;" title="Action Required"></div>
-    <div style="background:#9b2c2c; height:100%; width:{{ (risk_dist.urgent_review / t * 100) }}%;" title="Urgent Review"></div>
+  <div class="progress-bar" style="height:24px; display:flex; border-radius:8px; overflow:hidden;">
+    <div style="background:#e4e4e0; height:100%; width:{{ (risk_dist.pending / t * 100) }}%;" title="Not Reviewed"></div>
+    <div style="background:#e1efe5; height:100%; width:{{ (risk_dist.no_action_needed / t * 100) }}%;" title="No Action Needed"></div>
+    <div style="background:#f6ecd0; height:100%; width:{{ (risk_dist.review_recommended / t * 100) }}%;" title="Review Recommended"></div>
+    <div style="background:#f6dcd8; height:100%; width:{{ (risk_dist.action_required / t * 100) }}%;" title="Action Required"></div>
+    <div style="background:#8f2a22; height:100%; width:{{ (risk_dist.urgent_review / t * 100) }}%;" title="Urgent Review"></div>
   </div>
-  <div style="display:flex; justify-content:space-between; margin-top:6px; font-size:11px; color:#718096;">
+  <div style="display:flex; justify-content:space-between; margin-top:8px; font-size:11px; color:#6b6b66;">
     <span>Not Reviewed {{ "%.1f"|format(risk_dist.pending / t * 100) }}%</span>
     <span>No Action {{ "%.1f"|format(risk_dist.no_action_needed / t * 100) }}%</span>
     <span>Review {{ "%.1f"|format(risk_dist.review_recommended / t * 100) }}%</span>
@@ -109,30 +109,30 @@
 
 <div class="card" style="margin-bottom:16px; padding:12px 20px;">
   <div style="display:flex; gap:12px; align-items:center; flex-wrap:wrap;">
-    <span style="font-size:12px; font-weight:600; color:#4a5568;">Filters</span>
-    <select id="filter-reviewed" onchange="applyFilters()" style="font-size:12px; padding:6px 12px; border:1px solid #cbd5e0; border-radius:6px; background:#fff; color:#2d3748; cursor:pointer; min-width:130px;">
+    <span style="font-size:12px; font-weight:600; color:#4a4a46;">Filters</span>
+    <select id="filter-reviewed" onchange="applyFilters()" style="font-size:12px; padding:8px 12px; border:1px solid #d4d4cf; border-radius:8px; background:#fff; color:#1c1c1a; cursor:pointer; min-width:130px;">
       <option value="">All Status</option>
       <option value="yes" {% if filter_reviewed == 'yes' %}selected{% endif %}>Reviewed</option>
       <option value="no" {% if filter_reviewed == 'no' %}selected{% endif %}>Not Reviewed</option>
     </select>
-    <select id="filter-risk" onchange="applyFilters()" style="font-size:12px; padding:6px 12px; border:1px solid #cbd5e0; border-radius:6px; background:#fff; color:#2d3748; cursor:pointer; min-width:140px;">
+    <select id="filter-risk" onchange="applyFilters()" style="font-size:12px; padding:8px 12px; border:1px solid #d4d4cf; border-radius:8px; background:#fff; color:#1c1c1a; cursor:pointer; min-width:140px;">
       <option value="">All Risk Levels</option>
       <option value="urgent_review" {% if filter_risk == 'urgent_review' %}selected{% endif %}>Urgent Review</option>
       <option value="action_required" {% if filter_risk == 'action_required' %}selected{% endif %}>Action Required</option>
       <option value="review_recommended" {% if filter_risk == 'review_recommended' %}selected{% endif %}>Review Recommended</option>
       <option value="no_action_needed" {% if filter_risk == 'no_action_needed' %}selected{% endif %}>No Action Needed</option>
     </select>
-    <select id="filter-contacted" onchange="applyFilters()" style="font-size:12px; padding:6px 12px; border:1px solid #cbd5e0; border-radius:6px; background:#fff; color:#2d3748; cursor:pointer; min-width:130px;">
+    <select id="filter-contacted" onchange="applyFilters()" style="font-size:12px; padding:8px 12px; border:1px solid #d4d4cf; border-radius:8px; background:#fff; color:#1c1c1a; cursor:pointer; min-width:130px;">
       <option value="">All Contacted</option>
       <option value="yes" {% if filter_contacted == 'yes' %}selected{% endif %}>Contacted</option>
       <option value="no" {% if filter_contacted == 'no' %}selected{% endif %}>Not Contacted</option>
     </select>
-    <select id="filter-quoted" onchange="applyFilters()" style="font-size:12px; padding:6px 12px; border:1px solid #cbd5e0; border-radius:6px; background:#fff; color:#2d3748; cursor:pointer; min-width:130px;">
+    <select id="filter-quoted" onchange="applyFilters()" style="font-size:12px; padding:8px 12px; border:1px solid #d4d4cf; border-radius:8px; background:#fff; color:#1c1c1a; cursor:pointer; min-width:130px;">
       <option value="">All Quotes</option>
       <option value="yes" {% if filter_quoted == 'yes' %}selected{% endif %}>Quote Generated</option>
       <option value="no" {% if filter_quoted == 'no' %}selected{% endif %}>No Quote</option>
     </select>
-    <select id="filter-llm" onchange="applyFilters()" style="font-size:12px; padding:6px 12px; border:1px solid #cbd5e0; border-radius:6px; background:#fff; color:#2d3748; cursor:pointer; min-width:130px;">
+    <select id="filter-llm" onchange="applyFilters()" style="font-size:12px; padding:8px 12px; border:1px solid #d4d4cf; border-radius:8px; background:#fff; color:#1c1c1a; cursor:pointer; min-width:130px;">
       <option value="">All LLM</option>
       <option value="yes" {% if filter_llm == 'yes' %}selected{% endif %}>LLM Analyzed</option>
       <option value="no" {% if filter_llm == 'no' %}selected{% endif %}>No LLM</option>
@@ -141,22 +141,22 @@
 </div>
 
 <div class="card" id="results-section">
-  <h2>Reviews <span style="font-weight:400; font-size:12px; color:#718096;">{{ total_results }} total — page {{ page }}/{{ total_pages }}</span></h2>
+  <h2>Reviews <span style="font-weight:400; font-size:12px; color:#6b6b66;">{{ total_results }} total — page {{ page }}/{{ total_pages }}</span></h2>
   <table>
     <thead>
       <tr>
-        <th style="width:32px;"><input type="checkbox" id="select-all" onchange="toggleSelectAll(this)" style="cursor:pointer; width:15px; height:15px; accent-color:#3182ce;"></th>
+        <th style="width:32px;"><input type="checkbox" id="select-all" onchange="toggleSelectAll(this)" style="cursor:pointer; width:15px; height:15px; accent-color:#0f5c5c;"></th>
         <th>Policy #</th>
-        <th style="cursor:pointer; user-select:none;" onclick="sortByAccount()">Account {% if sort == 'account' %}{% if order == 'asc' %}&#9650;{% else %}&#9660;{% endif %}{% else %}<span style="color:#cbd5e0;">&#9650;</span>{% endif %}</th>
+        <th style="cursor:pointer; user-select:none;" onclick="sortByAccount()">Account {% if sort == 'account' %}{% if order == 'asc' %}&#9650;{% else %}&#9660;{% endif %}{% else %}<span style="color:#d4d4cf;">&#9650;</span>{% endif %}</th>
         <th>Risk</th><th>Flags</th><th>Changes</th><th>Contacted</th><th>Quote</th><th>Reviewed</th><th>LLM</th><th>Action</th>
       </tr>
     </thead>
     <tbody id="results-body">
       {% for r in results %}
       <tr>
-        <td><input type="checkbox" class="row-select" value="{{ r.policy_number }}" onchange="onRowCheckChange(this)" style="cursor:pointer; width:15px; height:15px; accent-color:#3182ce;"></td>
+        <td><input type="checkbox" class="row-select" value="{{ r.policy_number }}" onchange="onRowCheckChange(this)" style="cursor:pointer; width:15px; height:15px; accent-color:#0f5c5c;"></td>
         <td>{% if r.reviewed_at %}<a href="/ui/review/{{ r.policy_number }}">{{ r.policy_number }}</a>{% else %}{{ r.policy_number }}{% endif %}</td>
-        <td style="font-size:12px; color:#4a5568;">{% if r.pair and r.pair.renewal.insured_name %}{{ r.pair.renewal.insured_name }}{% else %}—{% endif %}</td>
+        <td style="font-size:12px; color:#4a4a46;">{% if r.pair and r.pair.renewal.insured_name %}{{ r.pair.renewal.insured_name }}{% else %}—{% endif %}</td>
         {% if r.reviewed_at %}
         <td><span class="badge badge-{{ r.risk_level.value }}">{{ r.risk_level.value|label }}</span></td>
         <td>{{ r.diff.flags|length }}</td>
@@ -164,24 +164,24 @@
         <td>
           <input type="checkbox" {% if r.broker_contacted %}checked{% endif %}
             onchange="toggleContacted('{{ r.policy_number }}', this)"
-            style="cursor:pointer; width:15px; height:15px; accent-color:#3182ce;">
+            style="cursor:pointer; width:15px; height:15px; accent-color:#0f5c5c;">
         </td>
         <td>
           <input type="checkbox" {% if r.quote_generated %}checked{% endif %}
-            disabled style="cursor:default; width:15px; height:15px; accent-color:#805ad5;">
+            disabled style="cursor:default; width:15px; height:15px; accent-color:#0f5c5c;">
         </td>
-        <td style="font-size:11px; color:#718096;">
+        <td style="font-size:11px; color:#6b6b66;">
           {{ r.reviewed_at.strftime("%m/%d %H:%M") }}
         </td>
         <td>{% if r.llm_insights %}<span class="llm-sparkle" title="LLM analyzed"></span>{% endif %}</td>
         <td><a href="/ui/review/{{ r.policy_number }}" class="btn btn-secondary" style="padding:2px 8px; font-size:11px;">View</a></td>
         {% else %}
-        <td><span style="color:#a0aec0; font-size:11px;">Not Reviewed</span></td>
-        <td style="color:#a0aec0;">—</td>
-        <td style="color:#a0aec0;">—</td>
-        <td style="color:#a0aec0;">—</td>
-        <td style="color:#a0aec0;">—</td>
-        <td style="color:#a0aec0;">—</td>
+        <td><span style="color:#8a8a84; font-size:11px;">Not Reviewed</span></td>
+        <td style="color:#8a8a84;">—</td>
+        <td style="color:#8a8a84;">—</td>
+        <td style="color:#8a8a84;">—</td>
+        <td style="color:#8a8a84;">—</td>
+        <td style="color:#8a8a84;">—</td>
         <td></td>
         <td></td>
         {% endif %}
@@ -194,7 +194,7 @@
     {% if page > 1 %}
     <a href="/?page={{ page - 1 }}&risk={{ filter_risk }}&contacted={{ filter_contacted }}&quoted={{ filter_quoted }}&reviewed={{ filter_reviewed }}&llm={{ filter_llm }}&sort={{ sort }}&order={{ order }}" class="btn btn-secondary" style="padding:4px 12px; font-size:12px;">&larr; Prev</a>
     {% endif %}
-    <span style="font-size:13px; color:#4a5568;">{{ page }} / {{ total_pages }}</span>
+    <span style="font-size:13px; color:#4a4a46;">{{ page }} / {{ total_pages }}</span>
     {% if page < total_pages %}
     <a href="/?page={{ page + 1 }}&risk={{ filter_risk }}&contacted={{ filter_contacted }}&quoted={{ filter_quoted }}&reviewed={{ filter_reviewed }}&llm={{ filter_llm }}&sort={{ sort }}&order={{ order }}" class="btn btn-secondary" style="padding:4px 12px; font-size:12px;">Next &rarr;</a>
     {% endif %}
@@ -370,7 +370,7 @@ function showBatchLoading(msg) {
 
 function showBatchError(msg) {
   document.getElementById('batch-loading-msg').textContent = msg;
-  document.getElementById('batch-loading-msg').style.color = '#e53e3e';
+  document.getElementById('batch-loading-msg').style.color = '#c2372d';
   document.getElementById('btn-review-all').disabled = false;
   document.getElementById('btn-review-all').style.opacity = '1';
   updateSelectedCountDisplay();
